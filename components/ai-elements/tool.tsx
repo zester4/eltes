@@ -2,16 +2,11 @@
 
 import type { ToolUIPart } from "ai";
 import {
-  CheckCircleIcon,
   ChevronDownIcon,
-  CircleIcon,
-  ClockIcon,
-  WrenchIcon,
-  XCircleIcon,
+  ZapIcon,
 } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
-import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
@@ -23,45 +18,123 @@ export type ToolProps = ComponentProps<typeof Collapsible>;
 
 export const Tool = ({ className, ...props }: ToolProps) => (
   <Collapsible
-    className={cn("not-prose mb-4 w-full rounded-md border", className)}
+    className={cn(
+      "not-prose mb-3 w-full rounded-xl border border-border/50 bg-muted/30 overflow-hidden",
+      className
+    )}
     {...props}
   />
 );
+
+// ─── Name Formatting ─────────────────────────────────────────────────────────
+
+// Maps known Composio meta-tool IDs to readable names
+const META_TOOL_NAMES: Record<string, string> = {
+  COMPOSIO_SEARCH_TOOLS: "Search Tools",
+  COMPOSIO_MULTI_EXECUTE_TOOL: "Execute Actions",
+  COMPOSIO_MANAGE_CONNECTIONS: "Manage Connections",
+  COMPOSIO_INITIATE_CONNECTION: "Connect Account",
+  COMPOSIO_GET_CONNECTION_STATUS: "Check Connection",
+};
+
+const KNOWN_APP_PREFIXES: Record<string, string> = {
+  GMAIL: "Gmail",
+  SLACK: "Slack",
+  GITHUB: "GitHub",
+  NOTION: "Notion",
+  YOUTUBE: "YouTube",
+  TWITTER: "Twitter",
+  LINKEDIN: "LinkedIn",
+  GOOGLE_CALENDAR: "Google Calendar",
+  GOOGLE_DRIVE: "Google Drive",
+  GOOGLE_SHEETS: "Google Sheets",
+  GOOGLE_DOCS: "Google Docs",
+  DISCORD: "Discord",
+  HUBSPOT: "HubSpot",
+  SALESFORCE: "Salesforce",
+  ASANA: "Asana",
+  JIRA: "Jira",
+  TRELLO: "Trello",
+  DROPBOX: "Dropbox",
+  ONEDRIVE: "OneDrive",
+  SHOPIFY: "Shopify",
+  STRIPE: "Stripe",
+  FIGMA: "Figma",
+  ZOOM: "Zoom",
+  AIRTABLE: "Airtable",
+};
+
+export const formatToolName = (type: string): string => {
+  // Strip the "tool-" prefix that Next.js AI SDK adds
+  const raw = type.replace(/^tool-/, "");
+
+  // Handle known meta-tools
+  if (META_TOOL_NAMES[raw]) return META_TOOL_NAMES[raw];
+
+  // Handle built-in tools
+  if (raw === "getWeather") return "Get Weather";
+  if (raw === "createDocument") return "Create Document";
+  if (raw === "updateDocument") return "Update Document";
+  if (raw === "requestSuggestions") return "Request Suggestions";
+
+  // For Composio tool actions like GMAIL_FETCH_EMAILS → "Gmail - Fetch Emails"
+  // Try to match a known app prefix first
+  for (const [prefix, appName] of Object.entries(KNOWN_APP_PREFIXES)) {
+    if (raw.startsWith(prefix + "_")) {
+      const action = raw.slice(prefix.length + 1);
+      const actionName = action
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      return `${appName} — ${actionName}`;
+    }
+  }
+
+  // Generic fallback: strip any remaining COMPOSIO_ prefix and title-case
+  return raw
+    .replace(/^COMPOSIO_/, "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+// ─── Status Badge ─────────────────────────────────────────────────────────────
+
+const getStatusIndicator = (state: ToolUIPart["state"]) => {
+  if (state === "output-available") {
+    return (
+      <span className="text-[11px] font-medium text-emerald-500 tracking-wide">
+        Completed
+      </span>
+    );
+  }
+  if (state === "output-error" || state === "output-denied") {
+    return (
+      <span className="text-[11px] font-medium text-destructive tracking-wide">
+        {state === "output-denied" ? "Denied" : "Error"}
+      </span>
+    );
+  }
+  if (state === "approval-requested") {
+    return (
+      <span className="text-[11px] font-medium text-yellow-500 tracking-wide animate-pulse">
+        Awaiting Approval
+      </span>
+    );
+  }
+  // Running / streaming states
+  return (
+    <span className="text-[11px] font-medium text-muted-foreground tracking-wide animate-pulse">
+      {state === "input-streaming" ? "Thinking…" : "Running…"}
+    </span>
+  );
+};
+
+// ─── Tool Header ─────────────────────────────────────────────────────────────
 
 export type ToolHeaderProps = {
   title?: string;
   type: ToolUIPart["type"];
   state: ToolUIPart["state"];
   className?: string;
-};
-
-const getStatusBadge = (status: ToolUIPart["state"]) => {
-  const labels: Record<ToolUIPart["state"], string> = {
-    "input-streaming": "Pending",
-    "input-available": "Running",
-    "approval-requested": "Awaiting Approval",
-    "approval-responded": "Responded",
-    "output-available": "Completed",
-    "output-error": "Error",
-    "output-denied": "Denied",
-  };
-
-  const icons: Record<ToolUIPart["state"], ReactNode> = {
-    "input-streaming": <CircleIcon className="size-4" />,
-    "input-available": <ClockIcon className="size-4 animate-pulse" />,
-    "approval-requested": <ClockIcon className="size-4 text-yellow-600" />,
-    "approval-responded": <CheckCircleIcon className="size-4 text-blue-600" />,
-    "output-available": <CheckCircleIcon className="size-4 text-green-600" />,
-    "output-error": <XCircleIcon className="size-4 text-red-600" />,
-    "output-denied": <XCircleIcon className="size-4 text-orange-600" />,
-  };
-
-  return (
-    <Badge className="gap-1.5 rounded-full text-xs" variant="secondary">
-      {icons[status]}
-      {labels[status]}
-    </Badge>
-  );
 };
 
 export const ToolHeader = ({
@@ -73,48 +146,55 @@ export const ToolHeader = ({
 }: ToolHeaderProps) => (
   <CollapsibleTrigger
     className={cn(
-      "flex w-full items-center justify-between gap-4 p-3",
+      "group flex w-full items-center justify-between gap-3 px-4 py-3",
       className
     )}
     {...props}
   >
-    <div className="flex items-center gap-2">
-      <WrenchIcon className="size-4 text-muted-foreground" />
-      <span className="font-medium text-sm">
-        {title ?? type.split("-").slice(1).join("-")}
+    <div className="flex items-center gap-2.5 min-w-0">
+      {/* Activity icon */}
+      <ZapIcon className="size-3.5 text-muted-foreground/70 shrink-0" />
+      <span className="font-medium text-sm text-foreground/80 truncate">
+        {title ?? formatToolName(type)}
       </span>
-      {getStatusBadge(state)}
+      {getStatusIndicator(state)}
     </div>
-    <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+    <ChevronDownIcon className="size-3.5 text-muted-foreground shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
   </CollapsibleTrigger>
 );
+
+// ─── Tool Content ─────────────────────────────────────────────────────────────
 
 export type ToolContentProps = ComponentProps<typeof CollapsibleContent>;
 
 export const ToolContent = ({ className, ...props }: ToolContentProps) => (
   <CollapsibleContent
     className={cn(
-      "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
+      "border-t border-border/40 data-[state=closed]:animate-out data-[state=open]:animate-in data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className
     )}
     {...props}
   />
 );
 
+// ─── Tool Input ───────────────────────────────────────────────────────────────
+
 export type ToolInputProps = ComponentProps<"div"> & {
   input: ToolUIPart["input"];
 };
 
 export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
-  <div className={cn("space-y-2 overflow-hidden p-4", className)} {...props}>
-    <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-      Parameters
+  <div className={cn("space-y-1.5 p-4", className)} {...props}>
+    <h4 className="text-[10px] font-semibold text-muted-foreground tracking-[0.12em] uppercase">
+      ARGS
     </h4>
-    <pre className="overflow-x-auto rounded-md bg-muted/50 p-3 font-mono text-xs">
+    <pre className="overflow-x-auto rounded-lg bg-background/60 border border-border/30 p-3 font-mono text-xs text-foreground/80 leading-relaxed">
       {JSON.stringify(input, null, 2)}
     </pre>
   </div>
 );
+
+// ─── Tool Output ──────────────────────────────────────────────────────────────
 
 export type ToolOutputProps = ComponentProps<"div"> & {
   output: ToolUIPart["output"];
@@ -127,41 +207,47 @@ export const ToolOutput = ({
   errorText,
   ...props
 }: ToolOutputProps) => {
-  if (!(output || errorText)) {
+  // Only treat as error if errorText is a non-null, non-empty string
+  const hasRealError =
+    typeof errorText === "string" && errorText.trim().length > 0;
+
+  if (!(output || hasRealError)) {
     return null;
   }
 
   const renderOutput = () => {
     if (typeof output === "object" && !isValidElement(output)) {
       return (
-        <pre className="overflow-x-auto p-3 font-mono text-xs">
+        <pre className="overflow-x-auto p-3 font-mono text-xs text-foreground/80 leading-relaxed">
           {JSON.stringify(output, null, 2)}
         </pre>
       );
     }
     if (typeof output === "string") {
       return (
-        <pre className="overflow-x-auto p-3 font-mono text-xs">{output}</pre>
+        <pre className="overflow-x-auto p-3 font-mono text-xs text-foreground/80">
+          {output}
+        </pre>
       );
     }
     return <div className="p-3">{output as ReactNode}</div>;
   };
 
   return (
-    <div className={cn("space-y-2 p-4", className)} {...props}>
-      <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-        {errorText ? "Error" : "Result"}
+    <div className={cn("space-y-1.5 p-4", className)} {...props}>
+      <h4 className="text-[10px] font-semibold text-muted-foreground tracking-[0.12em] uppercase">
+        {hasRealError ? "ERROR" : "RESULT"}
       </h4>
       <div
         className={cn(
-          "overflow-x-auto rounded-md text-xs [&_table]:w-full",
-          errorText
-            ? "bg-destructive/10 text-destructive"
-            : "bg-muted/50 text-foreground"
+          "overflow-x-auto rounded-lg border text-xs",
+          hasRealError
+            ? "bg-destructive/5 border-destructive/20 text-destructive"
+            : "bg-background/60 border-border/30 text-foreground"
         )}
       >
-        {errorText && <div className="p-3">{errorText}</div>}
-        {!errorText && renderOutput()}
+        {hasRealError && <div className="p-3">{errorText}</div>}
+        {!hasRealError && renderOutput()}
       </div>
     </div>
   );

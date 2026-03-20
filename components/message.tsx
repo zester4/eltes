@@ -1,4 +1,5 @@
 "use client";
+import type { ToolUIPart } from "ai";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useState } from "react";
 import type { Vote } from "@/lib/db/schema";
@@ -22,6 +23,9 @@ import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
+import { Button } from "./ui/button";
+import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -129,17 +133,12 @@ const PurePreviewMessage = ({
                   <div key={key}>
                     <MessageContent
                       className={cn({
-                        "wrap-break-word w-fit rounded-2xl px-3 py-2 text-right text-white":
+                        "wrap-break-word w-fit rounded-2xl px-3 py-2 text-right bg-primary text-primary-foreground":
                           message.role === "user",
                         "bg-transparent px-0 py-0 text-left":
                           message.role === "assistant",
                       })}
                       data-testid="message-content"
-                      style={
-                        message.role === "user"
-                          ? { backgroundColor: "#006cff" }
-                          : undefined
-                      }
                     >
                       <Response>{sanitizeText(part.text)}</Response>
                     </MessageContent>
@@ -342,6 +341,60 @@ const PurePreviewMessage = ({
                 </Tool>
               );
             }
+
+            if (type.startsWith("tool-") && "toolCallId" in part && "state" in part) {
+              const { toolCallId, state } = part;
+
+              // Only show error if output.error is a real non-null string
+              const rawError =
+                "output" in part &&
+                part.output &&
+                typeof part.output === "object" &&
+                "error" in part.output &&
+                (part.output as any).error != null
+                  ? String((part.output as any).error)
+                  : undefined;
+
+              // If the tool has a redirect URL (like OAuth), surface it prominently
+              const redirectUrl =
+                "output" in part &&
+                part.output &&
+                typeof part.output === "object"
+                  ? (part.output as any).url || (part.output as any).redirectUrl
+                  : undefined;
+
+              return (
+                <div className="w-[min(100%,500px)]" key={toolCallId}>
+                  <Tool defaultOpen={state === "approval-requested" || state === "output-error"}>
+                    <ToolHeader state={state} type={type as any} />
+                    <ToolContent>
+                      {"input" in part && !!part.input && (
+                        <ToolInput input={part.input} />
+                      )}
+                      {"output" in part && !!part.output && (
+                        <>
+                          {redirectUrl && (
+                            <div className="px-4 pb-3">
+                              <Button asChild className="w-full gap-2" size="sm">
+                                <Link href={redirectUrl} target="_blank">
+                                  <ExternalLink className="size-4" />
+                                  Connect Account
+                                </Link>
+                              </Button>
+                            </div>
+                          )}
+                          <ToolOutput
+                            errorText={rawError}
+                            output={part.output as any}
+                          />
+                        </>
+                      )}
+                    </ToolContent>
+                  </Tool>
+                </div>
+              );
+            }
+
 
             return null;
           })}

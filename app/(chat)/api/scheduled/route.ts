@@ -1,0 +1,168 @@
+import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
+import { NextRequest, NextResponse } from "next/server";
+import { generateText, stepCountIs } from "ai";
+import { getLanguageModel } from "@/lib/ai/providers";
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
+import {
+  getChatsByUserId,
+  saveMessages,
+} from "@/lib/db/queries";
+import { getWeather } from "@/lib/ai/tools/get-weather";
+import {
+  saveMemory,
+  recallMemory,
+  updateMemory,
+  deleteMemory,
+} from "@/lib/ai/tools/memory";
+import { generateUUID } from "@/lib/utils";
+
+const composioStatus = new Composio({ provider: new VercelProvider() });
+
+async function handler(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { userId, message } = body;
+
+    console.log(`[QStash] Proactive trigger: "${message}" for user ${userId}`);
+
+    // 1. Get the most recent chat for this user to append the reminder to
+    const { chats } = await getChatsByUserId({
+      id: userId,
+      limit: 1,
+      startingAfter: null,
+      endingBefore: null,
+    });
+
+    const activeChat = chats[0];
+    if (!activeChat) {
+      console.warn(`[QStash] No active chat found for user ${userId}. Skipping reminder.`);
+      return NextResponse.json({ ok: false, error: "No active chat found" });
+    }
+
+    const chatId = activeChat.id;
+
+    // 2. Initialize tools for the proactive agent
+    // We only include non-UI tools (no artifacts/documents)
+    let composioTools: Record<string, any> = {};
+    try {
+      const composioSession = await composioStatus.create(userId);
+      composioTools = await composioSession.tools();
+    } catch (e) {
+      console.error("[QStash] Failed to load Composio tools:", e);
+    }
+
+    const tools = {
+      ...composioTools,
+      getWeather,
+      saveMemory: saveMemory({ userId }),
+      recallMemory: recallMemory({ userId }),
+      updateMemory: updateMemory({ userId }),
+      deleteMemory: deleteMemory({ userId }),
+    };
+
+    // 3. Run the proactive agent
+    const systemInstruction = `You are Etles, the user's proactive AI assistant. 
+A scheduled reminder or recurring task has just fired: "${message}".
+Your goal is to fulfill this reminder immediately by taking any necessary actions (using your tools) and then leaving a brief message for the user in their chat.
+If the reminder is just a notification, tell the user. 
+If the reminder implies action (e.g. "Send email"), execute the action.
+Today's date is ${new Date().toLocaleDateString()}.
+Be direct and helpful.`;
+
+    const result = await generateText({
+      model: getLanguageModel("google/gemini-3-flash"),
+      system: systemInstruction,
+      prompt: `Reminder triggered: ${message}`,
+      tools,
+      stopWhen: stepCountIs(25),
+    });
+
+    // 4. Save the interaction back to the database
+    const messagesToSave: any[] = [];
+    const timestamp = new Date();
+
+    // Save the reminder trigger
+    messagesToSave.push({
+      id: generateUUID(),
+      chatId,
+      role: "user",
+      parts: [{ type: "text", text: `[Scheduled]: ${message}` }],
+      attachments: [],
+      createdAt: timestamp,
+    });
+
+    // Save assistant text response
+    if (result.text) {
+      messagesToSave.push({
+        id: generateUUID(),
+        chatId,
+        role: "assistant",
+        parts: [{ type: "text", text: result.text }],
+        attachments: [],
+        createdAt: new Date(timestamp.getTime() + 1000), // Ensure later timestamp
+      });
+    }
+
+    // Save tool executions if any
+    if (result.steps) {
+      for (const step of result.steps) {
+        if (step.toolCalls && step.toolCalls.length > 0) {
+          for (const call of step.toolCalls) {
+            const toolCallId = call.toolCallId;
+            
+            // Assistant message containing the tool call
+            messagesToSave.push({
+              id: generateUUID(),
+              chatId,
+              role: "assistant",
+              parts: [{ 
+                type: "tool-call", 
+                toolCallId, 
+                toolName: (call as any).toolName, 
+                args: (call as any).args 
+              }],
+              attachments: [],
+              createdAt: new Date(timestamp.getTime() + 2000),
+            });
+
+            // Tool result message
+            const toolResult = step.toolResults?.find((r: any) => r.toolCallId === toolCallId);
+            if (toolResult) {
+              messagesToSave.push({
+                id: generateUUID(),
+                chatId,
+                role: "tool",
+                parts: [{ 
+                  type: "tool-result", 
+                  toolCallId, 
+                  toolName: (call as any).toolName, 
+                  result: (toolResult as any).result 
+                }],
+                attachments: [],
+                createdAt: new Date(timestamp.getTime() + 3000),
+              });
+            }
+          }
+        }
+      }
+    }
+
+    await saveMessages({ messages: messagesToSave });
+
+    return NextResponse.json({
+      ok: true,
+      message: "Proactive trigger completed",
+      actionTaken: result.text,
+      toolCount: result.toolCalls?.length ?? 0
+    });
+  } catch (error: any) {
+    console.error("[QStash] Proactive trigger failed:", error);
+    return NextResponse.json(
+      { ok: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
+export const POST = verifySignatureAppRouter(handler);

@@ -72,6 +72,12 @@ export function SidebarUserNav({ user }: { user: User }) {
           >
             <DropdownMenuItem
               className="cursor-pointer"
+              onSelect={() => router.push("/settings/connections")}
+            >
+              App Connections
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer"
               data-testid="user-nav-item-theme"
               onSelect={() =>
                 setTheme(resolvedTheme === "dark" ? "light" : "dark")
