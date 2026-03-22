@@ -60,7 +60,7 @@ export async function proxy(request: NextRequest) {
   const isGuest = guestRegex.test(token?.email ?? "");
 
   if (token && !isGuest && ["/login", "/register"].includes(pathname)) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/chat", request.url));
   }
 
   return NextResponse.next();

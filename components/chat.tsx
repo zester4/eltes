@@ -393,7 +393,7 @@ export function Chat({
                   "https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%3Fmodal%3Dadd-credit-card",
                   "_blank"
                 );
-                window.location.href = "/";
+                window.location.href = "/chat";
               }}
             >
               Activate

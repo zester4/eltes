@@ -50,7 +50,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
       success: () => {
         mutate(unstable_serialize(getChatHistoryPaginationKey));
         setShowDeleteAllDialog(false);
-        router.replace("/");
+        router.replace("/chat");
         router.refresh();
         return "All chats deleted successfully";
       },
@@ -99,7 +99,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       className="h-8 p-1 md:h-fit md:p-2"
                       onClick={() => {
                         setOpenMobile(false);
-                        router.push("/");
+                        router.push("/chat");
                         router.refresh();
                       }}
                       type="button"

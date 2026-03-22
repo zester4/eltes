@@ -131,7 +131,7 @@ export default function AgentsActivityPage() {
         <SidebarToggle />
         <Button
           className="gap-2"
-          onClick={() => router.push("/")}
+          onClick={() => router.push("/chat")}
           size="sm"
           type="button"
           variant="ghost"
