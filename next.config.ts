@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
-  serverExternalPackages: ["zlib-sync", "pg", "pg-pool", "bufferutil"],
+  serverExternalPackages: ["zlib-sync"],
   experimental: {
     serverActions: {
       allowedOrigins: [
