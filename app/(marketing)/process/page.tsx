@@ -6,7 +6,7 @@ import Image from 'next/image';
 
 export default function ProcessPage() {
   return (
-    <div className="w-full relative overflow-visible bg-black selection:bg-white/20">
+    <div className="w-full relative overflow-visible bg-background selection:bg-primary/20">
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[500px] py-40 px-6 flex flex-col items-center justify-center text-center">
         <div className="absolute top-[20%] w-[600px] h-[600px] bg-white/[0.02] rounded-full blur-[120px] z-0" />

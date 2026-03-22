@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="dark bg-black text-foreground font-body min-h-screen selection:bg-white/20 selection:text-white">
+    <div className="bg-background text-foreground font-body min-h-screen selection:bg-primary/20">
 
       {/* SECTION 1 — NAVBAR (fixed) */}
       <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 py-4 w-full pointer-events-none">

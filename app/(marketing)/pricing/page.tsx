@@ -5,7 +5,7 @@ import { BlurText } from '@/components/blur-text';
 
 export default function PricingPage() {
   return (
-    <div className="w-full relative overflow-visible bg-black selection:bg-white/20">
+    <div className="w-full relative overflow-visible bg-background selection:bg-primary/20">
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[500px] py-32 px-6 flex flex-col items-center justify-center text-center overflow-hidden">
         <div className="relative z-10 max-w-4xl">

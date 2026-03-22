@@ -247,15 +247,15 @@ export default function EventsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "processed": return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-      case "received": return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-      case "failed": return "bg-red-500/20 text-red-400 border-red-500/30";
-      default: return "bg-white/10 text-zinc-400 border-white/10";
+      case "processed": return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20";
+      case "received": return "bg-blue-500/10 text-blue-500 border-blue-500/20";
+      case "failed": return "bg-red-500/10 text-red-500 border-red-500/20";
+      default: return "bg-muted text-muted-foreground border-border";
     }
   };
 
   return (
-    <div className="relative min-h-screen bg-[#050505] text-zinc-100 overflow-hidden font-sans selection:bg-primary/30">
+    <div className="relative min-h-screen bg-background text-foreground overflow-hidden font-sans selection:bg-primary/30">
       {/* Premium Background Effects */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background z-0 pointer-events-none opacity-60" />
       <div className="absolute top-0 inset-x-0 h-[600px] bg-gradient-to-b from-primary/10 to-transparent blur-[100px] z-0 pointer-events-none opacity-50 translate-y-[-20%]" />
@@ -265,10 +265,10 @@ export default function EventsPage() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 rounded-[2rem] bg-white/[0.02] border border-white/5 shadow-2xl backdrop-blur-3xl relative overflow-hidden"
+          className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 rounded-[2rem] bg-card border border-border pb-8 shadow-2xl backdrop-blur-3xl relative overflow-hidden"
         >
           {/* Subtle top glare */}
-          <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+          <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-foreground/10 to-transparent" />
           
           <div className="flex flex-col gap-1.5 flex-1 pl-2">
             <div className="flex items-center gap-4">
@@ -277,15 +277,15 @@ export default function EventsPage() {
                 variant="ghost" 
                 size="icon" 
                 onClick={() => router.back()} 
-                className="rounded-full hover:bg-white/10 text-zinc-400 hover:text-zinc-100 transition-colors shrink-0"
+                className="rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
               >
                 <ArrowLeft className="size-5" />
               </Button>
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-br from-white to-zinc-500 bg-clip-text text-transparent">
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">
                 Events Monitoring
               </h1>
             </div>
-            <p className="text-zinc-400/80 ml-14 text-sm font-medium">
+            <p className="text-muted-foreground ml-14 text-sm font-medium">
               Monitor and manage real-time event streams from your connected apps.
             </p>
           </div>
@@ -314,14 +314,14 @@ export default function EventsPage() {
                         onClick={() => setSelectedTrigger(t)}
                         className="flex items-center gap-4 p-4 rounded-2xl border border-white/5 bg-white/[0.02] hover:bg-white/5 hover:border-primary/40 transition-all text-left group"
                       >
-                        <div className="size-12 rounded-xl bg-black/50 flex items-center justify-center border border-white/10 shadow-inner group-hover:scale-110 group-hover:bg-black/80 transition-all">
+                        <div className="size-12 rounded-xl bg-muted flex items-center justify-center border border-border shadow-inner group-hover:scale-110 group-hover:bg-accent transition-all">
                           {getAppIcon(t.app, 24)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-sm text-zinc-200 truncate group-hover:text-primary transition-colors">{t.name}</h4>
-                          <p className="text-xs text-zinc-500 line-clamp-1">{t.description}</p>
+                          <h4 className="font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors">{t.name}</h4>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{t.description}</p>
                         </div>
-                        <ChevronRight className="size-4 text-zinc-600 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                        <ChevronRight className="size-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all" />
                       </button>
                     ))}
                   </div>
@@ -480,7 +480,7 @@ export default function EventsPage() {
             <div className="relative pl-2 md:pl-0">
               {/* Timeline Line */}
               {eventLogs.length > 0 && (
-                <div className="absolute left-[29px] top-6 bottom-4 w-px bg-gradient-to-b from-primary/50 via-white/10 to-transparent hidden md:block" />
+                <div className="absolute left-[29px] top-6 bottom-4 w-px bg-gradient-to-b from-primary/50 via-border to-transparent hidden md:block" />
               )}
 
               <div className="space-y-5 relative">
@@ -579,7 +579,7 @@ export default function EventsPage() {
                                             <span>via Composio</span>
                                           </div>
                                         </div>
-                                        <div className="rounded-xl border border-white/5 bg-[#0a0a0a] p-5 font-mono text-[12px] text-zinc-300 overflow-x-auto shadow-inner custom-scrollbar relative">
+                                        <div className="rounded-xl border border-border bg-muted/30 p-5 font-mono text-[12px] text-foreground overflow-x-auto shadow-inner custom-scrollbar relative">
                                           <pre className="relative z-10">{JSON.stringify(event.payload, null, 2)}</pre>
                                         </div>
                                       </div>

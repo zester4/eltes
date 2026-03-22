@@ -49,6 +49,11 @@ export async function proxy(request: NextRequest) {
     
     const redirectUrl = encodeURIComponent(currentUrl.toString());
 
+    // Redirect to login if accessing chat, otherwise to guest
+    if (pathname.startsWith("/chat")) {
+      return NextResponse.redirect(new URL(`/login?redirectTo=${redirectUrl}`, request.url));
+    }
+
     return NextResponse.redirect(
       new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url)
     );
@@ -66,6 +71,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     "/",
+    "/chat",
     "/chat/:id",
     "/api/:path*",
     "/login",

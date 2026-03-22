@@ -13,12 +13,12 @@
 
 /* define design tokens (light mode) */
 :root {
-  --background: 213 45% 67%;
-  --foreground: 0 0% 100%;
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
   --card: hsl(0 0% 100%);
-  --card-foreground: hsl(0 0% 14.9020%);
+  --card-foreground: 240 10% 3.9%;
   --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(0 0% 14.9020%);
+  --popover-foreground: 240 10% 3.9%;
   --primary: 0 0% 100%;
   --primary-foreground: 213 45% 67%;
   --secondary: hsl(220.0000 14.2857% 95.8824%);
@@ -50,7 +50,7 @@
   --font-sans: var(--font-body);
   --font-serif: var(--font-heading);
   --font-mono: JetBrains Mono, monospace;
-  --radius: 9999px;
+  --radius: 0.5rem;
   --shadow-x: 0px;
   --shadow-y: 4px;
   --shadow-blur: 8px;
@@ -183,7 +183,7 @@
   }
 
   body {
-    @apply bg-black text-white;
+    @apply bg-background text-foreground;
     overflow-x: hidden;
     position: relative;
     -webkit-font-smoothing: antialiased;

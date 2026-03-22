@@ -9,7 +9,7 @@ export default function LandingPage() {
     <div className="w-full relative overflow-visible bg-black selection:bg-white/20">
 
       {/* SECTION 2 — HERO */}
-      <section className="relative w-full h-[1000px] overflow-hidden bg-black flex flex-col items-center justify-start pt-[150px]">
+      <section className="relative w-full min-h-[800px] md:h-[1000px] overflow-hidden bg-black flex flex-col items-center justify-start pt-[100px] md:pt-[150px]">
         {/* Static Background */}
         <div className="absolute inset-0 z-0">
           <Image 
@@ -41,7 +41,7 @@ export default function LandingPage() {
 
           <BlurText 
              text="The AI Agent Your Workflow Deserves"
-             className="text-6xl md:text-7xl lg:text-[5.5rem] font-heading italic text-white leading-[0.8] tracking-[-4px] mb-8"
+             className="text-4xl md:text-7xl lg:text-[5.5rem] font-heading italic text-white leading-[0.9] tracking-[-2px] md:tracking-[-4px] mb-8"
           />
 
           <motion.p 
@@ -114,7 +114,7 @@ export default function LandingPage() {
              <span className="font-body text-xs text-white uppercase tracking-widest">How It Works</span>
            </div>
            
-           <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading italic text-white mb-6 leading-[0.9] tracking-tight">
+           <h2 className="text-3xl md:text-5xl lg:text-6xl font-heading italic text-white mb-6 leading-[1.1] md:leading-[0.9] tracking-tight">
              You describe it. We automate it.
            </h2>
            
@@ -223,7 +223,7 @@ export default function LandingPage() {
       <section className="relative w-full min-h-[500px] py-24 px-6 flex items-center justify-center overflow-hidden my-20">
         <div className="absolute inset-0 bg-black/40 z-[1]" />
         
-        <div className="relative z-10 w-full max-w-5xl liquid-glass rounded-[40px] p-12 md:p-20 grid grid-cols-1 md:grid-cols-3 gap-12 text-center bg-black/20 backdrop-blur-3xl">
+        <div className="relative z-10 w-full max-w-5xl liquid-glass rounded-[32px] md:rounded-[40px] p-8 md:p-20 grid grid-cols-1 md:grid-cols-3 gap-12 text-center bg-black/20 backdrop-blur-3xl">
           {[
             { stat: "700+", label: "Integrated Tools" },
             { stat: "< 2ms", label: "Event Latency" },
@@ -267,7 +267,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent z-[1]" />
         
         <div className="relative z-10 flex flex-col items-center text-center px-6 max-w-3xl">
-           <h2 className="text-5xl md:text-7xl font-heading italic text-white mb-6">
+           <h2 className="text-4xl md:text-7xl font-heading italic text-white mb-6">
             Ready to delegate?
           </h2>
           <p className="font-body font-light text-white/60 text-lg mb-10">
