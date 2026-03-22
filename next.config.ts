@@ -3,9 +3,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  serverExternalPackages: ["zlib-sync", "pg", "pg-pool", "bufferutil"],
   experimental: {
     serverActions: {
-      allowedOrigins: ["*.ngrok-free.app", "*.ngrok.app", "*.ngrok.io", "localhost:3000"],
+      allowedOrigins: [
+        "*.ngrok-free.app",
+        "*.ngrok.app",
+        "*.ngrok.io",
+        "localhost:3000",
+      ],
     },
   },
   images: {
