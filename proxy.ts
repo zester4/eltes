@@ -30,18 +30,18 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const protocol = request.headers.get("x-forwarded-proto") || "http";
-  const isSecure = protocol === "https";
+  // Detect if we are on a secure connection (Vercel/Production)
+  const isSecure = request.headers.get("x-forwarded-proto") === "https";
 
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
-    secureCookie: isSecure,
+    secureCookie: isSecure, // This is CRITICAL for mobile/production cookie visibility
   });
 
   if (!token) {
     const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "localhost:3000";
-    const protocol = request.headers.get("x-forwarded-proto") || "http";
+    const protocol = isSecure ? "https" : "http";
     const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
     
     const currentUrl = new URL(pathname, baseUrl);
