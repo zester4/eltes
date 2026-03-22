@@ -14,6 +14,12 @@ jobs:
       POSTGRES_URL: ${{ secrets.POSTGRES_URL }}
       BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
       REDIS_URL: ${{ secrets.REDIS_URL }}
+      AUTH_TRUST_HOST: true
+      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      AI_GATEWAY_API_KEY: ${{ secrets.AI_GATEWAY_API_KEY }}
+      GOOGLE_GENERATIVE_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_API_KEY }}
+      COMPOSIO_API_KEY: ${{ secrets.COMPOSIO_API_KEY }}
 
     steps:
       - uses: actions/checkout@v4

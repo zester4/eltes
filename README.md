@@ -4,7 +4,7 @@
 </a>
 
 <p align="center">
-    Etles (formerly AI Etles) is a free, open-source template built with Next.js and the AI SDK that helps you quickly build powerful Etles applications.
+    Etles is a powerful, open-source autonomous agent platform built with Next.js and the AI SDK that delegates complex administrative, sales, and operational tasks to a suite of specialized AI sub-agents.
 </p>
 
 <p align="center">
@@ -18,9 +18,19 @@
 
 ## Features
 
+- **Autonomous Sub-Agents Framework**
+  - Includes 16 specialized agents out of the box (e.g., SDR, Chief of Staff, Project Manager, Incident Responder, Cloud Cost Optimizer).
+  - Sub-agents operate intelligently out-of-band to perform complex, multi-step actions and proactive delegations.
+- **Deep Triggers & Automations (via Composio)**
+  - Seamlessly connect to over 100+ platforms (Jira, Slack, Salesforce, Stripe, GitHub).
+  - Configure active background triggers in real-time, enabling reactive agent workflows.
+- **Advanced Agent Toolkit**
+  - **Memory:** Agents save, recall, and update long-term user memories via Upstash Vector.
+  - **Scheduling:** Fully conversational cron jobs and reminders powered by Upstash QStash.
+  - **File Storage:** Store and retrieve files with Vercel Blob.
+  - **Generative UI:** Interactive components natively stream charts, documents, and real-time weather into the chat.
 - [Next.js](https://nextjs.org) App Router
-  - Advanced routing for seamless navigation and performance
-  - React Server Components (RSCs) and Server Actions for server-side rendering and increased performance
+  - Edge routing functionality mapping to highly resilient Server Components (RSCs) and Server Actions.
 - [AI SDK](https://ai-sdk.dev/docs/introduction)
   - Unified API for generating text, structured objects, and tool calls with LLMs
   - Hooks for building dynamic chat and generative user interfaces
