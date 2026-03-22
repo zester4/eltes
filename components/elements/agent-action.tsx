@@ -75,15 +75,15 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
 
   return (
     <div
-      className="not-prose my-4 w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl transition-all hover:bg-white/[0.05]"
+      className="not-prose my-2 w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-xl transition-all hover:bg-white/[0.05]"
       data-agent-task-id={taskId}
     >
       <div
-        className="flex cursor-pointer items-center gap-4 p-4 select-none"
+        className="flex cursor-pointer items-center gap-3 p-3 select-none"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/40 shadow-inner">
-          <Bot size={20} className="text-primary" />
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/40 shadow-inner">
+          <Bot size={16} className="text-primary" />
         </div>
 
         <div className="flex-1 min-w-0">
@@ -130,7 +130,7 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
 
         <div
           className={cn(
-            "flex size-7 items-center justify-center rounded-full bg-white/5 text-zinc-500 transition-all",
+            "flex size-6 items-center justify-center rounded-full bg-white/5 text-zinc-500 transition-all",
             isExpanded && "bg-primary/20 text-primary rotate-180"
           )}
         >
@@ -147,9 +147,9 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className="overflow-hidden border-t border-white/5 bg-black/60"
           >
-            <div className="p-4 space-y-3">
+            <div className="p-3 space-y-2">
               {isResult(agent) && (agent.result || agent.error) && (
-                <div className="rounded-xl border border-white/5 bg-[#080808] p-4 text-[14px] text-zinc-300 overflow-x-auto">
+                <div className="rounded-lg border border-white/5 bg-[#080808] p-3 text-[14px] text-zinc-300 overflow-x-auto">
                   {agent.error ? (
                     <span className="text-red-400 font-mono text-[12px] whitespace-pre-wrap">{agent.error}</span>
                   ) : (

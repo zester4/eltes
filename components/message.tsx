@@ -15,6 +15,7 @@ import { DocumentPreview } from "./document-preview";
 import { AgentActionCard, parseAgentMessage } from "./elements/agent-action";
 import { ChartDisplay } from "./elements/chart-display";
 import { EventCard, parseEventMessage } from "./elements/event";
+import { ExpandableContent } from "./elements/expandable-content";
 import { MessageContent } from "./elements/message";
 import { Response } from "./elements/response";
 import {
@@ -190,7 +191,6 @@ const PurePreviewMessage = ({
               const partEvent = parseEventMessage(rawText);
               const partAgent = parseAgentMessage(rawText);
 
-              if (mode === "view") {
                 return (
                   <div key={key}>
                     <MessageContent
@@ -208,13 +208,16 @@ const PurePreviewMessage = ({
                         <EventCard event={partEvent} />
                       ) : partAgent ? (
                         <AgentActionCard agent={partAgent} />
+                      ) : message.role === "user" ? (
+                        <ExpandableContent>
+                          <Response>{rawText}</Response>
+                        </ExpandableContent>
                       ) : (
-                        <Response>{sanitizeText(rawText)}</Response>
+                        <Response>{rawText}</Response>
                       )}
                     </MessageContent>
                   </div>
                 );
-              }
 
               if (mode === "edit") {
                 return (

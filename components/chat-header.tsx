@@ -32,7 +32,7 @@ function PureChatHeader({
         <Button
           className="order-2 ml-auto h-8 px-2 md:order-1 md:ml-0 md:h-fit md:px-2"
           onClick={() => {
-            router.push("/");
+            router.push("/chat");
             router.refresh();
           }}
           variant="outline"

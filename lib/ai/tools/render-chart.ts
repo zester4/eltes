@@ -5,6 +5,7 @@ const chartSeriesSchema = z.object({
   name: z.string().min(1),
   data: z.array(z.number()),
   color: z.string().optional(),
+  lineStyle: z.enum(["solid", "dashed"]).optional(),
 });
 
 export const chartToolInputSchema = z.object({
@@ -23,6 +24,8 @@ export const chartToolInputSchema = z.object({
   series: z.array(chartSeriesSchema).min(1).max(12),
   xAxisLabel: z.string().optional(),
   yAxisLabel: z.string().optional(),
+  layout: z.enum(["vertical", "horizontal"]).optional(),
+  stacked: z.boolean().optional(),
   /** Optional palette (hex or CSS colors), applied to series in order */
   colors: z.array(z.string()).max(16).optional(),
   /** Required for `composed`: one of line | bar | area per series */
@@ -79,7 +82,7 @@ function validateChartPayload(
 
 export const renderChart = tool({
   description:
-    "Render an interactive, responsive chart in the chat. Use when the user asks for a graph, chart, plot, trend, comparison, distribution, breakdown, KPIs, or analytics. Types: line (trends), bar (compare categories), area (cumulative trends), pie (proportions), radar (multi-axis comparison), scatter (correlation-style points per category), composed (mix bars/lines/areas). Provide human-readable category labels and numeric series aligned 1:1 with labels.",
+    "Render an interactive, high-end premium chart in the chat with 'Liquid Glass' aesthetic. Use when the user asks for insights, trends, comparisons, or analytics. Types: line, bar, area, pie, radar, scatter, composed. The UI handles curated premium color palettes automatically.",
   inputSchema: chartToolInputSchema,
   execute: (input) => {
     const parsed = chartToolInputSchema.safeParse(input);

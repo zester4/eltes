@@ -18,12 +18,13 @@ export async function proxy(request: NextRequest) {
     lowerPath.startsWith("/api/auth") ||
     lowerPath.startsWith("/api/composio/webhook") ||
     lowerPath.startsWith("/api/webhooks") ||
-    lowerPath.startsWith("/api/agent/workflow") ||  // QStash callbacks — secured by Receiver signing keys, not session
-    lowerPath.startsWith("/api/agent/notify") ||    // Approval links tapped from Telegram browser
-    lowerPath.startsWith("/api/agent/delegate") ||  // Internal sub-agent dispatch — secured by x-agent-secret
-    lowerPath.startsWith("/api/agent/handoff") ||   // Sub-agent → main agent follow-up — secured by x-agent-secret
-    lowerPath.startsWith("/api/telegram") ||        // Telegram webhook — secured by x-telegram-bot-api-secret-token
-    lowerPath.startsWith("/api/scheduled")          // QStash scheduled/reminder callbacks — secured by verifySignatureAppRouter
+    lowerPath.startsWith("/api/agent/workflow") ||
+    lowerPath.startsWith("/api/agent/notify") ||
+    lowerPath.startsWith("/api/agent/delegate") ||
+    lowerPath.startsWith("/api/agent/handoff") ||
+    lowerPath.startsWith("/api/telegram") ||
+    lowerPath.startsWith("/api/scheduled") ||
+    /\.(png|jpg|jpeg|gif|svg|webp|ico|m3u8|ts)$/.test(lowerPath)
   ) {
     console.log(`[Proxy] Allowing public path: ${pathname}`);
     return NextResponse.next();

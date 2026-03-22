@@ -30,18 +30,22 @@ import type { ChartToolPayload } from "@/lib/ai/tools/render-chart";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_SERIES_COLORS = [
-  "#6366f1",
-  "#10b981",
-  "#f59e0b",
-  "#ef4444",
-  "#8b5cf6",
-  "#06b6d4",
-  "#ec4899",
-  "#84cc16",
-  "#f97316",
-  "#14b8a6",
-  "#a855f7",
-  "#eab308",
+  "hsl(158 94% 30%)", // Emerald
+  "hsl(262 83% 58%)", // Violet
+  "hsl(38 92% 50%)",  // Amber
+  "hsl(346 87% 43%)", // Rose
+  "hsl(189 94% 43%)", // Cyan
+  "hsl(239 84% 67%)", // Indigo
+  "hsl(292 84% 61%)", // Fuchsia
+  "hsl(84 81% 44%)",  // Lime
+  "hsl(199 89% 48%)", // Sky
+  "hsl(174 86% 29%)", // Teal
+  "hsl(322 81% 54%)", // Pink
+  "hsl(217 91% 60%)", // Blue-Grey
+  "hsl(31 97% 55%)",  // Orange
+  "hsl(271 91% 65%)", // Purple
+  "hsl(142 71% 45%)", // Green
+  "hsl(11 80% 45%)",  // Crimson
 ] as const;
 
 type ChartDisplayProps = {
@@ -53,11 +57,11 @@ function useChartThemeColors() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   return {
-    grid: isDark ? "hsl(215 16% 22%)" : "hsl(214 32% 91%)",
-    axis: isDark ? "hsl(215 14% 65%)" : "hsl(215 16% 40%)",
-    tooltipBg: isDark ? "hsl(222 47% 11%)" : "hsl(0 0% 100%)",
-    tooltipBorder: isDark ? "hsl(215 16% 28%)" : "hsl(214 32% 88%)",
-    label: isDark ? "hsl(210 20% 88%)" : "hsl(222 47% 11%)",
+    grid: isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)",
+    axis: isDark ? "rgba(255, 255, 255, 0.3)" : "rgba(0, 0, 0, 0.4)",
+    tooltipBg: isDark ? "rgba(10, 10, 10, 0.8)" : "rgba(255, 255, 255, 0.9)",
+    tooltipBorder: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.1)",
+    label: isDark ? "rgba(255, 255, 255, 0.9)" : "rgba(0, 0, 0, 0.9)",
   };
 }
 
@@ -132,11 +136,14 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
   const yAxisTick = { fill: colors.axis, fontSize: 10 };
 
   const tooltipContentStyle = {
-    borderRadius: 8,
+    borderRadius: 12,
     border: `1px solid ${colors.tooltipBorder}`,
     background: colors.tooltipBg,
+    backdropFilter: "blur(12px)",
     color: colors.label,
     fontSize: 12,
+    padding: "8px 12px",
+    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
     maxWidth: "min(92vw, 280px)",
   };
 
@@ -151,57 +158,63 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
     },
   };
 
+  const isHorizontal = spec.layout === "horizontal";
+  const stacking = spec.stacked ? "1" : undefined;
+
+  const xAxisProps = {
+    dataKey: isHorizontal ? undefined : "name",
+    stroke: colors.grid,
+    tick: { fill: colors.axis, fontSize: 10 },
+    tickLine: { stroke: colors.grid },
+    axisLine: { stroke: colors.grid },
+    type: (isHorizontal ? "number" : "category") as "number" | "category",
+  };
+
+  const yAxisProps = {
+    stroke: colors.grid,
+    tick: { fill: colors.axis, fontSize: 10 },
+    tickLine: { stroke: colors.grid },
+    axisLine: { stroke: colors.grid },
+    width: isHorizontal ? 80 : 40,
+    type: (isHorizontal ? "category" : "number") as "number" | "category",
+    dataKey: isHorizontal ? "name" : undefined,
+  };
+
   const chartInner = (() => {
     switch (spec.chartType) {
       case "line":
         return (
-          <LineChart data={rows} margin={commonMargin}>
-            <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="name"
-              interval="preserveStartEnd"
-              label={
-                spec.xAxisLabel
-                  ? {
-                      value: spec.xAxisLabel,
-                      position: "insideBottom",
-                      offset: -2,
-                      fill: colors.axis,
-                      fontSize: 11,
-                    }
-                  : undefined
-              }
-              stroke={colors.axis}
-              tick={xAxisTick}
-              tickMargin={6}
+          <LineChart data={rows} layout={spec.layout} margin={commonMargin}>
+            <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" vertical={isHorizontal} horizontal={!isHorizontal} />
+            <XAxis {...xAxisProps} />
+            <YAxis {...yAxisProps} />
+            <Tooltip 
+              contentStyle={tooltipContentStyle} 
+              cursor={{ stroke: colors.grid, strokeWidth: 1 }}
             />
-            <YAxis
-              label={
-                spec.yAxisLabel
-                  ? {
-                      value: spec.yAxisLabel,
-                      angle: -90,
-                      position: "insideLeft",
-                      fill: colors.axis,
-                      fontSize: 11,
-                    }
-                  : undefined
-              }
-              stroke={colors.axis}
-              tick={yAxisTick}
-              tickMargin={4}
-              width={40}
-            />
-            <Tooltip contentStyle={tooltipContentStyle} />
             <Legend {...legendProps} />
+            <defs>
+              {spec.series.map((s, i) => {
+                const c = pickSeriesColor(i, s.color, spec.colors);
+                return (
+                  <linearGradient id={`lineGradient-${i}`} key={i} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={c} stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor={c} stopOpacity={0}/>
+                  </linearGradient>
+                )
+              })}
+            </defs>
             {spec.series.map((s, i) => (
               <Line
                 dataKey={s.name}
-                dot={{ r: 3 }}
+                dot={{ r: 3, fill: pickSeriesColor(i, s.color, spec.colors), strokeWidth: 2, stroke: "#000" }}
+                activeDot={{ r: 5, strokeWidth: 0 }}
                 key={s.name}
                 stroke={pickSeriesColor(i, s.color, spec.colors)}
-                strokeWidth={2}
+                strokeWidth={3}
+                strokeDasharray={s.lineStyle === "dashed" ? "5 5" : undefined}
                 type="monotone"
+                animationDuration={1500}
               />
             ))}
           </LineChart>
@@ -209,29 +222,34 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
 
       case "bar":
         return (
-          <BarChart data={rows} margin={commonMargin}>
-            <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="name"
-              interval="preserveStartEnd"
-              stroke={colors.axis}
-              tick={xAxisTick}
-              tickMargin={6}
+          <BarChart data={rows} layout={spec.layout} margin={commonMargin}>
+            <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" vertical={isHorizontal} horizontal={!isHorizontal} />
+            <XAxis {...xAxisProps} />
+            <YAxis {...yAxisProps} />
+            <Tooltip 
+              contentStyle={tooltipContentStyle} 
+              cursor={{ fill: "rgba(255,255,255,0.03)" }}
             />
-            <YAxis
-              stroke={colors.axis}
-              tick={yAxisTick}
-              tickMargin={4}
-              width={40}
-            />
-            <Tooltip contentStyle={tooltipContentStyle} />
             <Legend {...legendProps} />
+            <defs>
+              {spec.series.map((s, i) => {
+                const c = pickSeriesColor(i, s.color, spec.colors);
+                return (
+                  <linearGradient id={`barGradient-${i}`} key={i} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={c} stopOpacity={1}/>
+                    <stop offset="100%" stopColor={c} stopOpacity={0.6}/>
+                  </linearGradient>
+                )
+              })}
+            </defs>
             {spec.series.map((s, i) => (
               <Bar
                 dataKey={s.name}
-                fill={pickSeriesColor(i, s.color, spec.colors)}
+                fill={`url(#barGradient-${i})`}
                 key={s.name}
-                radius={[4, 4, 0, 0]}
+                radius={isHorizontal ? [0, 6, 6, 0] : [6, 6, 0, 0]}
+                stackId={stacking}
+                animationDuration={1500}
               />
             ))}
           </BarChart>
@@ -239,33 +257,38 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
 
       case "area":
         return (
-          <AreaChart data={rows} margin={commonMargin}>
-            <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" />
-            <XAxis
-              dataKey="name"
-              interval="preserveStartEnd"
-              stroke={colors.axis}
-              tick={xAxisTick}
-              tickMargin={6}
+          <AreaChart data={rows} layout={spec.layout} margin={commonMargin}>
+            <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" vertical={isHorizontal} horizontal={!isHorizontal} />
+            <XAxis {...xAxisProps} />
+            <YAxis {...yAxisProps} />
+            <Tooltip 
+              contentStyle={tooltipContentStyle}
+              cursor={{ fill: "rgba(255,255,255,0.03)" }}
             />
-            <YAxis
-              stroke={colors.axis}
-              tick={yAxisTick}
-              tickMargin={4}
-              width={40}
-            />
-            <Tooltip contentStyle={tooltipContentStyle} />
             <Legend {...legendProps} />
+            <defs>
+              {spec.series.map((s, i) => {
+                const c = pickSeriesColor(i, s.color, spec.colors);
+                return (
+                  <linearGradient id={`areaGradient-${i}`} key={i} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={c} stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor={c} stopOpacity={0}/>
+                  </linearGradient>
+                )
+              })}
+            </defs>
             {spec.series.map((s, i) => {
               const c = pickSeriesColor(i, s.color, spec.colors);
               return (
                 <Area
                   dataKey={s.name}
-                  fill={c}
-                  fillOpacity={0.35}
+                  fill={`url(#areaGradient-${i})`}
                   key={s.name}
                   stroke={c}
+                  strokeWidth={2}
+                  stackId={stacking}
                   type="monotone"
+                  animationDuration={1500}
                 />
               );
             })}
@@ -430,7 +453,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
   return (
     <div
       className={cn(
-        "not-prose w-full overflow-hidden rounded-xl border border-border/60 bg-card/80 p-2 shadow-sm backdrop-blur-sm sm:p-3",
+        "not-prose w-full overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.02] p-4 shadow-2xl backdrop-blur-3xl sm:p-6",
         className
       )}
     >

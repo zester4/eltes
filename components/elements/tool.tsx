@@ -21,7 +21,7 @@ export type ToolProps = ComponentProps<typeof Collapsible>;
 export const Tool = ({ className, ...props }: ToolProps) => (
   <Collapsible
     className={cn(
-      "not-prose mb-3 w-full rounded-xl border border-border/50 bg-muted/30 overflow-hidden",
+      "not-prose mb-3 w-full rounded-lg border border-border/50 bg-muted/30 overflow-hidden",
       className
     )}
     {...props}
@@ -146,7 +146,7 @@ export const ToolHeader = ({
 }: ToolHeaderProps) => (
   <CollapsibleTrigger
     className={cn(
-      "group flex w-full items-center justify-between gap-3 px-4 py-3",
+      "group flex w-full items-center justify-between gap-3 px-3 py-2",
       className
     )}
     {...props}
@@ -183,11 +183,11 @@ export type ToolInputProps = ComponentProps<"div"> & {
 };
 
 export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
-  <div className={cn("space-y-1.5 p-4", className)} {...props}>
+  <div className={cn("space-y-1 p-3", className)} {...props}>
     <h4 className="text-[10px] font-semibold text-muted-foreground tracking-[0.12em] uppercase">
       ARGS
     </h4>
-    <pre className="overflow-x-auto rounded-lg bg-background/60 border border-border/30 p-3 font-mono text-xs text-foreground/80 leading-relaxed">
+    <pre className="overflow-x-auto rounded-lg bg-background/60 border border-border/30 p-2 font-mono text-xs text-foreground/80 leading-relaxed">
       {JSON.stringify(input, null, 2)}
     </pre>
   </div>
@@ -209,24 +209,24 @@ const safeRenderOutput = (output: unknown) => {
     !isValidElement(output)
   ) {
     return (
-      <pre className="overflow-x-auto p-3 font-mono text-xs text-foreground/80 leading-relaxed">
+      <pre className="overflow-x-auto p-2 font-mono text-xs text-foreground/80 leading-relaxed">
         {JSON.stringify(output, null, 2)}
       </pre>
     );
   }
   if (typeof output === "string") {
     return (
-      <pre className="overflow-x-auto p-3 font-mono text-xs text-foreground/80">
+      <pre className="overflow-x-auto p-2 font-mono text-xs text-foreground/80">
         {output}
       </pre>
     );
   }
   if (isValidElement(output)) {
-    return <div className="p-3">{output}</div>;
+    return <div className="p-2">{output}</div>;
   }
   if (output !== null && output !== undefined) {
     return (
-      <pre className="overflow-x-auto p-3 font-mono text-xs text-foreground/80">
+      <pre className="overflow-x-auto p-2 font-mono text-xs text-foreground/80">
         {String(output)}
       </pre>
     );
@@ -249,7 +249,7 @@ export const ToolOutput = ({
   }
 
   return (
-    <div className={cn("space-y-1.5 p-4", className)} {...props}>
+    <div className={cn("space-y-1 p-3", className)} {...props}>
       <h4 className="text-[10px] font-semibold text-muted-foreground tracking-[0.12em] uppercase">
         {hasRealError ? "ERROR" : "RESULT"}
       </h4>
@@ -261,7 +261,7 @@ export const ToolOutput = ({
             : "bg-background/60 border-border/30 text-foreground"
         )}
       >
-        {hasRealError && <div className="p-3">{errorText}</div>}
+        {hasRealError && <div className="p-2">{errorText}</div>}
         {!hasRealError && safeRenderOutput(output)}
       </div>
     </div>

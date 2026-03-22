@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Source_Serif_4, JetBrains_Mono } from "next/font/google";
+import { Inter, Source_Serif_4, JetBrains_Mono, Instrument_Serif, Barlow } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -31,6 +31,19 @@ const fontMono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
+const fontHeading = Instrument_Serif({
+  weight: "400",
+  style: "italic",
+  subsets: ["latin"],
+  variable: "--font-heading",
+});
+
+const fontBody = Barlow({
+  weight: ["300", "400", "500", "600"],
+  subsets: ["latin"],
+  variable: "--font-body",
+});
+
 const LIGHT_THEME_COLOR = "hsl(0 0% 100%)";
 const DARK_THEME_COLOR = "hsl(240deg 10% 3.92%)";
 const THEME_COLOR_SCRIPT = `\
@@ -58,7 +71,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable}`}
+      className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} ${fontHeading.variable} ${fontBody.variable}`}
       // `next-themes` injects an extra classname to the body element to avoid
       // visual flicker before hydration. Hence the `suppressHydrationWarning`
       // prop is necessary to avoid the React hydration mismatch warning.
