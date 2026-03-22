@@ -51,11 +51,7 @@ export async function proxy(request: NextRequest) {
     
     const redirectUrl = encodeURIComponent(currentUrl.toString());
 
-    // Redirect to login if accessing chat, otherwise to guest
-    if (pathname.startsWith("/chat")) {
-      return NextResponse.redirect(new URL(`/login?redirectTo=${redirectUrl}`, request.url));
-    }
-
+    // Always use guest flow for unauthenticated users; /login is only for explicit sign-in
     return NextResponse.redirect(
       new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url)
     );
