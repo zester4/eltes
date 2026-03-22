@@ -97,9 +97,9 @@ export async function POST(request: Request) {
     const { id, message, messages, selectedChatModel, selectedVisibilityType } =
       requestBody;
 
-    const [botResult, session] = await Promise.all([checkBotId(), auth()]);
+    const [botResult, session] = await Promise.all([checkBotId().catch(() => ({ isBot: false })), auth()]);
 
-    if (botResult.isBot) {
+    if (botResult.isBot === true) {
       return new ChatbotError("unauthorized:chat").toResponse();
     }
 
