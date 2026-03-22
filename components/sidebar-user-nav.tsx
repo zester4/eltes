@@ -72,9 +72,27 @@ export function SidebarUserNav({ user }: { user: User }) {
           >
             <DropdownMenuItem
               className="cursor-pointer"
+              onSelect={() => router.push("/settings/profile")}
+            >
+              Profile
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer"
               onSelect={() => router.push("/settings/connections")}
             >
               App Connections
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onSelect={() => router.push("/settings/events")}
+            >
+              Events
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onSelect={() => router.push("/settings/agents")}
+            >
+              Agent activity
             </DropdownMenuItem>
             <DropdownMenuItem
               className="cursor-pointer"

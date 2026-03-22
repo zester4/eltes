@@ -74,6 +74,7 @@ export const formatToolName = (type: string): string => {
   if (META_TOOL_NAMES[raw]) return META_TOOL_NAMES[raw];
 
   if (raw === "getWeather") return "Get Weather";
+  if (raw === "renderChart") return "Render Chart";
   if (raw === "createDocument") return "Create Document";
   if (raw === "updateDocument") return "Update Document";
   if (raw === "requestSuggestions") return "Request Suggestions";

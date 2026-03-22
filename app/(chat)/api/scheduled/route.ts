@@ -1,3 +1,4 @@
+//app/(chat)/api/scheduled/route.ts
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { NextRequest, NextResponse } from "next/server";
 import { generateText, stepCountIs } from "ai";

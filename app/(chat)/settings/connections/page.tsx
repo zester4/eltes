@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { SidebarToggle } from "@/components/sidebar-toggle";
 
 type Toolkit = {
   slug: string;
@@ -113,8 +114,9 @@ export default function ConnectionsPage() {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col md:flex-row md:items-end justify-between gap-6"
       >
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4">
+            <SidebarToggle />
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full hover:bg-muted">
               <ArrowLeft className="size-5" />
             </Button>

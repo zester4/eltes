@@ -1,5 +1,6 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { ArrowDownIcon } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useMessages } from "@/hooks/use-messages";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
@@ -18,6 +19,8 @@ type MessagesProps = {
   isReadonly: boolean;
   isArtifactVisible: boolean;
   selectedModelId: string;
+  highlightTaskId?: string | null;
+  onHighlightConsumed?: () => void;
 };
 
 function PureMessages({
@@ -30,6 +33,8 @@ function PureMessages({
   regenerate,
   isReadonly,
   selectedModelId: _selectedModelId,
+  highlightTaskId,
+  onHighlightConsumed,
 }: MessagesProps) {
   const {
     containerRef: messagesContainerRef,
@@ -40,6 +45,75 @@ function PureMessages({
   } = useMessages({
     status,
   });
+
+  const highlightFailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
+  useEffect(() => {
+    if (!highlightTaskId) {
+      return undefined;
+    }
+    highlightFailTimerRef.current = setTimeout(() => {
+      onHighlightConsumed?.();
+    }, 12_000);
+    return () => {
+      if (highlightFailTimerRef.current) {
+        clearTimeout(highlightFailTimerRef.current);
+        highlightFailTimerRef.current = null;
+      }
+    };
+  }, [highlightTaskId, onHighlightConsumed]);
+
+  useEffect(() => {
+    if (!highlightTaskId || !messagesContainerRef.current) {
+      return undefined;
+    }
+
+    const root = messagesContainerRef.current;
+    const escaped =
+      typeof CSS !== "undefined" && "escape" in CSS
+        ? CSS.escape(highlightTaskId)
+        : highlightTaskId.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+    const el = root.querySelector(`[data-agent-task-id="${escaped}"]`);
+
+    if (!(el instanceof HTMLElement)) {
+      return undefined;
+    }
+
+    if (highlightFailTimerRef.current) {
+      clearTimeout(highlightFailTimerRef.current);
+      highlightFailTimerRef.current = null;
+    }
+
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add(
+      "ring-2",
+      "ring-primary",
+      "ring-offset-2",
+      "ring-offset-background",
+    );
+
+    const clearRing = window.setTimeout(() => {
+      el.classList.remove(
+        "ring-2",
+        "ring-primary",
+        "ring-offset-2",
+        "ring-offset-background",
+      );
+      onHighlightConsumed?.();
+    }, 3200);
+
+    return () => {
+      window.clearTimeout(clearRing);
+      el.classList.remove(
+        "ring-2",
+        "ring-primary",
+        "ring-offset-2",
+        "ring-offset-background",
+      );
+    };
+  }, [highlightTaskId, messages, onHighlightConsumed]);
 
   useDataStream();
 

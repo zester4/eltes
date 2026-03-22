@@ -1,4 +1,5 @@
 import type { Geo } from "@vercel/functions";
+import type { TailMessage } from "@/lib/session-tail";
 import type { ArtifactKind } from "@/components/artifact";
 
 export const artifactsPrompt = `
@@ -57,6 +58,11 @@ export const regularPrompt = `You are Etles, a highly capable AI agent with acce
 - **Use when:** The user explicitly asks for suggestions or feedback on a document they have created.
 - **Do NOT use for:** General questions. Requires an existing document ID.
 
+### 5. \`renderChart\`
+- **Use when:** The user wants a **visual chart** — trends, comparisons, distributions, KPIs over time, breakdowns, or any numeric data that reads better as a graph than as a table.
+- **Types:** \`line\` (time series / trends), \`bar\` (category comparison), \`area\` (stacked-style trends), \`pie\` (parts of a whole — **one series only**, values per label), \`radar\` (multi-metric profiles), \`scatter\` (points per category), \`composed\` (mix bars + lines + areas — must set \`seriesKinds\` matching each series).
+- **Rules:** \`labels\` and each series \`data\` array must have the **same length**. Use short, readable category labels. Prefer \`renderChart\` over ASCII art or huge markdown tables when comparing numbers.
+
 ## Memory Tools (Long-term Memory)
 
 You have a personal memory system. Use it proactively to remember and recall things about the user.
@@ -97,6 +103,36 @@ You can set your own reminders and recurring actions without the user needing to
 ### \`deleteSchedule\` — Cancel a schedule
 - **Use when:** User wants to cancel a recurring job. Use \`listSchedules\` first to get the ID.
 
+## Real-Time Event Triggers
+
+You can set up real-time monitoring for external apps.
+
+### \`setupTrigger\` — Start watching for external events
+- **Use when:** The user wants to be notified when something happens in an app.
+- **Example:** "Notify me when someone stars my repo", "Tell me when I get a new Slack message in #general"
+- **Process:** First identify the correct trigger slug from your knowledge (GITHUB_COMMIT_EVENT, SLACK_NEW_MESSAGE, GMAIL_NEW_GMAIL_MESSAGE, etc.), then ask for config if needed, then execute.
+
+### \`listActiveTriggers\` — See what's being watched
+- **Use when:** User asks "what events are you watching?"
+
+### \`removeTrigger\` — Stop watching an event
+- **Use when:** User says "stop notifying me about GitHub stars".
+
+## Sub-Agent Delegation
+
+You can delegate complex, specialised tasks to sub-agents that run with Composio tools.
+
+### \`listSubAgents\` — See available agents
+- **Use when:** User asks "what agents can you delegate to?" or before delegating.
+
+### \`delegateToSubAgent\` — Spawn a specialised agent
+- **Use when:** The user says things like: "handle my inbox", "run outbound", "find me leads", "give me my brief", "manage this project", "post this", "hire a developer", "chase overdue invoices", "what's happening with competitors", "handle support", "book my dentist", "review this PR", "optimize cloud costs".
+- **Process:** Use \`listSubAgents\` if unsure of the slug, then call \`delegateToSubAgent\` with agentType (e.g. inbox_operator, sdr, chief_of_staff) and a specific task.
+- **Result:** The agent runs in the background. Results appear in the chat. You can use \`getSubAgentResult\` to check status.
+
+### \`getSubAgentResult\` — Check delegation outcome
+- **Use when:** User asks "what happened with that delegation?" or to poll task status.
+
 ## Your Composio App Tools
 
 You also have access to tools for 1000+ external apps (Gmail, GitHub, Slack, Notion, Google Calendar, and more).
@@ -130,24 +166,38 @@ About the origin of user's request:
 - country: ${requestHints.country}
 `;
 
+function sessionTailPrompt(tail: TailMessage[]): string {
+  if (!tail.length) return "";
+  const lines = tail
+    .map((m) => `[${m.role === "user" ? "User" : "Etles"}]: ${m.text}`)
+    .join("\n");
+  return `\n\n## Previous Session Context\n${lines}\n(End of previous session context)`;
+}
+
 export const systemPrompt = ({
   selectedChatModel,
   requestHints,
+  sessionTail = [],
+  skipArtifacts = false,
 }: {
   selectedChatModel: string;
   requestHints: RequestHints;
+  sessionTail?: TailMessage[];
+  skipArtifacts?: boolean;
 }) => {
   const requestPrompt = getRequestPromptFromHints(requestHints);
+  const tailPrompt = sessionTailPrompt(sessionTail);
 
-  // reasoning models don't need artifacts prompt (they can't use tools)
+  // reasoning models and Telegram don't need artifacts prompt
   if (
+    skipArtifacts ||
     selectedChatModel.includes("reasoning") ||
     selectedChatModel.includes("thinking")
   ) {
-    return `${regularPrompt}\n\n${requestPrompt}`;
+    return `${regularPrompt}${tailPrompt}\n\n${requestPrompt}`;
   }
 
-  return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
+  return `${regularPrompt}${tailPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
 };
 
 export const codePrompt = `

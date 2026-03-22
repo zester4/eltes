@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "chat-sdk": {
+      "source": "vercel/chat",
+      "sourceType": "github",
+      "computedHash": "600754075d186c987b3199703b6dba77fd18aa0dec193c010378d6b5200ef46d"
+    },
     "composio": {
       "source": "composiohq/skills",
       "sourceType": "github",

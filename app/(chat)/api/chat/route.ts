@@ -18,6 +18,7 @@ import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
+import { renderChart } from "@/lib/ai/tools/render-chart";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
 import {
@@ -32,6 +33,20 @@ import {
   listSchedules,
   deleteSchedule,
 } from "@/lib/ai/tools/schedule";
+import {
+  setupTrigger,
+  listActiveTriggers,
+  removeTrigger,
+} from "@/lib/ai/tools/triggers";
+import {
+  delegateToSubAgent,
+  getSubAgentResult,
+  listSubAgents,
+} from "@/lib/ai/tools/subagents";
+// Sub-agents run out-of-band (delegate → runSubAgent / workflow). The chat UI refreshes
+// messages via GET /api/chat/[id]/messages (client poll) and proactive follow-ups via
+// POST /api/agent/handoff after each run completes.
+import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { isProductionEnvironment } from "@/lib/constants";
@@ -105,7 +120,10 @@ export async function POST(request: Request) {
       differenceInHours: 1,
     });
 
-    if (messageCount > entitlementsByUserType[userType].maxMessagesPerHour) {
+    if (
+      messageCount >
+      (entitlementsByUserType[userType] as any).maxMessagesPerHour
+    ) {
       return new ChatbotError("rate_limit:chat").toResponse();
     }
 
@@ -131,6 +149,10 @@ export async function POST(request: Request) {
       });
       titlePromise = generateTitleFromUserMessage({ message });
     }
+
+    const sessionTail = !chat
+      ? await getSessionTail(session.user.id)
+      : undefined;
 
     const uiMessages = isToolApprovalFlow
       ? (messages as ChatMessage[])
@@ -172,7 +194,9 @@ export async function POST(request: Request) {
     let composioTools: Record<string, any> = {};
     if (session?.user?.id && !isGuest) {
       try {
-        const composioSession = await composio.create(session.user.id);
+        const composioSession = await composio.create(session.user.id, {
+          manageConnections: true,
+        });
         composioTools = await composioSession.tools();
       } catch (error) {
         console.error("Failed to initialize Composio tools:", error);
@@ -184,13 +208,18 @@ export async function POST(request: Request) {
       execute: async ({ writer: dataStream }) => {
         const result = streamText({
           model: getLanguageModel(selectedChatModel),
-          system: systemPrompt({ selectedChatModel, requestHints }),
+          system: systemPrompt({
+            selectedChatModel,
+            requestHints,
+            sessionTail,
+          }),
           messages: modelMessages,
           stopWhen: stepCountIs(25),
           experimental_activeTools: (isReasoningModel
             ? []
             : [
                 "getWeather",
+                "renderChart",
                 "createDocument",
                 "updateDocument",
                 "requestSuggestions",
@@ -202,6 +231,12 @@ export async function POST(request: Request) {
                 "setCronJob",
                 "listSchedules",
                 "deleteSchedule",
+                "setupTrigger",
+                "listActiveTriggers",
+                "removeTrigger",
+                "delegateToSubAgent",
+                "getSubAgentResult",
+                "listSubAgents",
                 ...Object.keys(composioTools),
               ]) as any,
           providerOptions: isReasoningModel
@@ -214,6 +249,7 @@ export async function POST(request: Request) {
           tools: {
             ...composioTools,
             getWeather,
+            renderChart,
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
@@ -223,10 +259,32 @@ export async function POST(request: Request) {
             updateMemory: updateMemory({ userId: session.user.id! }),
             deleteMemory: deleteMemory({ userId: session.user.id! }),
             // Scheduling tools (QStash)
-            setReminder: setReminder({ userId: session.user.id!, baseUrl: new URL(request.url).origin }),
-            setCronJob: setCronJob({ userId: session.user.id!, baseUrl: new URL(request.url).origin }),
+            setReminder: setReminder({
+              userId: session.user.id!,
+              baseUrl: process.env.BASE_URL || new URL(request.url).origin,
+            }),
+            setCronJob: setCronJob({
+              userId: session.user.id!,
+              baseUrl: process.env.BASE_URL || new URL(request.url).origin,
+            }),
             listSchedules: listSchedules({ userId: session.user.id! }),
             deleteSchedule: deleteSchedule(),
+            // Trigger management tools
+            setupTrigger: setupTrigger({ userId: session.user.id! }),
+            listActiveTriggers: listActiveTriggers({ userId: session.user.id! }),
+            removeTrigger: removeTrigger(),
+            // Sub-agent delegation (guest users get listSubAgents only)
+            ...(isGuest
+              ? { listSubAgents: listSubAgents() }
+              : {
+                  delegateToSubAgent: delegateToSubAgent({
+                    userId: session.user.id!,
+                    chatId: id,
+                    baseUrl: process.env.BASE_URL || new URL(request.url).origin,
+                  }),
+                  getSubAgentResult: getSubAgentResult({ userId: session.user.id! }),
+                  listSubAgents: listSubAgents(),
+                }),
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
@@ -279,6 +337,23 @@ export async function POST(request: Request) {
               attachments: [],
               chatId: id,
             })),
+          });
+        }
+
+        if (session?.user?.id) {
+          after(async () => {
+            const tail = finishedMessages
+              .filter((m) => m.role === "user" || m.role === "assistant")
+              .slice(-2)
+              .map((m) => ({
+                role: m.role as "user" | "assistant",
+                text: m.parts
+                  .filter((p) => p.type === "text")
+                  .map((p) => (p as any).text)
+                  .join("\n"),
+              }));
+
+            await saveSessionTail(session.user.id, tail);
           });
         }
       },

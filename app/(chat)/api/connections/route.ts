@@ -17,17 +17,11 @@ export async function GET() {
   }
 
   try {
-    // Fetch all 1000+ available apps directly to bypass pagination limits
-    const appsRes = await fetch("https://backend.composio.dev/api/v1/apps", {
-      headers: { "x-api-key": process.env.COMPOSIO_API_KEY! }
-    });
-    if (!appsRes.ok) throw new Error("Failed to fetch apps catalogue");
-    
-    const appsData = await appsRes.json();
-    let allApps = appsData.items || [];
-    
-    // Deduplicate apps by key
-    allApps = Array.from(new Map(allApps.map((a: any) => [a.key, a])).values());
+    // Fetch all toolkits from Composio SDK directly
+    let allApps: any = await composio.toolkits.get();
+    if (!Array.isArray(allApps)) {
+      allApps = allApps?.items || [];
+    }
 
     // Fetch user's connected accounts — no status filter to avoid SDK version issues
     let connectedApps = new Map<string, string>();
@@ -41,7 +35,7 @@ export async function GET() {
         items
           .filter((acc: any) => !acc.status || acc.status === "ACTIVE")
           .map((acc: any) => [
-            (acc.appName || acc.appId || "").toLowerCase(),
+            (acc.toolkit?.slug || acc.appName || acc.appId || "").toLowerCase(),
             acc.id,
           ])
       );
@@ -59,14 +53,17 @@ export async function GET() {
 
     return Response.json({
       toolkits: allApps
-        .filter((t: any) => !t.no_auth) // Only show apps requiring auth
-        .map((t: any) => ({
-          slug: t.key,
-          name: formatAppName(t.name || t.key),
-          logo: t.logo,
-          isConnected: connectedApps.has(t.key.toLowerCase()),
-          connectedAccountId: connectedApps.get(t.key.toLowerCase()),
-        })),
+        .filter((t: any) => !t.noAuth && !t.no_auth) // Only show apps requiring auth
+        .map((t: any) => {
+          const slug = t.slug || t.key || "";
+          return {
+            slug: slug,
+            name: formatAppName(t.name || slug),
+            logo: t.meta?.logo || t.logo,
+            isConnected: connectedApps.has(slug.toLowerCase()),
+            connectedAccountId: connectedApps.get(slug.toLowerCase()),
+          };
+        }),
     });
   } catch (error: any) {
     console.error("Failed to fetch toolkits from Composio:", error);

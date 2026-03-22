@@ -10,6 +10,7 @@ import {
   gte,
   inArray,
   lt,
+  or,
   type SQL,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -30,6 +31,11 @@ import {
   type User,
   user,
   vote,
+  event,
+  botIntegration,
+  type BotIntegration,
+  agentTask,
+  type AgentTask,
 } from "./schema";
 import { generateHashedPassword } from "./utils";
 
@@ -40,6 +46,43 @@ import { generateHashedPassword } from "./utils";
 // biome-ignore lint: Forbidden non-null assertion.
 const client = postgres(process.env.POSTGRES_URL!);
 const db = drizzle(client);
+
+/** True when Postgres reports the AgentTask relation is missing (migrations not applied). */
+function isPostgresUndefinedAgentTaskError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+  const record = error as { code?: string; message?: string };
+  if (record.code === "42P01") {
+    return true;
+  }
+  const msg = record.message ?? "";
+  return (
+    msg.includes("does not exist") &&
+    (msg.includes("AgentTask") || msg.includes('"AgentTask"'))
+  );
+}
+
+/**
+ * Columns from AgentTask migration 0012. Excludes `workflowRunId` (0013) so SELECT
+ * works before that migration is applied — avoids 500 on /api/agent/tasks.
+ */
+const agentTaskListColumns = {
+  id: agentTask.id,
+  userId: agentTask.userId,
+  chatId: agentTask.chatId,
+  agentType: agentTask.agentType,
+  task: agentTask.task,
+  status: agentTask.status,
+  result: agentTask.result,
+  createdAt: agentTask.createdAt,
+  updatedAt: agentTask.updatedAt,
+} as const;
+
+const activeAgentStatusFilter = or(
+  eq(agentTask.status, "pending"),
+  eq(agentTask.status, "running"),
+);
 
 export async function getUser(email: string): Promise<User[]> {
   try {
@@ -84,11 +127,13 @@ export async function saveChat({
   userId,
   title,
   visibility,
+  platformThreadId,
 }: {
   id: string;
   userId: string;
   title: string;
   visibility: VisibilityType;
+  platformThreadId?: string;
 }) {
   try {
     return await db.insert(chat).values({
@@ -97,6 +142,7 @@ export async function saveChat({
       userId,
       title,
       visibility,
+      platformThreadId,
     });
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to save chat");
@@ -275,6 +321,29 @@ export async function getMessagesByChatId({ id }: { id: string }) {
     throw new ChatbotError(
       "bad_request:database",
       "Failed to get messages by chat id"
+    );
+  }
+}
+
+/** Newest-first slice (e.g. handoff dedupe) without loading full thread. */
+export async function getRecentMessagesForChat({
+  chatId,
+  limit,
+}: {
+  chatId: string;
+  limit: number;
+}) {
+  try {
+    return await db
+      .select()
+      .from(message)
+      .where(eq(message.chatId, chatId))
+      .orderBy(desc(message.createdAt))
+      .limit(limit);
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get recent messages for chat"
     );
   }
 }
@@ -598,5 +667,309 @@ export async function getStreamIdsByChatId({ chatId }: { chatId: string }) {
       "bad_request:database",
       "Failed to get stream ids by chat id"
     );
+  }
+}
+
+export async function saveEvent({
+  userId,
+  triggerSlug,
+  payload,
+}: {
+  userId: string;
+  triggerSlug: string;
+  payload: any;
+}) {
+  try {
+    return await db
+      .insert(event)
+      .values({
+        userId,
+        triggerSlug,
+        payload,
+        createdAt: new Date(),
+        status: "received",
+      })
+      .returning();
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to save event");
+  }
+}
+
+export async function getEventsByUserId({
+  userId,
+  limit = 20,
+}: {
+  userId: string;
+  limit?: number;
+}) {
+  try {
+    return await db
+      .select()
+      .from(event)
+      .where(eq(event.userId, userId))
+      .orderBy(desc(event.createdAt))
+      .limit(limit);
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get events by user id"
+    );
+  }
+}
+
+export async function updateEventStatus({
+  id,
+  status,
+}: {
+  id: string;
+  status: "received" | "processed" | "failed";
+}) {
+  try {
+    return await db.update(event).set({ status }).where(eq(event.id, id));
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to update event status");
+  }
+}
+
+export async function saveBotIntegration({
+  userId,
+  platform,
+  botToken,
+  signingSecret,
+  extraConfig,
+}: {
+  userId: string;
+  platform: string;
+  botToken: string;
+  signingSecret?: string | null;
+  extraConfig?: any | null;
+}) {
+  try {
+    const [existing] = await db
+      .select()
+      .from(botIntegration)
+      .where(and(eq(botIntegration.userId, userId), eq(botIntegration.platform, platform)));
+
+    if (existing) {
+      const updates: Record<string, unknown> = { botToken };
+      if (signingSecret !== undefined) updates.signingSecret = signingSecret;
+      if (extraConfig !== undefined) updates.extraConfig = extraConfig;
+      return await db
+        .update(botIntegration)
+        .set(updates as any)
+        .where(eq(botIntegration.id, existing.id))
+        .returning();
+    }
+
+    return await db
+      .insert(botIntegration)
+      .values({
+        userId,
+        platform,
+        botToken,
+        signingSecret,
+        extraConfig,
+      })
+      .returning();
+  } catch (error) {
+    throw new ChatbotError("bad_request:database", "Failed to save bot integration");
+  }
+}
+
+export async function getBotIntegration({
+  userId,
+  platform,
+}: {
+  userId: string;
+  platform: string;
+}) {
+  try {
+    const [integration] = await db
+      .select()
+      .from(botIntegration)
+      .where(and(eq(botIntegration.userId, userId), eq(botIntegration.platform, platform)));
+    return integration;
+  } catch (error) {
+    throw new ChatbotError("bad_request:database", "Failed to get bot integration");
+  }
+}
+
+export async function getUserBotIntegrations({ userId }: { userId: string }) {
+  try {
+    return await db
+      .select()
+      .from(botIntegration)
+      .where(eq(botIntegration.userId, userId));
+  } catch (error) {
+    throw new ChatbotError("bad_request:database", "Failed to get user bot integrations");
+  }
+}
+
+export async function createAgentTask({
+  id,
+  userId,
+  chatId,
+  agentType,
+  task,
+}: {
+  id: string;
+  userId: string;
+  chatId: string;
+  agentType: string;
+  task: string;
+}) {
+  try {
+    const [created] = await db
+      .insert(agentTask)
+      .values({ id, userId, chatId, agentType, task, status: "pending" })
+      .returning(agentTaskListColumns);
+    return created;
+  } catch (error) {
+    if (isPostgresUndefinedAgentTaskError(error)) {
+      throw new ChatbotError(
+        "bad_request:database",
+        "AgentTask table is missing. Run pnpm db:migrate against this database.",
+      );
+    }
+    throw new ChatbotError("bad_request:database", "Failed to create agent task");
+  }
+}
+
+export async function getAgentTaskById({ id, userId }: { id: string; userId: string }) {
+  try {
+    const [task] = await db
+      .select(agentTaskListColumns)
+      .from(agentTask)
+      .where(and(eq(agentTask.id, id), eq(agentTask.userId, userId)));
+    return task;
+  } catch (error) {
+    if (isPostgresUndefinedAgentTaskError(error)) {
+      return undefined;
+    }
+    throw new ChatbotError("bad_request:database", "Failed to get agent task");
+  }
+}
+
+export async function getAgentTaskByIdOnly(id: string) {
+  try {
+    const [task] = await db
+      .select(agentTaskListColumns)
+      .from(agentTask)
+      .where(eq(agentTask.id, id));
+    return task;
+  } catch (error) {
+    if (isPostgresUndefinedAgentTaskError(error)) {
+      return undefined;
+    }
+    throw new ChatbotError("bad_request:database", "Failed to get agent task");
+  }
+}
+
+/** Returns workflowRunId only if column exists (migration 0013 applied). */
+export async function getAgentTaskWorkflowRunId({
+  id,
+  userId,
+}: {
+  id: string;
+  userId: string;
+}): Promise<string | null> {
+  try {
+    const [row] = await db
+      .select({ workflowRunId: agentTask.workflowRunId })
+      .from(agentTask)
+      .where(and(eq(agentTask.id, id), eq(agentTask.userId, userId)));
+    return row?.workflowRunId ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function updateAgentTask({
+  id,
+  userId,
+  status,
+  result,
+  workflowRunId,
+}: {
+  id: string;
+  userId: string;
+  status?: "running" | "completed" | "failed";
+  result?: { text?: string; toolCalls?: unknown[]; error?: string };
+  workflowRunId?: string | null;
+}) {
+  try {
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (status !== undefined) updates.status = status;
+    if (result !== undefined) updates.result = result;
+    if (workflowRunId !== undefined) updates.workflowRunId = workflowRunId;
+    const [updated] = await db
+      .update(agentTask)
+      .set(updates as any)
+      .where(and(eq(agentTask.id, id), eq(agentTask.userId, userId)))
+      .returning(agentTaskListColumns);
+    return updated;
+  } catch (error) {
+    if (isPostgresUndefinedAgentTaskError(error)) {
+      throw new ChatbotError(
+        "bad_request:database",
+        "AgentTask table is missing. Run pnpm db:migrate against this database.",
+      );
+    }
+    throw new ChatbotError("bad_request:database", "Failed to update agent task");
+  }
+}
+
+export async function getActiveAgentTasksByUserId(userId: string) {
+  try {
+    return await db
+      .select(agentTaskListColumns)
+      .from(agentTask)
+      .where(and(eq(agentTask.userId, userId), activeAgentStatusFilter))
+      .orderBy(desc(agentTask.createdAt));
+  } catch (error) {
+    if (isPostgresUndefinedAgentTaskError(error)) {
+      return [];
+    }
+    throw new ChatbotError("bad_request:database", "Failed to get agent tasks");
+  }
+}
+
+export async function getActiveAgentTasksByChatId(chatId: string, userId: string) {
+  try {
+    return await db
+      .select(agentTaskListColumns)
+      .from(agentTask)
+      .where(
+        and(
+          eq(agentTask.chatId, chatId),
+          eq(agentTask.userId, userId),
+          activeAgentStatusFilter,
+        ),
+      )
+      .orderBy(desc(agentTask.createdAt));
+  } catch (error) {
+    if (isPostgresUndefinedAgentTaskError(error)) {
+      return [];
+    }
+    throw new ChatbotError("bad_request:database", "Failed to get agent tasks");
+  }
+}
+
+export async function getRecentAgentTasksByUserId(
+  userId: string,
+  limit = 100,
+) {
+  try {
+    return await db
+      .select(agentTaskListColumns)
+      .from(agentTask)
+      .where(eq(agentTask.userId, userId))
+      .orderBy(desc(agentTask.createdAt))
+      .limit(limit);
+  } catch (error) {
+    if (isPostgresUndefinedAgentTaskError(error)) {
+      return [];
+    }
+    throw new ChatbotError("bad_request:database", "Failed to get agent tasks");
   }
 }

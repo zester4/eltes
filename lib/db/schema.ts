@@ -15,6 +15,8 @@ export const user = pgTable("User", {
   id: uuid("id").primaryKey().notNull().defaultRandom(),
   email: varchar("email", { length: 64 }).notNull(),
   password: varchar("password", { length: 64 }),
+  platformProvider: varchar("platformProvider", { length: 64 }),
+  platformUserId: varchar("platformUserId", { length: 255 }),
 });
 
 export type User = InferSelectModel<typeof user>;
@@ -29,6 +31,7 @@ export const chat = pgTable("Chat", {
   visibility: varchar("visibility", { enum: ["public", "private"] })
     .notNull()
     .default("private"),
+  platformThreadId: varchar("platformThreadId", { length: 255 }),
 });
 
 export type Chat = InferSelectModel<typeof chat>;
@@ -168,3 +171,57 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+export const event = pgTable("Event", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  triggerSlug: varchar("triggerSlug").notNull(),
+  payload: json("payload").notNull(),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  status: varchar("status", {
+    enum: ["received", "processed", "failed"],
+  })
+    .notNull()
+    .default("received"),
+});
+
+export type Event = InferSelectModel<typeof event>;
+
+export const botIntegration = pgTable("BotIntegration", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  platform: varchar("platform", { length: 64 }).notNull(),
+  botToken: text("botToken").notNull(),
+  signingSecret: text("signingSecret"),
+  extraConfig: json("extraConfig"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type BotIntegration = InferSelectModel<typeof botIntegration>;
+
+export const agentTask = pgTable("AgentTask", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  chatId: uuid("chatId")
+    .notNull()
+    .references(() => chat.id),
+  agentType: varchar("agentType", { length: 64 }).notNull(),
+  task: text("task").notNull(),
+  status: varchar("status", {
+    enum: ["pending", "running", "completed", "failed"],
+  })
+    .notNull()
+    .default("pending"),
+  result: json("result"),
+  workflowRunId: varchar("workflowRunId", { length: 128 }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type AgentTask = InferSelectModel<typeof agentTask>;

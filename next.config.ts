@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  experimental: {
+    serverActions: {
+      allowedOrigins: ["*.ngrok-free.app", "*.ngrok.app", "*.ngrok.io", "localhost:3000"],
+    },
+  },
   images: {
     remotePatterns: [
       {

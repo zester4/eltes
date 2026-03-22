@@ -1,0 +1,1 @@
+ALTER TABLE "AgentTask" ADD COLUMN IF NOT EXISTS "workflowRunId" varchar(128);

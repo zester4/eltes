@@ -284,7 +284,11 @@ export const FileIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
-export const LoaderIcon = ({ size = 16 }: { size?: number }) => {
+export const LoaderIcon = ({
+  size = 16,
+  ...props
+}: { size?: number } & React.SVGProps<SVGSVGElement>) => {
+
   return (
     <svg
       height={size}
@@ -292,6 +296,7 @@ export const LoaderIcon = ({ size = 16 }: { size?: number }) => {
       style={{ color: "currentcolor" }}
       viewBox="0 0 16 16"
       width={size}
+      {...props}
     >
       <g clipPath="url(#clip0_2393_1490)">
         <path d="M8 0V4" stroke="currentColor" strokeWidth="1.5" />

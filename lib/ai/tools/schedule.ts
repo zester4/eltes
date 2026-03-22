@@ -1,3 +1,4 @@
+//lib/ai/tools/schedule.ts
 import { tool } from "ai";
 import { Client } from "@upstash/qstash";
 import { z } from "zod";
@@ -15,7 +16,10 @@ import { z } from "zod";
 // or by creating a new chat message).
 
 function getQStashClient() {
-  return new Client({ token: process.env.QSTASH_TOKEN! });
+  return new Client({
+    baseUrl: process.env.QSTASH_URL || "https://qstash-us-east-1.upstash.io",
+    token: process.env.QSTASH_URL === "http://localhost:3000" ? "not-needed" : process.env.QSTASH_TOKEN!,
+  });
 }
 
 // ─── setReminder ──────────────────────────────────────────────────────────────

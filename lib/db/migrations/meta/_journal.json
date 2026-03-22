@@ -64,6 +64,41 @@
       "when": 1768479010084,
       "tag": "0008_flat_forgotten_one",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773974763611,
+      "tag": "0009_nappy_bucky",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774053540201,
+      "tag": "0010_nifty_machine_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1774054627472,
+      "tag": "0011_complete_turbo",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1774125045868,
+      "tag": "0012_wooden_jack_power",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1774131523167,
+      "tag": "0013_hesitant_rogue",
+      "breakpoints": true
     }
   ]
 }

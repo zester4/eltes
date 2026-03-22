@@ -1,13 +1,20 @@
+//components/message.tsx
 "use client";
-import type { ToolUIPart } from "ai";
 import type { UseChatHelpers } from "@ai-sdk/react";
+import { ExternalLink } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
+import type { ChartToolPayload } from "@/lib/ai/tools/render-chart";
+import { parseSubAgentHandoffMarker } from "@/lib/agent/sub-agent-handoff-markers";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { cn, sanitizeText } from "@/lib/utils";
 import { useDataStream } from "./data-stream-provider";
 import { DocumentToolResult } from "./document";
 import { DocumentPreview } from "./document-preview";
+import { AgentActionCard, parseAgentMessage } from "./elements/agent-action";
+import { ChartDisplay } from "./elements/chart-display";
+import { EventCard, parseEventMessage } from "./elements/event";
 import { MessageContent } from "./elements/message";
 import { Response } from "./elements/response";
 import {
@@ -22,10 +29,8 @@ import { MessageActions } from "./message-actions";
 import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
-import { Weather } from "./weather";
 import { Button } from "./ui/button";
-import Link from "next/link";
-import { ExternalLink } from "lucide-react";
+import { Weather } from "./weather";
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -56,6 +61,47 @@ const PurePreviewMessage = ({
 
   useDataStream();
 
+  const role = message.role as string;
+  const isAssistant = role === "assistant";
+  const isTool = role === "tool";
+  const hasVisibleContent = message.parts.some((part: any) => {
+    const type = part.type;
+    if (type === "text" && part.text?.trim()) {
+      return true;
+    }
+    if (type === "reasoning" && part.text?.trim()) {
+      return true;
+    }
+    if (
+      [
+        "file",
+        "image",
+        "imageDelta",
+        "sheetDelta",
+        "codeDelta",
+        "suggestion",
+      ].includes(type)
+    ) {
+      return true;
+    }
+    if (
+      typeof type === "string" &&
+      type.startsWith("tool-") &&
+      type !== "tool-call" &&
+      type !== "tool-result" &&
+      !type.includes("invocation")
+    ) {
+      return true;
+    }
+
+    // Everything else (tool-call, tool-result, etc.) is considered non-visible for the main bubble
+    return false;
+  });
+
+  if ((isAssistant || isTool) && !hasVisibleContent && !isLoading) {
+    return null;
+  }
+
   return (
     <div
       className="group/message fade-in w-full animate-in duration-200"
@@ -64,8 +110,8 @@ const PurePreviewMessage = ({
     >
       <div
         className={cn("flex w-full items-start gap-2 md:gap-3", {
-          "justify-end": message.role === "user" && mode !== "edit",
-          "justify-start": message.role === "assistant",
+          "justify-end": role === "user" && mode !== "edit",
+          "justify-start": role === "assistant" || role === "tool",
         })}
       >
         {message.role === "assistant" && (
@@ -77,12 +123,18 @@ const PurePreviewMessage = ({
         <div
           className={cn("flex flex-col", {
             "gap-2 md:gap-4": message.parts?.some(
-              (p) => p.type === "text" && p.text?.trim()
+              (p) =>
+                p.type === "text" &&
+                p.text?.trim() &&
+                !parseSubAgentHandoffMarker(p.text)
             ),
             "w-full":
               (message.role === "assistant" &&
                 (message.parts?.some(
-                  (p) => p.type === "text" && p.text?.trim()
+                  (p) =>
+                    p.type === "text" &&
+                    p.text?.trim() &&
+                    !parseSubAgentHandoffMarker(p.text)
                 ) ||
                   message.parts?.some((p) => p.type.startsWith("tool-")))) ||
               mode === "edit",
@@ -109,6 +161,9 @@ const PurePreviewMessage = ({
           )}
 
           {message.parts?.map((part, index) => {
+            if (!part || typeof part !== "object") {
+              return null;
+            }
             const { type } = part;
             const key = `message-${message.id}-part-${index}`;
 
@@ -128,19 +183,34 @@ const PurePreviewMessage = ({
             }
 
             if (type === "text") {
+              const rawText = part.text ?? "";
+              if (parseSubAgentHandoffMarker(rawText)) {
+                return null;
+              }
+              const partEvent = parseEventMessage(rawText);
+              const partAgent = parseAgentMessage(rawText);
+
               if (mode === "view") {
                 return (
                   <div key={key}>
                     <MessageContent
                       className={cn({
                         "wrap-break-word w-fit rounded-2xl px-3 py-2 text-right bg-primary text-primary-foreground":
-                          message.role === "user",
-                        "bg-transparent px-0 py-0 text-left":
-                          message.role === "assistant",
+                          message.role === "user" && !partEvent && !partAgent,
+                        "bg-transparent px-0 py-0 text-left w-full":
+                          message.role === "assistant" ||
+                          partEvent ||
+                          partAgent,
                       })}
                       data-testid="message-content"
                     >
-                      <Response>{sanitizeText(part.text)}</Response>
+                      {partEvent ? (
+                        <EventCard event={partEvent} />
+                      ) : partAgent ? (
+                        <AgentActionCard agent={partAgent} />
+                      ) : (
+                        <Response>{sanitizeText(rawText)}</Response>
+                      )}
                     </MessageContent>
                   </div>
                 );
@@ -261,6 +331,72 @@ const PurePreviewMessage = ({
               );
             }
 
+            if (type === "tool-renderChart") {
+              const { toolCallId, state } = part;
+              const widthClass =
+                "w-full max-w-full min-w-0 sm:max-w-[min(100%,720px)]";
+
+              if (state === "output-available") {
+                const out = part.output;
+                if (
+                  out &&
+                  typeof out === "object" &&
+                  "error" in out &&
+                  out.error != null
+                ) {
+                  return (
+                    <div
+                      className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-600 text-sm dark:bg-red-950/40 dark:text-red-400"
+                      key={toolCallId}
+                    >
+                      {String((out as { error: unknown }).error)}
+                    </div>
+                  );
+                }
+                if (
+                  out &&
+                  typeof out === "object" &&
+                  "chartType" in out &&
+                  "labels" in out &&
+                  "series" in out
+                ) {
+                  return (
+                    <div className={widthClass} key={toolCallId}>
+                      <ChartDisplay spec={out as ChartToolPayload} />
+                    </div>
+                  );
+                }
+                return (
+                  <div className={widthClass} key={toolCallId}>
+                    <p className="text-muted-foreground text-sm">
+                      Chart data was invalid or incomplete.
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className={widthClass} key={toolCallId}>
+                  <Tool
+                    className="w-full"
+                    defaultOpen={state !== "input-streaming"}
+                  >
+                    <ToolHeader state={state} type={type} />
+                    <ToolContent>
+                      {state === "input-available" && (
+                        <ToolInput input={part.input} />
+                      )}
+                      {state === "output-error" && (
+                        <div className="px-4 py-3 text-destructive text-sm">
+                          Could not render the chart.
+                        </div>
+                      )}
+                    </ToolContent>
+                  </Tool>
+                </div>
+              );
+            }
+
             if (type === "tool-createDocument") {
               const { toolCallId } = part;
 
@@ -342,7 +478,11 @@ const PurePreviewMessage = ({
               );
             }
 
-            if (type.startsWith("tool-") && "toolCallId" in part && "state" in part) {
+            if (
+              type.startsWith("tool-") &&
+              "toolCallId" in part &&
+              "state" in part
+            ) {
               const { toolCallId, state } = part;
 
               // Only show error if output.error is a real non-null string
@@ -365,7 +505,11 @@ const PurePreviewMessage = ({
 
               return (
                 <div className="w-[min(100%,500px)]" key={toolCallId}>
-                  <Tool defaultOpen={state === "approval-requested" || state === "output-error"}>
+                  <Tool
+                    defaultOpen={
+                      state === "approval-requested" || state === "output-error"
+                    }
+                  >
                     <ToolHeader state={state} type={type as any} />
                     <ToolContent>
                       {"input" in part && !!part.input && (
@@ -375,7 +519,11 @@ const PurePreviewMessage = ({
                         <>
                           {redirectUrl && (
                             <div className="px-4 pb-3">
-                              <Button asChild className="w-full gap-2" size="sm">
+                              <Button
+                                asChild
+                                className="w-full gap-2"
+                                size="sm"
+                              >
                                 <Link href={redirectUrl} target="_blank">
                                   <ExternalLink className="size-4" />
                                   Connect Account
@@ -394,7 +542,6 @@ const PurePreviewMessage = ({
                 </div>
               );
             }
-
 
             return null;
           })}

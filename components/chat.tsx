@@ -1,11 +1,13 @@
+//components/chat.tsx
 "use client";
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
+import type { UIArtifact } from "@/components/artifact";
 import { ChatHeader } from "@/components/chat-header";
 import {
   AlertDialog,
@@ -17,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useActiveAgentTasks } from "@/hooks/use-active-agent-tasks";
 import { useArtifactSelector } from "@/hooks/use-artifact";
 import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
@@ -24,6 +27,7 @@ import type { Vote } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
+import { ActiveAgentTasksBanner } from "./active-agent-tasks-banner";
 import { Artifact } from "./artifact";
 import { useDataStream } from "./data-stream-provider";
 import { Messages } from "./messages";
@@ -59,14 +63,25 @@ export function Chat({
   // Handle browser back/forward navigation
   useEffect(() => {
     const handlePopState = () => {
-      // When user navigates back/forward, refresh to sync with URL
       router.refresh();
     };
-
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [router]);
+
+  // Refresh on tab focus to pick up new messages (scheduled results, sub-agent results, Composio events)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        router.refresh();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [router]);
   const { setDataStream } = useDataStream();
+  const startPollingRef = useRef<((id: string) => void) | null>(null);
 
   const [input, setInput] = useState<string>("");
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
@@ -95,6 +110,8 @@ export function Chat({
       const shouldContinue =
         lastMessage?.parts?.some(
           (part) =>
+            part &&
+            typeof part === "object" &&
             "state" in part &&
             part.state === "approval-responded" &&
             "approval" in part &&
@@ -111,6 +128,9 @@ export function Chat({
           lastMessage?.role !== "user" ||
           request.messages.some((msg) =>
             msg.parts?.some((part) => {
+              if (!part || typeof part !== "object") {
+                return false;
+              }
               const state = (part as { state?: string }).state;
               return (
                 state === "approval-responded" || state === "output-denied"
@@ -133,6 +153,13 @@ export function Chat({
     }),
     onData: (dataPart) => {
       setDataStream((ds) => (ds ? [...ds, dataPart] : []));
+
+      if ((dataPart as any).type === "data-workflow-run") {
+        const workflowRunId = (dataPart as any).data?.workflowRunId;
+        if (workflowRunId && startPollingRef.current) {
+          startPollingRef.current(workflowRunId);
+        }
+      }
     },
     onFinish: () => {
       mutate(unstable_serialize(getChatHistoryPaginationKey));
@@ -156,8 +183,97 @@ export function Chat({
 
   const searchParams = useSearchParams();
   const query = searchParams.get("query");
+  const highlightTaskId = searchParams.get("highlightTask");
 
   const [hasAppendedQuery, setHasAppendedQuery] = useState(false);
+
+  const { tasks: activeAgentTasks } = useActiveAgentTasks(id);
+  const prevAgentTaskCountRef = useRef(0);
+  const postAgentActivityUntilRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    const prev = prevAgentTaskCountRef.current;
+    if (prev > 0 && activeAgentTasks.length === 0) {
+      postAgentActivityUntilRef.current = Date.now() + 60_000;
+    }
+    prevAgentTaskCountRef.current = activeAgentTasks.length;
+  }, [activeAgentTasks.length]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncFromServer = async () => {
+      try {
+        const res = await fetch(`/api/chat/${id}/messages`);
+        if (!res.ok || cancelled) {
+          return;
+        }
+        const data = (await res.json()) as { messages?: ChatMessage[] };
+        const incoming = data.messages;
+        if (!incoming || cancelled) {
+          return;
+        }
+        setMessages((prev) => {
+          if (prev.length !== incoming.length) {
+            return incoming;
+          }
+          const lastPrev = prev.at(-1)?.id;
+          const lastNew = incoming.at(-1)?.id;
+          if (lastPrev !== lastNew) {
+            return incoming;
+          }
+          return prev;
+        });
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const tick = () => {
+      if (cancelled) {
+        return;
+      }
+
+      const postDeadline = postAgentActivityUntilRef.current;
+      if (postDeadline !== null && Date.now() >= postDeadline) {
+        postAgentActivityUntilRef.current = null;
+      }
+
+      const stillPostActive =
+        postAgentActivityUntilRef.current !== null &&
+        Date.now() < postAgentActivityUntilRef.current;
+      const shouldPoll = activeAgentTasks.length > 0 || stillPostActive;
+      if (!shouldPoll) {
+        return;
+      }
+      if (status === "streaming" || status === "submitted") {
+        return;
+      }
+
+      void syncFromServer();
+    };
+
+    tick();
+    const intervalId = setInterval(tick, 4000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [id, activeAgentTasks.length, status, setMessages]);
+
+  const handleHighlightConsumed = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const u = new URL(window.location.href);
+    if (!u.searchParams.has("highlightTask")) {
+      return;
+    }
+    u.searchParams.delete("highlightTask");
+    const next = `${u.pathname}${u.search}`;
+    window.history.replaceState({}, "", next);
+  }, []);
 
   useEffect(() => {
     if (query && !hasAppendedQuery) {
@@ -177,7 +293,11 @@ export function Chat({
   );
 
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
+  const selectArtifactVisible = useCallback(
+    (state: UIArtifact) => state.isVisible,
+    []
+  );
+  const isArtifactVisible = useArtifactSelector(selectArtifactVisible);
 
   useAutoResume({
     autoResume,
@@ -195,12 +315,16 @@ export function Chat({
           selectedVisibilityType={initialVisibilityType}
         />
 
+        <ActiveAgentTasksBanner chatId={id} />
+
         <Messages
           addToolApprovalResponse={addToolApprovalResponse}
           chatId={id}
+          highlightTaskId={highlightTaskId}
           isArtifactVisible={isArtifactVisible}
           isReadonly={isReadonly}
           messages={messages}
+          onHighlightConsumed={handleHighlightConsumed}
           regenerate={regenerate}
           selectedModelId={initialChatModel}
           setMessages={setMessages}

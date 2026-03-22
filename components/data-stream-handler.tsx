@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { initialArtifactData, useArtifact } from "@/hooks/use-artifact";
@@ -13,7 +13,11 @@ export function DataStreamHandler() {
   const { mutate } = useSWRConfig();
 
   const { artifact, setArtifact, setMetadata } = useArtifact();
+  const artifactKindRef = useRef(artifact.kind);
+  artifactKindRef.current = artifact.kind;
 
+  // Omit `artifact` from deps: kind comes from artifactKindRef + per-batch activeKind so
+  // setArtifact from this loop does not re-trigger the effect (avoids max update depth).
   useEffect(() => {
     if (!dataStream?.length) {
       return;
@@ -22,15 +26,21 @@ export function DataStreamHandler() {
     const newDeltas = dataStream.slice();
     setDataStream([]);
 
+    let activeKind = artifactKindRef.current;
+
     for (const delta of newDeltas) {
       // Handle chat title updates
       if (delta.type === "data-chat-title") {
         mutate(unstable_serialize(getChatHistoryPaginationKey));
         continue;
       }
+      if (delta.type === "data-kind") {
+        activeKind = delta.data;
+      }
+
       const artifactDefinition = artifactDefinitions.find(
         (currentArtifactDefinition) =>
-          currentArtifactDefinition.kind === artifact.kind
+          currentArtifactDefinition.kind === activeKind
       );
 
       if (artifactDefinition?.onStreamPart) {
@@ -86,7 +96,7 @@ export function DataStreamHandler() {
         }
       });
     }
-  }, [dataStream, setArtifact, setMetadata, artifact, setDataStream, mutate]);
+  }, [dataStream, setArtifact, setMetadata, setDataStream, mutate]);
 
   return null;
 }

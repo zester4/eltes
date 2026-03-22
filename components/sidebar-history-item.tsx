@@ -29,11 +29,13 @@ import {
 const PureChatItem = ({
   chat,
   isActive,
+  hasActiveAgentTask,
   onDelete,
   setOpenMobile,
 }: {
   chat: Chat;
   isActive: boolean;
+  hasActiveAgentTask?: boolean;
   onDelete: (chatId: string) => void;
   setOpenMobile: (open: boolean) => void;
 }) => {
@@ -46,7 +48,13 @@ const PureChatItem = ({
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={isActive}>
         <Link href={`/chat/${chat.id}`} onClick={() => setOpenMobile(false)}>
-          <span>{chat.title}</span>
+          <span className="truncate">{chat.title}</span>
+          {hasActiveAgentTask && (
+            <span
+              className="ml-1 size-1.5 shrink-0 rounded-full bg-primary animate-pulse"
+              title="Agent running"
+            />
+          )}
         </Link>
       </SidebarMenuButton>
 
@@ -113,7 +121,10 @@ const PureChatItem = ({
 };
 
 export const ChatItem = memo(PureChatItem, (prevProps, nextProps) => {
-  if (prevProps.isActive !== nextProps.isActive) {
+  if (
+    prevProps.isActive !== nextProps.isActive ||
+    prevProps.hasActiveAgentTask !== nextProps.hasActiveAgentTask
+  ) {
     return false;
   }
   return true;

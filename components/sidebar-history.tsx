@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 import type { Chat } from "@/lib/db/schema";
 import { fetcher } from "@/lib/utils";
+import { useActiveAgentTasksByChat } from "@/hooks/use-active-agent-tasks";
 import { LoaderIcon } from "./icons";
 import { ChatItem } from "./sidebar-history-item";
 
@@ -101,6 +102,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
   const { setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const id = pathname?.startsWith("/chat/") ? pathname.split("/")[2] : null;
+  const { chatIdsWithActiveTasks } = useActiveAgentTasksByChat(!!user);
 
   const {
     data: paginatedChatHistories,
@@ -235,6 +237,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                         {groupedChats.today.map((chat) => (
                           <ChatItem
                             chat={chat}
+                            hasActiveAgentTask={chatIdsWithActiveTasks.has(chat.id)}
                             isActive={chat.id === id}
                             key={chat.id}
                             onDelete={(chatId) => {
@@ -255,6 +258,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                         {groupedChats.yesterday.map((chat) => (
                           <ChatItem
                             chat={chat}
+                            hasActiveAgentTask={chatIdsWithActiveTasks.has(chat.id)}
                             isActive={chat.id === id}
                             key={chat.id}
                             onDelete={(chatId) => {
@@ -275,6 +279,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                         {groupedChats.lastWeek.map((chat) => (
                           <ChatItem
                             chat={chat}
+                            hasActiveAgentTask={chatIdsWithActiveTasks.has(chat.id)}
                             isActive={chat.id === id}
                             key={chat.id}
                             onDelete={(chatId) => {
@@ -295,6 +300,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                         {groupedChats.lastMonth.map((chat) => (
                           <ChatItem
                             chat={chat}
+                            hasActiveAgentTask={chatIdsWithActiveTasks.has(chat.id)}
                             isActive={chat.id === id}
                             key={chat.id}
                             onDelete={(chatId) => {
@@ -315,6 +321,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                         {groupedChats.older.map((chat) => (
                           <ChatItem
                             chat={chat}
+                            hasActiveAgentTask={chatIdsWithActiveTasks.has(chat.id)}
                             isActive={chat.id === id}
                             key={chat.id}
                             onDelete={(chatId) => {
