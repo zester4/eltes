@@ -76,7 +76,7 @@ export const {
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        token.id = user.id as string;
+        token.id = user.id!;
         token.type = user.type;
       }
 
