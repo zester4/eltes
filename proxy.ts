@@ -12,6 +12,9 @@ export async function proxy(request: NextRequest) {
 
   const lowerPath = pathname.toLowerCase();
   if (
+    lowerPath === "/" ||
+    lowerPath.startsWith("/login") ||
+    lowerPath.startsWith("/register") ||
     lowerPath.startsWith("/api/auth") ||
     lowerPath.startsWith("/api/composio/webhook") ||
     lowerPath.startsWith("/api/webhooks") ||
