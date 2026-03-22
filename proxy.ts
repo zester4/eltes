@@ -31,7 +31,9 @@ export async function proxy(request: NextRequest) {
   }
 
   // Detect if we are on a secure connection (Vercel/Production)
-  const isSecure = request.headers.get("x-forwarded-proto") === "https";
+  const isSecure = request.nextUrl.protocol === "https:" || 
+                   request.headers.get("x-forwarded-proto") === "https" ||
+                   process.env.NODE_ENV === "production";
 
   const token = await getToken({
     req: request,

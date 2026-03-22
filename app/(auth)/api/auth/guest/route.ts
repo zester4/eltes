@@ -7,8 +7,9 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const redirectUrl = searchParams.get("redirectUrl") || "/";
 
-  const protocol = request.headers.get("x-forwarded-proto") || "http";
-  const isSecure = protocol === "https";
+  const isSecure = new URL(request.url).protocol === "https:" || 
+                   request.headers.get("x-forwarded-proto") === "https" ||
+                   process.env.NODE_ENV === "production";
 
   const token = await getToken({
     req: request,
