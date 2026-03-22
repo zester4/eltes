@@ -11,7 +11,14 @@ export function notifySubAgentHandoffToMainAgent(payload: {
   outcome: "completed" | "failed";
   summary: string;
 }): void {
-  const base = process.env.BASE_URL?.replace(/\/+$/, "") ?? "";
+  const rawBase =
+    process.env.BASE_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : undefined) ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+  
+  const base = rawBase?.replace(/\/+$/, "") ?? "";
   if (!base) {
     return;
   }

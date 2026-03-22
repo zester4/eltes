@@ -1,7 +1,12 @@
 import { Client } from "@upstash/workflow";
 
 const token = process.env.QSTASH_TOKEN;
-const appBaseUrl = process.env.BASE_URL;
+const appBaseUrl =
+  process.env.BASE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : undefined) ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
 
 export function getWorkflowClient(): Client | null {
   if (!token) return null;
