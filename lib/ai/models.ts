@@ -29,6 +29,18 @@ export const chatModels: ChatModel[] = [
     provider: "openai",
     description: "Most capable OpenAI model",
   },
+  {
+    id: "openai/gpt-5-nano",
+    name: "GPT-5 Nano",
+    provider: "openai",
+    description: "Ultra-compact high speed model",
+  },
+  {
+    id: "openai/gpt-oss-120b",
+    name: "GPT OSS 120B",
+    provider: "openai",
+    description: "Open source large scale model",
+  },
   // Google
   {
     id: "google/gemini-3-flash",
@@ -37,10 +49,49 @@ export const chatModels: ChatModel[] = [
     description: "Ultra fast and affordable",
   },
   {
+    id: "google/gemini-3.1-flash-lite-preview",
+    name: "Gemini 3.1 Flash Lite",
+    provider: "google",
+    description: "Latest lightweight preview model",
+  },
+  {
     id: "google/gemini-3-pro-preview",
     name: "Gemini 3 Pro",
     provider: "google",
     description: "Most capable Google model",
+  },
+  // MoonshotAI
+  {
+    id: "moonshotai/kimi-k2.5",
+    name: "Kimi K2.5",
+    provider: "moonshotai",
+    description: "Next generation Kimi model",
+  },
+  // Minimax
+  {
+    id: "minimax/minimax-m2.5",
+    name: "Minimax M2.5",
+    provider: "minimax",
+    description: "Standard M2.5 performance",
+  },
+  {
+    id: "minimax/minimax-m2.5-highspeed",
+    name: "Minimax M2.5 Speed",
+    provider: "minimax",
+    description: "Optimized for extreme speed",
+  },
+  {
+    id: "minimax/minimax-m2.7",
+    name: "Minimax M2.7",
+    provider: "minimax",
+    description: "Advanced multi-modal capabilities",
+  },
+  // ZAI
+  {
+    id: "zai/glm-5",
+    name: "GLM-5",
+    provider: "zai",
+    description: "High performance GLM model",
   },
   // xAI
   {
@@ -57,10 +108,22 @@ export const chatModels: ChatModel[] = [
     description: "Extended thinking for complex problems",
   },
   {
+    id: "moonshotai/kimi-k2-thinking",
+    name: "Kimi K2 Thinking",
+    provider: "reasoning",
+    description: "Moonshot reasoning model",
+  },
+  {
     id: "xai/grok-code-fast-1-thinking",
     name: "Grok Code Fast",
     provider: "reasoning",
     description: "Reasoning optimized for code",
+  },
+  {
+    id: "xai/grok-4.1-fast-reasoning",
+    name: "Grok 4.1 Reasoning",
+    provider: "reasoning",
+    description: "Reasoning-enabled Grok 4.1",
   },
 ];
 
