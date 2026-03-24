@@ -43,9 +43,26 @@ import {
   getSubAgentResult,
   listSubAgents,
 } from "@/lib/ai/tools/subagents";
-// Sub-agents run out-of-band (delegate → runSubAgent / workflow). The chat UI refreshes
-// messages via GET /api/chat/[id]/messages (client poll) and proactive follow-ups via
-// POST /api/agent/handoff after each run completes.
+// Daytona sandbox tools
+import {
+  createSandbox,
+  listSandboxes,
+  deleteSandbox,
+  executeCommand,
+  runCode,
+  listFiles,
+  readFile,
+  writeFile,
+  createDirectory,
+  searchFiles,
+  replaceInFiles,
+  gitClone,
+  gitStatus,
+  gitCommit,
+  gitPush,
+  gitPull,
+  gitBranch,
+} from "@/lib/ai/tools/daytona";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
@@ -199,6 +216,29 @@ export async function POST(request: Request) {
       }
     }
 
+    // Daytona sandbox tools — authenticated users only (sandbox compute has real cost)
+    const sandboxTools = isGuest
+      ? {}
+      : {
+          createSandbox: createSandbox({ userId: session.user.id! }),
+          listSandboxes: listSandboxes({ userId: session.user.id! }),
+          deleteSandbox: deleteSandbox({ userId: session.user.id! }),
+          executeCommand: executeCommand({ userId: session.user.id! }),
+          runCode: runCode({ userId: session.user.id! }),
+          listFiles: listFiles({ userId: session.user.id! }),
+          readFile: readFile({ userId: session.user.id! }),
+          writeFile: writeFile({ userId: session.user.id! }),
+          createDirectory: createDirectory({ userId: session.user.id! }),
+          searchFiles: searchFiles({ userId: session.user.id! }),
+          replaceInFiles: replaceInFiles({ userId: session.user.id! }),
+          gitClone: gitClone({ userId: session.user.id! }),
+          gitStatus: gitStatus({ userId: session.user.id! }),
+          gitCommit: gitCommit({ userId: session.user.id! }),
+          gitPush: gitPush({ userId: session.user.id! }),
+          gitPull: gitPull({ userId: session.user.id! }),
+          gitBranch: gitBranch({ userId: session.user.id! }),
+        };
+
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
@@ -233,6 +273,7 @@ export async function POST(request: Request) {
                 "delegateToSubAgent",
                 "getSubAgentResult",
                 "listSubAgents",
+                ...Object.keys(sandboxTools),
                 ...Object.keys(composioTools),
               ]) as any,
           providerOptions: isReasoningModel
@@ -281,6 +322,8 @@ export async function POST(request: Request) {
                   getSubAgentResult: getSubAgentResult({ userId: session.user.id! }),
                   listSubAgents: listSubAgents(),
                 }),
+            // Daytona sandbox tools (authenticated users only)
+            ...(sandboxTools as any),
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
