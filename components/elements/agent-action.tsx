@@ -32,7 +32,7 @@ function isDelegated(data: AgentActionData): data is AgentDelegatedData {
   return "status" in data && !("result" in data) && !("error" in data);
 }
 
-function isResult(data: AgentActionData): data is AgentResultData {
+export function isResult(data: AgentActionData): data is AgentResultData {
   return "result" in data || "error" in data;
 }
 
@@ -166,6 +166,44 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+};
+
+export const AgentMessageBubble = ({ agent }: { agent: AgentResultData }) => {
+  return (
+    <div className="not-prose my-2 w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-[#0a0a0a] p-4 shadow-sm transition-all">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/60 shadow-inner">
+          <Bot size={16} className="text-primary" />
+        </div>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          <span className="text-sm font-bold tracking-tight text-white/90">{agent.agentType}</span>
+          <Badge
+            variant="outline"
+            className="w-fit text-[9px] px-1.5 py-0 rounded-md font-medium tracking-wide font-mono border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+          >
+            <CheckCircle size={10} className="mr-0.5" />
+            COMPLETED
+          </Badge>
+        </div>
+      </div>
+      <div className="mt-2 border-t border-white/5 pt-3 w-full text-sm">
+        {agent.error ? (
+          <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-[14px] text-red-400 font-mono text-[12px] whitespace-pre-wrap">
+            {agent.error}
+          </div>
+        ) : (
+          <div className="prose prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-white/5 prose-pre:border border-white/10">
+            <Response>{agent.result!}</Response>
+          </div>
+        )}
+      </div>
+      {agent.timestamp && (
+        <div className="mt-3 text-[10px] text-zinc-500 font-mono">
+          {new Date(agent.timestamp).toLocaleString()}
+        </div>
+      )}
     </div>
   );
 };

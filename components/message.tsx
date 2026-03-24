@@ -12,7 +12,7 @@ import { cn, sanitizeText } from "@/lib/utils";
 import { useDataStream } from "./data-stream-provider";
 import { DocumentToolResult } from "./document";
 import { DocumentPreview } from "./document-preview";
-import { AgentActionCard, parseAgentMessage } from "./elements/agent-action";
+import { AgentActionCard, AgentMessageBubble, isResult, parseAgentMessage, type AgentResultData } from "./elements/agent-action";
 import { ChartDisplay } from "./elements/chart-display";
 import { EventCard, parseEventMessage } from "./elements/event";
 import { ExpandableContent } from "./elements/expandable-content";
@@ -103,6 +103,14 @@ const PurePreviewMessage = ({
     return null;
   }
 
+  const hasAgentResult = message.parts.some((part: any) => {
+    if (part.type === "text" && part.text) {
+      const parsed = parseAgentMessage(part.text);
+      return parsed && isResult(parsed) && !parsed.error;
+    }
+    return false;
+  });
+
   return (
     <div
       className="group/message fade-in w-full animate-in duration-200"
@@ -115,7 +123,7 @@ const PurePreviewMessage = ({
           "justify-start": role === "assistant" || role === "tool",
         })}
       >
-        {message.role === "assistant" && (
+        {message.role === "assistant" && !hasAgentResult && (
           <div className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border">
             <SparklesIcon size={14} />
           </div>
@@ -123,6 +131,7 @@ const PurePreviewMessage = ({
 
         <div
           className={cn("flex flex-col", {
+            "ml-11": message.role === "assistant" && hasAgentResult,
             "gap-2 md:gap-4": message.parts?.some(
               (p) =>
                 p.type === "text" &&
@@ -208,7 +217,11 @@ const PurePreviewMessage = ({
                       {partEvent ? (
                         <EventCard event={partEvent} />
                       ) : partAgent ? (
-                        <AgentActionCard agent={partAgent} />
+                        isResult(partAgent) && !partAgent.error ? (
+                          <AgentMessageBubble agent={partAgent as AgentResultData} />
+                        ) : (
+                          <AgentActionCard agent={partAgent} />
+                        )
                       ) : message.role === "user" ? (
                         <ExpandableContent>
                           <Response>{rawText}</Response>

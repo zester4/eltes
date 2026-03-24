@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function PrivacyPage() {
   return (
-    <div className="w-full bg-black min-h-screen pt-20 px-6 pb-40 relative">
+    <div className="w-full bg-black min-h-screen pt-10 md:pt-20 px-4 md:px-6 pb-20 md:pb-40 relative">
       <div className="max-w-4xl mx-auto">
         <div className="mb-20">
           <Link 
@@ -19,10 +19,10 @@ export default function PrivacyPage() {
         </div>
         <BlurText 
           text="Privacy Policy."
-          className="text-6xl md:text-8xl font-heading italic text-white leading-tight tracking-[-4px] mb-8"
+          className="text-3xl sm:text-5xl md:text-8xl font-heading italic text-white leading-tight tracking-[-1px] md:tracking-[-4px] mb-6 md:mb-12"
         />
-        <div className="font-body font-light text-white/50 text-lg leading-relaxed space-y-12">
-          <div className="space-y-4">
+        <div className="font-body font-light text-white/50 text-base md:text-lg leading-relaxed space-y-6 md:space-y-12">
+          <div className="space-y-3 md:space-y-4">
              <p className="text-sm uppercase tracking-widest text-white/30 font-bold">Effective Date: March 22, 2026</p>
              <p>This Privacy Policy describes how Etles ("we," "us," or "our") collects, uses, and shares your personal information when you use our autonomous agent platform and related services (the "Services").</p>
           </div>

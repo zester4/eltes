@@ -4,7 +4,7 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function TermsPage() {
   return (
-    <div className="w-full bg-black min-h-screen pt-20 px-6 pb-40 relative">
+    <div className="w-full bg-black min-h-screen pt-10 md:pt-20 px-4 md:px-6 pb-20 md:pb-40 relative">
       <div className="max-w-4xl mx-auto">
         <div className="mb-20">
           <Link 
@@ -19,9 +19,9 @@ export default function TermsPage() {
         </div>
         <BlurText 
           text="Terms of Service."
-          className="text-6xl md:text-8xl font-heading italic text-white leading-tight tracking-[-4px] mb-8"
+          className="text-3xl sm:text-5xl md:text-8xl font-heading italic text-white leading-tight tracking-[-1px] md:tracking-[-4px] mb-8 md:mb-12"
         />
-        <div className="font-body font-light text-white/50 text-lg leading-relaxed space-y-12">
+        <div className="font-body font-light text-white/50 text-base md:text-lg leading-relaxed space-y-6 md:space-y-12">
           <div className="space-y-4">
              <p className="text-sm uppercase tracking-widest text-white/30 font-bold">Last Updated: March 22, 2026</p>
              <p>Welcome to Etles. These Terms of Service ("Terms") govern your access to and use of the Etles platform, website, and agent orchestration services (the "Services"). By using our Services, you agree to be bound by these Terms.</p>

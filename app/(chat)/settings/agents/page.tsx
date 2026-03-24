@@ -139,9 +139,9 @@ export default function AgentsActivityPage() {
           <ArrowLeft className="size-4" />
           Back
         </Button>
-        <div className="flex flex-1 items-center gap-2">
-          <Bot className="size-5 text-primary" />
-          <h1 className="font-semibold text-lg tracking-tight">
+        <div className="flex flex-1 items-center gap-2 min-w-0">
+          <Bot className="size-4 md:size-5 text-primary shrink-0" />
+          <h1 className="font-bold text-sm md:text-lg tracking-tight truncate">
             Agent activity
           </h1>
         </div>
@@ -151,28 +151,28 @@ export default function AgentsActivityPage() {
           size="sm"
           type="button"
           variant="outline"
+          className="h-8 px-2 md:px-3"
         >
           <RefreshCw
-            className={cn("mr-2 size-4", refreshing && "animate-spin")}
+            className={cn("md:mr-2 size-3 md:size-4", refreshing && "animate-spin")}
           />
-          Refresh
+          <span className="hidden md:inline">Refresh</span>
         </Button>
       </header>
 
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-6 p-4 md:p-8">
-        <Card className="border-border/60 bg-card/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bot className="size-5 text-primary" />
+      <main className="mx-auto w-full max-w-4xl flex-1 space-y-4 md:space-y-6 p-3 md:p-8">
+        <Card className="border-border/60 bg-card/50 rounded-xl md:rounded-2xl overflow-hidden">
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="flex items-center gap-2 text-base md:text-xl font-bold">
+              <Bot className="size-4 md:size-5 text-primary" />
               Sub-agents and delegations
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs md:text-sm leading-relaxed">
               See every delegated agent run: what ran, current status, and
-              outcome. Open the chat to continue the thread. Active runs also
-              show a pulsing dot in the sidebar and a banner in the chat.
+              outcome. Active runs also show a pulsing dot in the sidebar.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-4 text-muted-foreground text-sm">
+          <CardContent className="p-4 pt-0 md:p-6 md:pt-0 flex flex-wrap gap-x-4 gap-y-2 text-muted-foreground text-[11px] md:text-sm border-t border-border/5 pt-4 md:border-none md:pt-0">
             <span>
               <strong className="text-foreground">{active.length}</strong>{" "}
               active
@@ -204,8 +204,8 @@ export default function AgentsActivityPage() {
                 key={t.id}
                 transition={{ delay: i * 0.02 }}
               >
-                <Card className="overflow-hidden border-border/60 transition-shadow hover:shadow-md">
-                  <CardContent className="p-4">
+                <Card className="overflow-hidden border-border/60 transition-shadow hover:shadow-md rounded-xl">
+                  <CardContent className="p-3 md:p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0 flex-1 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
@@ -227,7 +227,7 @@ export default function AgentsActivityPage() {
                               )}
                             </div>
                           )}
-                        <p className="text-muted-foreground text-xs">
+                        <p className="text-muted-foreground text-[10px] md:text-xs">
                           Started{" "}
                           {new Date(t.createdAt).toLocaleString(undefined, {
                             dateStyle: "medium",
@@ -235,11 +235,11 @@ export default function AgentsActivityPage() {
                           })}
                         </p>
                       </div>
-                      <Button asChild size="sm" variant="secondary">
+                      <Button asChild size="sm" variant="secondary" className="h-8 md:h-9 text-xs md:text-sm shrink-0">
                         <Link
                           href={`/chat/${t.chatId}?highlightTask=${encodeURIComponent(t.id)}`}
                         >
-                          <MessageSquare className="mr-2 size-4" />
+                          <MessageSquare className="mr-1.5 md:mr-2 size-3.5 md:size-4" />
                           Open chat
                         </Link>
                       </Button>

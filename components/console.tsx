@@ -154,17 +154,18 @@ export function Console({ consoleOutputs, setConsoleOutputs }: ConsoleProps) {
                     {consoleOutput.status === "in_progress"
                       ? "Initializing..."
                       : consoleOutput.status === "loading_packages"
-                        ? consoleOutput.contents.map((content) =>
-                            content.type === "text" ? content.value : null
-                          )
+                        ? consoleOutput.contents
+                            .filter((c) => c.type === "text")
+                            .map((c) => c.value)
+                            .join(", ")
                         : null}
                   </div>
                 </div>
               ) : (
                 <div className="flex w-full flex-col gap-2 overflow-x-scroll text-zinc-900 dark:text-zinc-50">
-                  {consoleOutput.contents.map((content) =>
+                  {consoleOutput.contents.map((content, idx) =>
                     content.type === "image" ? (
-                      <picture key={`${consoleOutput.id}-${content.value}`}>
+                      <picture key={`${consoleOutput.id}-${content.value}-${idx}`}>
                         <img
                           alt="output"
                           className="w-full max-w-(--breakpoint-toast-mobile) rounded-md"
@@ -174,7 +175,7 @@ export function Console({ consoleOutputs, setConsoleOutputs }: ConsoleProps) {
                     ) : (
                       <div
                         className="w-full whitespace-pre-line break-words"
-                        key={`${consoleOutput.id}-${content.value}`}
+                        key={`${consoleOutput.id}-${content.value}-${idx}`}
                       >
                         {content.value}
                       </div>

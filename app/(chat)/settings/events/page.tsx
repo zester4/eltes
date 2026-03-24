@@ -270,31 +270,32 @@ export default function EventsPage() {
           {/* Subtle top glare */}
           <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-foreground/10 to-transparent" />
           
-          <div className="flex flex-col gap-1.5 flex-1 pl-2">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-1 flex-1 min-w-0">
+            <div className="flex items-center gap-2 md:gap-4">
               <SidebarToggle />
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={() => router.back()} 
-                className="rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                className="size-8 md:size-10 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
               >
-                <ArrowLeft className="size-5" />
+                <ArrowLeft className="size-4 md:size-5" />
               </Button>
-              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent">
-                Events Monitoring
+              <h1 className="text-xl md:text-4xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent truncate">
+                Events
               </h1>
             </div>
-            <p className="text-muted-foreground ml-14 text-sm font-medium">
-              Monitor and manage real-time event streams from your connected apps.
+            <p className="text-muted-foreground ml-10 md:ml-14 text-[10px] md:text-sm font-medium line-clamp-1">
+              Real-time event streams monitoring.
             </p>
           </div>
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2 rounded-[1rem] h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98]">
-                <Plus className="size-4" />
-                Subscribe to Event
+              <Button className="gap-2 rounded-xl h-10 md:h-12 px-4 md:px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold shadow-lg shadow-primary/20 transition-all hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] text-xs md:text-base">
+                <Plus className="size-3.5 md:size-4" />
+                <span className="hidden sm:inline">Subscribe to Event</span>
+                <span className="sm:hidden">Subscribe</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] rounded-3xl bg-zinc-950/80 backdrop-blur-2xl border-white/10 shadow-2xl">
@@ -381,15 +382,15 @@ export default function EventsPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start pb-20">
           {/* Active Subscriptions Section */}
-          <div className="lg:col-span-4 space-y-6">
+          <div className="lg:col-span-4 space-y-4 md:space-y-6">
             <div className="flex items-center justify-between px-2">
-              <h3 className="font-extrabold text-xl flex items-center gap-2.5 text-zinc-100">
-                <div className="flex items-center justify-center size-8 rounded-full bg-primary/10 text-primary border border-primary/20">
-                  <Activity size={16} />
+              <h3 className="font-extrabold text-lg md:text-xl flex items-center gap-2 text-zinc-100">
+                <div className="flex items-center justify-center size-7 md:size-8 rounded-full bg-primary/10 text-primary border border-primary/20">
+                  <Activity size={14} />
                 </div>
                 Active Triggers
               </h3>
-              <Badge variant="secondary" className="rounded-full bg-white/5 text-zinc-300 border border-white/10 px-2.5 py-0.5 font-bold">
+              <Badge variant="secondary" className="rounded-full bg-white/5 text-zinc-300 border border-white/10 px-2 py-0.5 font-bold text-[10px] md:text-xs">
                 {activeTriggers.length}
               </Badge>
             </div>
@@ -425,11 +426,11 @@ export default function EventsPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: idx * 0.05 }}
                     >
-                      <Card className="border-white/5 bg-white/[0.02] backdrop-blur-xl hover:border-primary/30 hover:bg-white/[0.04] transition-all duration-300 group rounded-2xl shadow-lg relative overflow-hidden">
+                      <Card className="border-white/5 bg-white/[0.02] backdrop-blur-xl hover:border-primary/30 hover:bg-white/[0.04] transition-all duration-300 group rounded-xl md:rounded-2xl shadow-lg relative overflow-hidden">
                         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                        <CardHeader className="p-4 flex flex-row items-center gap-4 space-y-0 text-zinc-100">
-                          <div className="size-11 rounded-[14px] bg-black/60 border border-white/10 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform duration-300">
-                            {getAppIcon(def?.app || "", 20)}
+                        <CardHeader className="p-3 md:p-4 flex flex-row items-center gap-3 md:gap-4 space-y-0 text-zinc-100">
+                          <div className="size-9 md:size-11 rounded-lg md:rounded-[14px] bg-black/60 border border-white/10 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform duration-300">
+                            {getAppIcon(def?.app || "", 18)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <CardTitle className="text-[15px] font-bold truncate text-zinc-200 group-hover:text-primary transition-colors">{displaySlug}</CardTitle>
@@ -457,11 +458,11 @@ export default function EventsPage() {
           </div>
 
           {/* Event Timeline Section */}
-          <div className="lg:col-span-8 space-y-6">
-             <div className="flex items-center justify-between px-2 bg-white/[0.02] border border-white/5 py-4 px-6 rounded-[1.5rem] backdrop-blur-md">
-              <h3 className="font-extrabold text-xl flex items-center gap-2.5 text-zinc-100">
-                <div className="flex items-center justify-center size-8 rounded-full bg-zinc-800 text-zinc-300 border border-white/10">
-                  <Clock size={16} />
+          <div className="lg:col-span-8 space-y-4 md:space-y-6">
+             <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 bg-white/[0.02] border border-white/5 rounded-xl md:rounded-[1.5rem] backdrop-blur-md">
+              <h3 className="font-extrabold text-lg md:text-xl flex items-center gap-2 text-zinc-100">
+                <div className="flex items-center justify-center size-7 md:size-8 rounded-full bg-zinc-800 text-zinc-300 border border-white/10">
+                  <Clock size={14} />
                 </div>
                 Live Stream
               </h3>
@@ -470,10 +471,10 @@ export default function EventsPage() {
                 size="sm" 
                 onClick={() => fetchEvents(true)} 
                 disabled={isRefreshing}
-                className="text-xs h-8 px-4 gap-2 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 rounded-full transition-all"
+                className="text-[10px] md:text-xs h-7 md:h-8 px-3 md:px-4 gap-1.5 border-white/10 bg-white/5 hover:bg-white/10 text-zinc-300 rounded-full transition-all"
               >
-                <Activity className={cn("size-3.5", isRefreshing && "animate-spin text-primary")} /> 
-                {isRefreshing ? "Syncing..." : "Refresh"}
+                <Activity className={cn("size-3 md:size-3.5", isRefreshing && "animate-spin text-primary")} /> 
+                {isRefreshing ? "Syncing" : "Refresh"}
               </Button>
             </div>
 
@@ -522,43 +523,43 @@ export default function EventsPage() {
                             <div className="absolute left-[24px] top-1/2 -translate-y-1/2 size-3 rounded-full bg-black border-2 border-primary z-10 hidden md:block shadow-[0_0_10px_rgba(234,179,8,0.5)] group-hover:scale-[1.5] transition-all duration-300" />
                             
                             <Card className={cn(
-                              "border-white/5 bg-white/[0.02] backdrop-blur-xl transition-all duration-300 hover:border-white/10 hover:bg-white/[0.04] rounded-[1.5rem] overflow-hidden relative",
+                              "border-white/5 bg-white/[0.02] backdrop-blur-xl transition-all duration-300 hover:border-white/10 hover:bg-white/[0.04] rounded-xl md:rounded-[1.5rem] overflow-hidden relative",
                               isExpanded && "ring-1 ring-primary/30 bg-white/[0.05]"
                             )}>
                               {isExpanded && <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />}
                               
                               <div 
-                                className="p-4 sm:p-5 flex items-center gap-4 sm:gap-5 cursor-pointer select-none"
+                                className="p-3 md:p-5 flex items-center gap-3 md:gap-5 cursor-pointer select-none"
                                 onClick={() => setExpandedEventId(isExpanded ? null : event.id)}
                               >
-                                <div className="size-12 rounded-xl bg-black/50 border border-white/5 flex items-center justify-center shadow-inner shrink-0 group-hover:bg-black/80 transition-colors">
-                                  {getAppIcon(triggerDef?.app || "", 24)}
+                                <div className="size-10 md:size-12 rounded-lg md:rounded-xl bg-black/50 border border-white/5 flex items-center justify-center shadow-inner shrink-0 group-hover:bg-black/80 transition-colors">
+                                  {getAppIcon(triggerDef?.app || "", 20)}
                                 </div>
                                 
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1.5">
-                                    <h4 className="font-extrabold text-[15px] tracking-tight text-zinc-100 group-hover:text-primary transition-colors">{displaySlug}</h4>
-                                    <Badge className={cn("w-fit text-[10px] px-2 py-0.5 rounded-md font-bold uppercase", getStatusColor(event.status))}>
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-3 mb-1">
+                                    <h4 className="font-extrabold text-sm md:text-[15px] tracking-tight text-zinc-100 group-hover:text-primary transition-colors truncate">{displaySlug}</h4>
+                                    <Badge className={cn("w-fit text-[9px] md:text-[10px] px-1.5 py-0 rounded-md font-bold uppercase", getStatusColor(event.status))}>
                                       {event.status}
                                     </Badge>
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-3 text-[12px] text-zinc-500 font-semibold">
-                                    <span className="flex items-center gap-1.5 bg-black/30 px-2 py-1 rounded-md border border-white/5">
-                                      <Clock size={12} className="text-zinc-600" />
-                                      {new Date(event.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                  <div className="flex flex-wrap items-center gap-2 md:gap-3 text-[10px] md:text-[12px] text-zinc-500 font-semibold">
+                                    <span className="flex items-center gap-1 md:gap-1.5 bg-black/30 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md border border-white/5">
+                                      <Clock size={10} className="text-zinc-600" />
+                                      {new Date(event.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
-                                    <span className="flex items-center gap-1.5 bg-black/30 px-2 py-1 rounded-md border border-white/5">
-                                      <Calendar size={12} className="text-zinc-600" />
+                                    <span className="flex items-center gap-1 md:gap-1.5 bg-black/30 px-1.5 py-0.5 md:px-2 md:py-1 rounded-md border border-white/5">
+                                      <Calendar size={10} className="text-zinc-600" />
                                       {new Date(event.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                                     </span>
                                   </div>
                                 </div>
 
                                 <div className={cn(
-                                  "size-8 rounded-full flex items-center justify-center bg-white/5 text-zinc-400 group-hover:bg-white/10 group-hover:text-zinc-100 transition-all shrink-0",
+                                  "size-7 md:size-8 rounded-full flex items-center justify-center bg-white/5 text-zinc-400 group-hover:bg-white/10 group-hover:text-zinc-100 transition-all shrink-0",
                                   isExpanded && "bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary"
                                 )}>
-                                  {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                  {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                                 </div>
                               </div>
 

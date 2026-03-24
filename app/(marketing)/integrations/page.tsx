@@ -39,50 +39,50 @@ export default function IntegrationsPage() {
   return (
     <div className="w-full relative overflow-visible bg-background selection:bg-primary/20">
       {/* HERO SECTION */}
-      <section className="relative w-full min-h-[500px] py-32 px-6 flex flex-col items-center justify-center text-center overflow-hidden border-b border-white/5">
+      <section className="relative w-full min-h-[400px] md:min-h-[500px] py-20 md:py-32 px-6 flex flex-col items-center justify-center text-center overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 z-0 opacity-20">
            <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_70%)]" />
         </div>
         
         <div className="relative z-10 max-w-4xl">
-          <div className="liquid-glass rounded-full px-4 py-1.5 mb-8 inline-block">
-             <span className="font-body text-xs text-white uppercase tracking-widest flex items-center gap-2">
+          <div className="liquid-glass rounded-full px-4 py-1.5 mb-6 md:mb-8 inline-block">
+             <span className="font-body text-[10px] md:text-xs text-white uppercase tracking-widest flex items-center gap-2">
                 <Globe className="w-3 h-3" /> 500+ Toolkits Available
              </span>
           </div>
           <BlurText 
             text="The Connectivity Layer for AI."
-            className="text-6xl md:text-8xl font-heading italic text-white leading-tight tracking-[-4px] mb-8"
+            className="text-3xl sm:text-5xl md:text-8xl font-heading italic text-white leading-tight tracking-[-1px] md:tracking-[-4px] mb-6 md:mb-8"
           />
-          <p className="font-body font-light text-white/60 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-12">
+          <p className="font-body font-light text-white/60 text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-8 md:mb-12">
             Etles leverages Composio's massive toolkit library to give your agent hands-on access to the world's most popular software.
           </p>
 
           {/* Search Bar inspired by connections/page.tsx */}
           <div className="relative max-w-xl mx-auto w-full group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30 group-focus-within:text-white transition-colors" />
+            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-white/30 group-focus-within:text-white transition-colors" />
             <input 
               type="text" 
               placeholder="Search across 500+ toolkits..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-16 pl-14 pr-6 bg-white/5 border border-white/10 rounded-2xl text-white font-body focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20"
+              className="w-full h-12 md:h-16 pl-12 md:pl-14 pr-6 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl text-sm md:text-base text-white font-body focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20"
             />
           </div>
         </div>
       </section>
 
       {/* CATALOG SECTION */}
-      <section className="py-24 px-6 md:px-16 lg:px-24 max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+      <section className="py-16 md:py-24 px-6 md:px-16 lg:px-24 max-w-7xl mx-auto">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-6">
           {filteredToolkits.map((app) => (
             <div 
               key={app.slug} 
-              className="liquid-glass group relative overflow-hidden aspect-square rounded-[32px] p-8 border border-white/5 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-all cursor-pointer"
+              className="liquid-glass group relative overflow-hidden aspect-square rounded-[24px] md:rounded-[32px] p-4 md:p-8 border border-white/5 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-all cursor-pointer"
             >
               <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
               
-              <div className="relative size-16 mb-6 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
+              <div className="relative size-10 md:size-16 mb-3 md:mb-6 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
                 <div className="absolute inset-0 bg-white/5 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                 <Image 
                   src={app.logo} 
@@ -92,10 +92,10 @@ export default function IntegrationsPage() {
                 />
               </div>
 
-              <span className="relative z-10 text-white font-body text-lg font-medium tracking-tight">{app.name}</span>
-              <span className="relative z-10 text-white/20 font-body text-[10px] uppercase tracking-[0.2em] mt-2 group-hover:text-white/40 transition-colors">{app.category}</span>
+              <span className="relative z-10 text-white font-body text-sm md:text-lg font-medium tracking-tight truncate w-full px-1">{app.name}</span>
+              <span className="relative z-10 text-white/20 font-body text-[8px] md:text-[10px] uppercase tracking-[0.2em] mt-1 md:mt-2 group-hover:text-white/40 transition-colors">{app.category}</span>
               
-              <div className="absolute bottom-6 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+              <div className="absolute bottom-4 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hidden md:block">
                  <Zap className="w-4 h-4 text-white/40" />
               </div>
             </div>
@@ -149,14 +149,14 @@ export default function IntegrationsPage() {
       </section>
 
       {/* FOOTER CTA */}
-      <section className="py-32 px-6 flex flex-col items-center justify-center border-t border-white/10 mt-32">
-        <h2 className="text-5xl md:text-7xl font-heading italic text-white mb-10 text-center uppercase tracking-tighter">Hook it up.</h2>
+      <section className="py-20 md:py-32 px-6 flex flex-col items-center justify-center border-t border-white/10 mt-20 md:mt-32">
+        <h2 className="text-3xl md:text-7xl font-heading italic text-white mb-8 md:mb-10 text-center uppercase tracking-tighter">Hook it up.</h2>
         <Link 
           href="/chat" 
-          className="liquid-glass-strong h-14 px-10 inline-flex items-center justify-center rounded-full text-white font-body text-lg font-medium hover:bg-white/10 transition-colors gap-2"
+          className="liquid-glass-strong h-12 md:h-14 px-8 md:px-10 inline-flex items-center justify-center rounded-full text-white font-body text-base md:text-lg font-medium hover:bg-white/10 transition-colors gap-2"
         >
           Explore the Full Catalog
-          <ArrowUpRight className="w-5 h-5" />
+          <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5" />
         </Link>
       </section>
     </div>
