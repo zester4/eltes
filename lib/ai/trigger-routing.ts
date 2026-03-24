@@ -60,6 +60,14 @@ export const TRIGGER_ROUTES: TriggerRoutingMap = {
         `${p.pull_request?.changed_files ?? 0} files. ` +
         `Perform a full code review: correctness, security, performance, consistency.`,
     },
+    {
+      agentSlug: "docs_keeper",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `PR #${p.number} opened in ${p.repository?.full_name}: "${p.pull_request?.title}". ` +
+        `Review the code changes for any mismatch with existing documentation in Notion/Confluence. ` +
+        `If documentation is missing for this new feature, draft a first version from the PR diff.`,
+    },
   ],
 
   GITHUB_ISSUE_OPENED: [
@@ -107,6 +115,20 @@ export const TRIGGER_ROUTES: TriggerRoutingMap = {
         `"${p.text?.slice(0, 500) ?? ""}". ` +
         `Classify this message, determine if it requires a response or action, and handle accordingly.`,
     },
+    {
+      agentSlug: "brand_monitor",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `New Slack message in ${p.channel}: "${p.text?.slice(0, 300)}". ` +
+        `Check sentiment. If this is a crisis (complaint/outage) or a high-value opportunity, triage immediately.`,
+    },
+    {
+      agentSlug: "docs_keeper",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `Slack message in ${p.channel}: "${p.text?.slice(0, 300)}". ` +
+        `Scan for technical questions. If this is a recurring question, flag as a "Documentation Gap" and draft a doc entry.`,
+    },
   ],
 
   SLACK_USER_JOINED_CHANNEL: [
@@ -150,6 +172,28 @@ export const TRIGGER_ROUTES: TriggerRoutingMap = {
         `Subject: "${p.subject ?? "no subject"}". ` +
         `Snippet: "${p.snippet?.slice(0, 400) ?? ""}". ` +
         `Classify (LEAD / SUPPORT / INVOICE / SENSITIVE / SPAM / PERSONAL) and take the appropriate action.`,
+    },
+    {
+      agentSlug: "legal_operator",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `New email received from ${p.from}: "${p.subject}". ` +
+        `If this email contains a contract, renewal notice, or sensitive legal document (DocuSign/PandaDoc), ` +
+        `extract obligations and update the contract register immediately.`,
+    },
+    {
+      agentSlug: "brand_monitor",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `New email from ${p.from}: "${p.subject}". ` +
+        `Check for brand mentions, PR enquiries, or crisis signals. Triage and draft response if needed.`,
+    },
+    {
+      agentSlug: "investor_relations",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `New email from ${p.from}: "${p.subject}". ` +
+        `Check if this is an investor inquiry or data request. If so, draft a response with metrics from connected tools.`,
     },
   ],
 
@@ -199,6 +243,13 @@ export const TRIGGER_ROUTES: TriggerRoutingMap = {
         `Amount: ${((p.amount ?? 0) / 100).toFixed(2)} ${(p.currency ?? "usd").toUpperCase()}. ` +
         `Failure reason: "${p.failure_message ?? "unknown"}". ` +
         `Triage the account, classify as ENGAGED/AT-RISK/LOST, and execute the appropriate recovery sequence.`,
+    },
+    {
+      agentSlug: "revenue_forecasting",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `Stripe charge failed for ${p.billing_details?.email}. ` +
+        `Update the revenue forecast model and flag this as a potential hit to the month-end target.`,
     },
   ],
 
@@ -261,6 +312,20 @@ export const TRIGGER_ROUTES: TriggerRoutingMap = {
         `Invoice: ${p.number ?? "unknown"}, Amount: ${((p.amount_paid ?? 0) / 100).toFixed(2)} ${(p.currency ?? "usd").toUpperCase()}. ` +
         `Log the payment in the accounting system, update the receivables register, and send a payment receipt if not auto-sent by Stripe.`,
     },
+    {
+      agentSlug: "revenue_forecasting",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `Successful Stripe payment: ${((p.amount_paid ?? 0) / 100).toFixed(2)} ${p.currency?.toUpperCase()}. ` +
+        `Update actual vs. forecasted revenue for the current month.`,
+    },
+    {
+      agentSlug: "investor_relations",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `Revenue event: ${((p.amount_paid ?? 0) / 100).toFixed(2)} ${p.currency?.toUpperCase()}. ` +
+        `Update MRR and growth metrics for the next investor update.`,
+    },
   ],
 
   STRIPE_SUBSCRIPTION_ADDED_TRIGGER: [
@@ -305,6 +370,13 @@ export const TRIGGER_ROUTES: TriggerRoutingMap = {
         `A new page was added to a Notion database. ` +
         `Page ID: ${p.id ?? "unknown"}. ` +
         `Check if this represents a new project, task, or deliverable that needs a corresponding ticket created.`,
+    },
+    {
+      agentSlug: "legal_operator",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `New entry in Notion database (ID: ${p.id}). ` +
+        `Check if this is a newly added contract. If yes, analyze it for renewal dates and key obligations.`,
     },
   ],
 
@@ -416,6 +488,13 @@ export const TRIGGER_ROUTES: TriggerRoutingMap = {
         `A new Google Doc was created: "${p.title ?? "untitled"}". ` +
         `Determine if this document should be filed in a project folder, linked to a ticket, or flagged for review.`,
     },
+    {
+      agentSlug: "legal_operator",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `Google Doc created: "${p.title}". ` +
+        `Analyze this document for legal commitments, renewal terms, or obligation clauses. Update contract register if applicable.`,
+    },
   ],
 
   // ── Google Sheets ─────────────────────────────────────────────────────────────
@@ -462,6 +541,13 @@ export const TRIGGER_ROUTES: TriggerRoutingMap = {
         `HubSpot deal stage updated. Deal: "${p.properties?.dealname ?? "unknown"}". ` +
         `New stage: "${p.properties?.dealstage ?? "unknown"}". ` +
         `Determine the appropriate next action for this stage and execute it: follow-up, proposal draft, or contract initiation.`,
+    },
+    {
+      agentSlug: "investor_relations",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `HubSpot deal stage updated for "${p.properties?.dealname}". ` +
+        `Update pipeline velocity metrics and draft the product/sales win section for the monthly investor update.`,
     },
   ],
 
@@ -556,6 +642,13 @@ export const TRIGGER_ROUTES: TriggerRoutingMap = {
       contextExtractor: (p) =>
         `Confluence page updated: "${p.title ?? "untitled"}". ` +
         `Check if this page is a decision log, meeting notes, or project spec. If so, extract any new action items and track them.`,
+    },
+    {
+      agentSlug: "docs_keeper",
+      priority: "queued",
+      contextExtractor: (p) =>
+        `Confluence page updated: "${p.title}". ` +
+        `Review the update against current code and other docs. Identify any inconsistencies or knowledge gaps to resolve.`,
     },
   ],
 
