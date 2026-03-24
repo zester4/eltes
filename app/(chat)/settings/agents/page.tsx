@@ -171,8 +171,8 @@ export default function AgentsSettingsPage() {
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden font-sans selection:bg-primary/30">
       {/* Premium Background Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background z-0 pointer-events-none opacity-60" />
-      <div className="absolute top-0 inset-x-0 h-[600px] bg-gradient-to-b from-primary/10 to-transparent blur-[100px] z-0 pointer-events-none opacity-50 translate-y-[-20%]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background z-0 pointer-events-none opacity-60 dark:opacity-40" />
+      <div className="absolute top-0 inset-x-0 h-[600px] bg-gradient-to-b from-primary/10 to-transparent blur-[100px] z-0 pointer-events-none opacity-50 dark:opacity-30 translate-y-[-20%]" />
 
       <div className="flex flex-col gap-4 md:gap-8 p-3 md:p-8 lg:px-12 max-w-5xl mx-auto w-full relative z-10 min-h-screen">
         
@@ -195,7 +195,7 @@ export default function AgentsSettingsPage() {
               <ArrowLeft className="size-4 md:size-5" />
             </Button>
             <div className="min-w-0">
-              <h1 className="text-lg md:text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent truncate">
+              <h1 className="text-lg md:text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground via-foreground/90 to-foreground/70 bg-clip-text text-transparent truncate">
                 Agents & Memory
               </h1>
               <p className="text-muted-foreground text-[10px] md:text-xs font-medium mt-0.5">
@@ -210,7 +210,7 @@ export default function AgentsSettingsPage() {
               onClick={onRefresh}
               size="sm"
               variant="outline"
-              className="h-8 rounded-full border-white/10 bg-white/5 hover:bg-white/10 px-3 md:px-4"
+              className="h-8 rounded-full border-border/50 bg-background/50 hover:bg-accent px-3 md:px-4"
             >
               <RefreshCw className={cn("size-3.5 mr-2", refreshing && "animate-spin text-primary")} />
               Sync
@@ -219,12 +219,12 @@ export default function AgentsSettingsPage() {
         </motion.header>
 
         {/* Custom Tabs */}
-        <div className="flex gap-1 p-1 bg-muted/20 border border-border/30 rounded-xl w-fit">
+        <div className="flex gap-1 p-1 bg-muted border border-border rounded-xl w-fit">
           <button
             onClick={() => setActiveTab("activity")}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-              activeTab === "activity" ? "bg-card text-foreground shadow-sm border border-border/40" : "text-muted-foreground hover:bg-white/5"
+              activeTab === "activity" ? "bg-card text-foreground shadow-sm border border-border/40" : "text-muted-foreground hover:bg-accent/50"
             )}
           >
             <History size={14} className={cn(activeTab === "activity" ? "text-primary" : "text-muted-foreground")} />
@@ -234,7 +234,7 @@ export default function AgentsSettingsPage() {
             onClick={() => setActiveTab("memory")}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
-              activeTab === "memory" ? "bg-card text-foreground shadow-sm border border-border/40" : "text-muted-foreground hover:bg-white/5"
+              activeTab === "memory" ? "bg-card text-foreground shadow-sm border border-border/40" : "text-muted-foreground hover:bg-accent/50"
             )}
           >
             <Brain size={14} className={cn(activeTab === "memory" ? "text-primary" : "text-muted-foreground")} />
@@ -254,7 +254,7 @@ export default function AgentsSettingsPage() {
               >
                 {/* Statistics Cards */}
                 <div className="grid grid-cols-2 gap-2">
-                  <Card className="bg-white/[0.02] border-white/5 backdrop-blur-md rounded-xl">
+                  <Card className="bg-card border-border/50 backdrop-blur-md rounded-xl">
                     <CardHeader className="p-2.5 flex flex-row items-center justify-between space-y-0">
                       <div>
                         <CardTitle className="text-lg md:text-xl font-black">{tasks.length}</CardTitle>
@@ -265,7 +265,7 @@ export default function AgentsSettingsPage() {
                       </div>
                     </CardHeader>
                   </Card>
-                  <Card className="bg-white/[0.02] border-white/5 backdrop-blur-md rounded-xl">
+                  <Card className="bg-card border-border/50 backdrop-blur-md rounded-xl">
                     <CardHeader className="p-2.5 flex flex-row items-center justify-between space-y-0">
                       <div>
                         <CardTitle className="text-lg md:text-xl font-black">
@@ -288,8 +288,8 @@ export default function AgentsSettingsPage() {
                       <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Reading Agent Logs...</p>
                     </div>
                   ) : tasks.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-32 text-center border-2 border-dashed rounded-[3rem] border-white/5 bg-white/[0.01] backdrop-blur-md gap-6">
-                      <div className="size-16 rounded-[2rem] bg-black/40 flex items-center justify-center border border-white/5 shadow-inner">
+                    <div className="flex flex-col items-center justify-center py-32 text-center border-2 border-dashed rounded-[3rem] border-border/50 bg-card/10 backdrop-blur-md gap-6">
+                      <div className="size-16 rounded-[2rem] bg-muted/50 flex items-center justify-center border border-border shadow-inner">
                         <Info className="size-8 text-muted-foreground/30" />
                       </div>
                       <p className="text-sm font-bold text-muted-foreground max-w-xs leading-relaxed px-6">
@@ -304,15 +304,15 @@ export default function AgentsSettingsPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: idx * 0.03 }}
                       >
-                        <Card className="group overflow-hidden border-white/5 bg-white/[0.02] backdrop-blur-xl hover:border-primary/30 hover:bg-white/[0.04] transition-all duration-300 rounded-xl md:rounded-2xl shadow-lg relative">
-                           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <Card className="group overflow-hidden border-border/50 bg-card backdrop-blur-xl hover:border-primary/30 hover:bg-accent/5 transition-all duration-300 rounded-xl md:rounded-2xl shadow-lg relative">
+                           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                            
                            <div className="p-2.5 md:p-5 space-y-2.5">
                              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
                                <div className="space-y-1.5 min-w-0 flex-1">
                                  <div className="flex flex-wrap items-center gap-1.5">
                                    {statusBadge(t.status)}
-                                   <Badge variant="secondary" className="bg-zinc-800/50 text-zinc-400 border-white/5 uppercase text-[7px] font-black tracking-widest px-1 py-0 h-3.5">
+                                   <Badge variant="secondary" className="bg-muted text-muted-foreground border-border uppercase text-[7px] font-black tracking-widest px-1 py-0 h-3.5">
                                      {t.task.startsWith("[Trigger") ? "Automated" : "Manual"}
                                    </Badge>
                                  </div>
@@ -320,7 +320,7 @@ export default function AgentsSettingsPage() {
                                    “{t.task}”
                                  </h3>
                                </div>
-                               <Button asChild size="sm" variant="secondary" className="h-6 md:h-8 rounded-md md:rounded-lg border-white/5 bg-white/5 hover:bg-white/10 shrink-0 text-[9px] md:text-[10px] px-2 font-bold">
+                               <Button asChild size="sm" variant="secondary" className="h-6 md:h-8 rounded-md md:rounded-lg border-border bg-muted/50 hover:bg-muted shrink-0 text-[9px] md:text-[10px] px-2 font-bold">
                                  <Link href={`/chat/${t.chatId}?highlightTask=${encodeURIComponent(t.id)}`}>
                                    <MessageSquare className="mr-1 size-2.5 md:size-3" />
                                    Details
@@ -329,7 +329,7 @@ export default function AgentsSettingsPage() {
                              </div>
 
                              {(t.status === "completed" || t.status === "failed") && (t.result?.text || t.result?.error) && (
-                               <div className="rounded-xl border border-white/5 bg-black/40 p-3 font-normal text-[10px] md:text-xs text-zinc-300 overflow-hidden line-clamp-3 shadow-inner">
+                               <div className="rounded-xl border border-border bg-muted/30 p-3 font-normal text-[10px] md:text-xs text-foreground/80 overflow-hidden line-clamp-3 shadow-inner">
                                  {t.result.error ? (
                                    <div className="flex gap-1.5 text-destructive font-mono">
                                      <XCircle size={12} className="shrink-0" />
@@ -398,8 +398,8 @@ export default function AgentsSettingsPage() {
                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Searching Vault...</p>
                      </div>
                    ) : memories.length === 0 ? (
-                     <div className="flex flex-col items-center justify-center py-32 text-center border-2 border-dashed rounded-[3rem] border-white/5 bg-white/[0.01] backdrop-blur-md gap-6">
-                        <div className="size-16 rounded-[2rem] bg-black/40 flex items-center justify-center border border-white/5 shadow-inner">
+                     <div className="flex flex-col items-center justify-center py-32 text-center border-2 border-dashed rounded-[3rem] border-border/50 bg-card/10 backdrop-blur-md gap-6">
+                        <div className="size-16 rounded-[2rem] bg-muted/50 flex items-center justify-center border border-border shadow-inner">
                           <Brain className="size-8 text-primary/20" />
                         </div>
                         <p className="text-sm font-bold text-muted-foreground max-w-xs leading-relaxed px-6">
@@ -415,7 +415,7 @@ export default function AgentsSettingsPage() {
                            animate={{ opacity: 1, scale: 1 }}
                            transition={{ delay: idx * 0.05 }}
                          >
-                           <Card className="group relative border-white/5 bg-white/[0.02] backdrop-blur-xl hover:border-primary/30 hover:bg-white/[0.05] transition-all duration-300 rounded-xl md:rounded-2xl overflow-hidden flex flex-col min-h-[70px]">
+                        <Card className="group relative border-border/50 bg-card backdrop-blur-xl hover:border-primary/30 hover:bg-accent/5 transition-all duration-300 rounded-xl md:rounded-2xl overflow-hidden flex flex-col min-h-[70px]">
                              <div className="p-2.5 md:p-4 flex-1 space-y-1.5">
                                <div className="flex items-center justify-between">
                                  <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 tracking-widest font-black text-[7px] uppercase h-3.5 px-1.5">
@@ -431,11 +431,11 @@ export default function AgentsSettingsPage() {
                                    {isActionLoading === m.key ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
                                  </Button>
                                </div>
-                               <p className="text-[10px] md:text-sm font-medium leading-relaxed text-zinc-300 line-clamp-2 group-hover:text-foreground transition-colors">
+                               <p className="text-[10px] md:text-sm font-medium leading-relaxed text-foreground/70 line-clamp-2 group-hover:text-foreground transition-colors">
                                  {m.content}
                                </p>
                              </div>
-                             <div className="px-2.5 md:px-4 py-1 bg-white/[0.03] border-t border-white/5 flex items-center justify-between text-[7px] font-black text-muted-foreground/20 uppercase tracking-widest">
+                             <div className="px-2.5 md:px-4 py-1 bg-muted/30 border-t border-border/50 flex items-center justify-between text-[7px] font-black text-muted-foreground/40 uppercase tracking-widest">
                                <span>Recorded {new Date(m.savedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
                              </div>
                            </Card>

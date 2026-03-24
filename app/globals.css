@@ -12,45 +12,46 @@
 @plugin "@tailwindcss/typography";
 
 /* define design tokens (light mode) */
+/* FIX: All values wrapped in hsl() so Tailwind v4 var() references resolve correctly */
 :root {
-  --background: 0 0% 100%;
-  --foreground: 240 10% 3.9%;
-  --card: hsl(0 0% 100%);
-  --card-foreground: 240 10% 3.9%;
+  --background: hsl(240 4.8% 96%);          /* was: 0 0% 100% (pure white = no card separation) */
+  --foreground: hsl(240 10% 3.9%);
+  --card: hsl(0 0% 100%);                   /* white cards over grey bg = visible separation */
+  --card-foreground: hsl(240 10% 3.9%);
   --popover: hsl(0 0% 100%);
-  --popover-foreground: 240 10% 3.9%;
-  --primary: 0 0% 100%;
-  --primary-foreground: 213 45% 67%;
-  --secondary: hsl(220.0000 14.2857% 95.8824%);
-  --secondary-foreground: hsl(215 13.7931% 34.1176%);
-  --muted: hsl(210 20.0000% 98.0392%);
-  --muted-foreground: hsl(220 8.9362% 46.0784%);
-  --accent: hsl(48.0000 100.0000% 96.0784%);
-  --accent-foreground: hsl(22.7273 82.5000% 31.3725%);
-  --destructive: hsl(0 84.2365% 60.1961%);
-  --destructive-foreground: hsl(0 0% 100%);
-  --border: 0 0% 100% / 0.2;
-  --input: hsl(220 13.0435% 90.9804%);
-  --ring: hsl(37.6923 92.1260% 50.1961%);
-  --chart-1: hsl(37.6923 92.1260% 50.1961%);
-  --chart-2: hsl(32.1327 94.6188% 43.7255%);
-  --chart-3: hsl(25.9649 90.4762% 37.0588%);
-  --chart-4: hsl(22.7273 82.5000% 31.3725%);
-  --chart-5: hsl(21.7143 77.7778% 26.4706%);
-  --sidebar: hsl(210 20.0000% 98.0392%);
-  --sidebar-foreground: hsl(0 0% 14.9020%);
-  --sidebar-primary: hsl(37.6923 92.1260% 50.1961%);
+  --popover-foreground: hsl(240 10% 3.9%);
+  --primary: hsl(37.7 92.1% 50.2%);         /* FIX: was bare "37.7 92.1% 50.2%" — invalid in Tailwind v4 */
+  --primary-foreground: hsl(0 0% 100%);
+  --secondary: hsl(48 100% 96.1%);
+  --secondary-foreground: hsl(22.7 82.5% 31.4%);
+  --muted: hsl(240 4.8% 93%);
+  --muted-foreground: hsl(240 3.8% 46.1%);
+  --accent: hsl(48 100% 93%);
+  --accent-foreground: hsl(22.7 82.5% 31.4%);
+  --destructive: hsl(0 84.2% 60.2%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(240 5.9% 84%);              /* slightly darker than default for visibility */
+  --input: hsl(240 5.9% 88%);
+  --ring: hsl(37.7 92.1% 50.2%);
+  --chart-1: hsl(12 76% 61%);
+  --chart-2: hsl(173 58% 39%);
+  --chart-3: hsl(197 37% 24%);
+  --chart-4: hsl(43 74% 66%);
+  --chart-5: hsl(27 87% 67%);
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(37.7 92.1% 50.2%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(48.0000 100.0000% 96.0784%);
-  --sidebar-accent-foreground: hsl(22.7273 82.5000% 31.3725%);
-  --sidebar-border: hsl(220 13.0435% 90.9804%);
-  --sidebar-ring: hsl(37.6923 92.1260% 50.1961%);
+  --sidebar-accent: hsl(240 4.8% 93%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 88%);
+  --sidebar-ring: hsl(37.7 92.1% 50.2%);
   --font-heading: var(--font-heading);
   --font-body: var(--font-body);
   --font-sans: var(--font-body);
   --font-serif: var(--font-heading);
   --font-mono: JetBrains Mono, monospace;
-  --radius: 0.5rem;
+  --radius: 0.75rem;
   --shadow-x: 0px;
   --shadow-y: 4px;
   --shadow-blur: 8px;
@@ -198,66 +199,34 @@
 @layer utilities {
   .liquid-glass {
     position: relative;
-    background: rgba(255, 255, 255, 0.03);
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.01)
+    );
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 
       0 4px 24px -1px rgba(0, 0, 0, 0.2),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
-      inset 0 0 0 1px rgba(255, 255, 255, 0.02);
-    overflow: hidden;
-  }
-
-  .liquid-glass::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.15) 0%,
-      rgba(255, 255, 255, 0.02) 100%
-    );
-    -webkit-mask: 
-      linear-gradient(#fff 0 0) content-box, 
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
-
-  .liquid-glass-strong {
-    position: relative;
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 
-      0 8px 32px -4px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 0 rgba(255, 255, 255, 0.2),
       inset 0 0 0 1px rgba(255, 255, 255, 0.05);
     overflow: hidden;
   }
 
-  .liquid-glass-strong::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
+  .liquid-glass-strong {
+    position: relative;
     background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.3) 0%,
-      rgba(255, 255, 255, 0.05) 100%
+      135deg,
+      rgba(255, 255, 255, 0.1),
+      rgba(255, 255, 255, 0.02)
     );
-    -webkit-mask: 
-      linear-gradient(#fff 0 0) content-box, 
-      linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 
+      0 8px 32px -4px rgba(0, 0, 0, 0.3),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    overflow: hidden;
   }
 }
 

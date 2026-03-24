@@ -51,8 +51,8 @@ export default function FeaturesPage() {
               </ul>
             </div>
             <div className="flex-1 w-full">
-               <div className="liquid-glass rounded-3xl md:rounded-[40px] aspect-video w-full p-1.5 md:p-2 bg-white/5 overflow-hidden group">
-                <div className="w-full h-full rounded-[22px] md:rounded-[32px] bg-zinc-900 border border-white/10 flex items-center justify-center relative overflow-hidden">
+               <div className="liquid-glass rounded-3xl md:rounded-[40px] aspect-video w-full p-1.5 md:p-2 overflow-hidden group">
+                <div className="w-full h-full rounded-[22px] md:rounded-[32px] bg-zinc-950 border border-white/5 flex items-center justify-center relative overflow-hidden">
                   <Image 
                     src="/dashboard_mockup.png" 
                     alt="Workflows" 
@@ -81,8 +81,8 @@ export default function FeaturesPage() {
               </ul>
             </div>
             <div className="flex-1 w-full">
-               <div className="liquid-glass rounded-3xl md:rounded-[40px] aspect-video w-full p-1.5 md:p-2 bg-white/5 overflow-hidden group">
-                <div className="w-full h-full rounded-[22px] md:rounded-[32px] bg-zinc-900 border border-white/10 flex items-center justify-center relative overflow-hidden">
+               <div className="liquid-glass rounded-3xl md:rounded-[40px] aspect-video w-full p-1.5 md:p-2 overflow-hidden group">
+                <div className="w-full h-full rounded-[22px] md:rounded-[32px] bg-zinc-950 border border-white/5 flex items-center justify-center relative overflow-hidden">
                   <Image 
                     src="/memory_visual.png" 
                     alt="Memory Visual" 
@@ -111,8 +111,8 @@ export default function FeaturesPage() {
               </ul>
             </div>
             <div className="flex-1 w-full h-[400px]">
-               <div className="liquid-glass rounded-[40px] h-full w-full p-2 bg-white/5 overflow-hidden group">
-                <div className="w-full h-full rounded-[32px] bg-zinc-900 border border-white/10 flex items-center justify-center relative overflow-hidden">
+               <div className="liquid-glass rounded-[40px] h-full w-full p-2 overflow-hidden group">
+                <div className="w-full h-full rounded-[32px] bg-zinc-950 border border-white/5 flex items-center justify-center relative overflow-hidden">
                    <Image 
                      src="/generative_ui.png" 
                      alt="Generative UI Mockup" 
@@ -132,7 +132,7 @@ export default function FeaturesPage() {
         <h2 className="text-3xl md:text-7xl font-heading italic text-white mb-6 md:mb-10 text-center">Unleash your agent.</h2>
         <Link 
           href="/chat" 
-          className="liquid-glass-strong h-12 md:h-14 px-8 md:px-10 inline-flex items-center justify-center rounded-full text-white font-body text-base md:text-lg font-medium hover:bg-white/10 transition-colors gap-2"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_30px_rgba(251,191,36,0.3)] h-12 md:h-14 px-8 md:px-10 inline-flex items-center justify-center rounded-full font-body text-base md:text-lg font-bold hover:scale-[1.05] transition-all gap-2"
         >
           Start for free
           <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5" />

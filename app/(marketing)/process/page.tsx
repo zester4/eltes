@@ -6,7 +6,7 @@ import Image from 'next/image';
 
 export default function ProcessPage() {
   return (
-    <div className="w-full relative overflow-visible bg-background selection:bg-primary/20">
+    <div className="w-full relative overflow-visible bg-black selection:bg-primary/20">
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[400px] md:min-h-[500px] py-20 md:py-40 px-6 flex flex-col items-center justify-center text-center">
         <div className="absolute top-[20%] w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-white/[0.02] rounded-full blur-[80px] md:blur-[120px] z-0" />
@@ -31,7 +31,7 @@ export default function ProcessPage() {
             
             <div className="relative flex flex-col md:flex-row items-center gap-8 md:gap-12 group">
               <div className="flex-1 text-center md:text-right">
-                <div className="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 mb-4 md:mb-6 group-hover:scale-110 transition-transform">
+                <div className="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl liquid-glass border border-white/10 mb-4 md:mb-6 group-hover:scale-110 transition-transform">
                   <MessageSquare className="text-white w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <h3 className="text-2xl md:text-3xl font-heading italic text-white mb-3 md:mb-4">1. Natural Language Input</h3>
@@ -45,7 +45,7 @@ export default function ProcessPage() {
 
             <div className="relative flex flex-col md:flex-row-reverse items-center gap-8 md:gap-12 group">
               <div className="flex-1 text-center md:text-left">
-                <div className="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 mb-4 md:mb-6 group-hover:scale-110 transition-transform">
+                <div className="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl liquid-glass border border-white/10 mb-4 md:mb-6 group-hover:scale-110 transition-transform">
                   <ListTodo className="text-white w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <h3 className="text-2xl md:text-3xl font-heading italic text-white mb-3 md:mb-4">2. Strategic Planning</h3>
@@ -59,7 +59,7 @@ export default function ProcessPage() {
 
             <div className="relative flex flex-col md:flex-row items-center gap-8 md:gap-12 group">
               <div className="flex-1 text-center md:text-right">
-                <div className="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 mb-4 md:mb-6 group-hover:scale-110 transition-transform">
+                <div className="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl liquid-glass border border-white/10 mb-4 md:mb-6 group-hover:scale-110 transition-transform">
                   <Repeat className="text-white w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <h3 className="text-2xl md:text-3xl font-heading italic text-white mb-3 md:mb-4">3. Execution & Loop</h3>
@@ -73,7 +73,7 @@ export default function ProcessPage() {
 
             <div className="relative flex flex-col md:flex-row-reverse items-center gap-8 md:gap-12 group">
               <div className="flex-1 text-center md:text-left">
-                <div className="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-white/5 border border-white/10 mb-4 md:mb-6 group-hover:scale-110 transition-transform">
+                <div className="inline-flex items-center justify-center w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl liquid-glass border border-white/10 mb-4 md:mb-6 group-hover:scale-110 transition-transform">
                   <CheckCircle2 className="text-white w-5 h-5 md:w-6 md:h-6" />
                 </div>
                 <h3 className="text-2xl md:text-3xl font-heading italic text-white mb-3 md:mb-4">4. Goal Accomplished</h3>
@@ -94,7 +94,7 @@ export default function ProcessPage() {
         <h2 className="text-4xl md:text-7xl font-heading italic text-white mb-8 md:mb-10 text-center">Process is power.</h2>
         <Link 
           href="/chat" 
-          className="liquid-glass-strong h-12 md:h-14 px-8 md:px-10 inline-flex items-center justify-center rounded-full text-white font-body text-base md:text-lg font-medium hover:bg-white/10 transition-colors gap-2"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_30px_rgba(251,191,36,0.3)] h-12 md:h-14 px-8 md:px-10 inline-flex items-center justify-center rounded-full font-body text-base md:text-lg font-bold hover:scale-[1.05] transition-all gap-2"
         >
           Build a Workflow
           <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5" />

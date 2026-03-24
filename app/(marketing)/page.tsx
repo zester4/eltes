@@ -61,7 +61,7 @@ export default function LandingPage() {
           >
             <Link 
               href="/chat" 
-              className="liquid-glass-strong h-10 md:h-14 px-8 inline-flex items-center justify-center rounded-full text-white font-body text-xs md:text-base font-medium hover:bg-white/10 transition-colors gap-2 w-full sm:w-auto"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_25px_rgba(251,191,36,0.3)] h-10 md:h-14 px-8 inline-flex items-center justify-center rounded-full font-body text-xs md:text-base font-bold hover:scale-[1.02] transition-all gap-2 w-full sm:w-auto"
             >
               Get Started
               <ArrowUpRight className="w-4 h-4" />
@@ -124,7 +124,7 @@ export default function LandingPage() {
            
            <Link 
               href="/chat" 
-              className="liquid-glass-strong h-12 md:h-14 px-8 inline-flex items-center justify-center rounded-full text-white font-body text-sm md:text-base font-medium hover:bg-white/10 transition-colors gap-2"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_rgba(251,191,36,0.2)] h-12 md:h-14 px-8 inline-flex items-center justify-center rounded-full font-body text-sm md:text-base font-bold hover:scale-[1.02] transition-all gap-2"
             >
               Get Started
               <ArrowUpRight className="w-4 h-4" />
@@ -153,13 +153,13 @@ export default function LandingPage() {
             </Link>
           </div>
           <div className="flex-1 w-full">
-            <div className="liquid-glass rounded-3xl aspect-video w-full p-2 bg-white/5 overflow-hidden">
-              <div className="w-full h-full rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center relative overflow-hidden">
+            <div className="liquid-glass rounded-3xl aspect-video w-full p-2 overflow-hidden">
+              <div className="w-full h-full rounded-2xl bg-zinc-950 border border-white/5 flex items-center justify-center relative overflow-hidden group">
                 <Image 
                   src="/etles_dashboard_mockup_1774154912837.png" 
                   alt="Etles Dashboard Mockup" 
                   fill 
-                  className="object-cover opacity-80"
+                  className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
                 />
               </div>
             </div>
@@ -178,13 +178,13 @@ export default function LandingPage() {
             </Link>
           </div>
           <div className="flex-1 w-full">
-            <div className="liquid-glass rounded-3xl aspect-video w-full p-2 bg-white/5 overflow-hidden">
-              <div className="w-full h-full rounded-2xl bg-zinc-900 border border-white/10 flex items-center justify-center relative overflow-hidden">
+            <div className="liquid-glass rounded-3xl aspect-video w-full p-2 overflow-hidden">
+              <div className="w-full h-full rounded-2xl bg-zinc-950 border border-white/5 flex items-center justify-center relative overflow-hidden group">
                 <Image 
                   src="/etles_triggers_ui_1774154944442.png" 
                   alt="Etles Triggers UI Mockup" 
                   fill 
-                  className="object-cover opacity-80"
+                  className="object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
                 />
               </div>
             </div>
@@ -208,11 +208,11 @@ export default function LandingPage() {
             { title: "Cron Scheduling", desc: "Conversational scheduling via Upstash QStash. No crontab required." },
             { title: "Generative UI", desc: "Agents stream custom interactive components directly to your chat." }
           ].map((feature) => (
-            <div key={feature.title} className="liquid-glass p-6 md:p-8 rounded-2xl md:rounded-3xl flex flex-col items-start text-left hover:bg-white/5 transition-colors">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center mb-4 md:mb-6">
-                <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-white" />
+            <div key={feature.title} className="liquid-glass p-6 md:p-8 rounded-2xl md:rounded-3xl flex flex-col items-start text-left hover:bg-white/5 hover:border-primary/20 transition-all group">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 flex items-center justify-center mb-4 md:mb-6 group-hover:bg-primary/20 transition-colors">
+                <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-white group-hover:bg-primary transition-colors" />
               </div>
-              <h4 className="text-lg md:text-xl font-body font-medium text-white mb-2 md:mb-3 tracking-tight">{feature.title}</h4>
+              <h4 className="text-lg md:text-xl font-body font-medium text-white mb-2 md:mb-3 tracking-tight group-hover:text-primary transition-colors">{feature.title}</h4>
               <p className="text-white/50 font-body font-light text-xs md:text-sm leading-relaxed">{feature.desc}</p>
             </div>
           ))}
@@ -223,15 +223,15 @@ export default function LandingPage() {
       <section className="relative w-full min-h-[400px] md:min-h-[500px] py-16 md:py-24 px-4 md:px-6 flex items-center justify-center overflow-hidden my-10 md:my-20">
         <div className="absolute inset-0 bg-black/40 z-[1]" />
         
-        <div className="relative z-10 w-full max-w-5xl liquid-glass rounded-[24px] md:rounded-[40px] p-8 md:p-20 grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12 text-center bg-black/20 backdrop-blur-3xl">
+        <div className="relative z-10 w-full max-w-5xl liquid-glass rounded-[24px] md:rounded-[40px] p-8 md:p-20 grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12 text-center">
           {[
-            { stat: "700+", label: "Integrated Tools" },
-            { stat: "< 2ms", label: "Event Latency" },
-            { stat: "16+", label: "Specialized Agents" }
+            { stat: "700+", label: "Integrated Tools", color: "from-amber-400 to-amber-600" },
+            { stat: "< 2ms", label: "Event Latency", color: "from-blue-400 to-blue-600" },
+            { stat: "16+", label: "Specialized Agents", color: "from-emerald-400 to-emerald-600" }
           ].map((s) => (
-            <div key={s.label} className="flex flex-col items-center">
-              <span className="font-heading italic text-5xl md:text-7xl text-white mb-1 md:mb-2">{s.stat}</span>
-              <span className="font-body font-light text-white/50 text-[10px] md:text-sm uppercase tracking-widest">{s.label}</span>
+            <div key={s.label} className="flex flex-col items-center group">
+              <span className={`font-heading italic text-5xl md:text-7xl mb-1 md:mb-2 bg-gradient-to-r ${s.color} bg-clip-text text-transparent transition-all duration-500 group-hover:drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]`}>{s.stat}</span>
+              <span className="font-body font-light text-white/50 text-[10px] md:text-sm uppercase tracking-widest group-hover:text-white/80 transition-colors">{s.label}</span>
             </div>
           ))}
         </div>
@@ -248,12 +248,12 @@ export default function LandingPage() {
             { quote: "The Generative UI combined with autonomous execution means my developers spend zero time building internal dashboards.", author: "Mark Daoust", role: "CTO" },
             { quote: "Being able to say 'schedule a daily summary of high-severity Jira tickets' and have it actually work flawlessly is magic.", author: "Elena Rostova", role: "Product Ops" }
           ].map((t) => (
-            <div key={t.author} className="liquid-glass p-6 md:p-8 rounded-2xl md:rounded-3xl flex flex-col justify-between text-left h-full">
-               <p className="font-body font-light text-white/80 text-base md:text-lg leading-relaxed mb-6 md:mb-8">"{t.quote}"</p>
+            <div key={t.author} className="liquid-glass p-6 md:p-8 rounded-2xl md:rounded-3xl flex flex-col justify-between text-left h-full group hover:border-white/20 transition-all border border-white/5">
+               <p className="font-body font-light text-white/80 text-base md:text-lg leading-relaxed mb-6 md:mb-8 transition-colors group-hover:text-white">"{t.quote}"</p>
                <div className="flex items-center gap-3">
-                 <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 shrink-0" />
+                 <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/10 shrink-0 group-hover:bg-primary/20 transition-colors" />
                  <div className="flex flex-col">
-                   <span className="font-body text-white text-xs md:text-sm font-medium">{t.author}</span>
+                   <span className="font-body text-white text-xs md:text-sm font-medium group-hover:text-primary transition-colors">{t.author}</span>
                    <span className="font-body text-white/40 text-[10px] md:text-xs">{t.role}</span>
                  </div>
                </div>
@@ -275,7 +275,7 @@ export default function LandingPage() {
           </p>
           <Link 
             href="/chat" 
-            className="liquid-glass-strong h-12 md:h-14 px-8 md:px-10 inline-flex items-center justify-center rounded-full text-white font-body text-base md:text-lg font-medium hover:bg-white/10 transition-colors gap-2"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_30px_rgba(251,191,36,0.3)] h-12 md:h-14 px-8 md:px-10 inline-flex items-center justify-center rounded-full font-body text-base md:text-lg font-bold hover:scale-[1.05] transition-all gap-2"
           >
             Start for free
             <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5" />

@@ -37,7 +37,7 @@ export default function IntegrationsPage() {
   }, [searchQuery]);
 
   return (
-    <div className="w-full relative overflow-visible bg-background selection:bg-primary/20">
+    <div className="w-full relative overflow-visible bg-black selection:bg-primary/20">
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[400px] md:min-h-[500px] py-20 md:py-32 px-6 flex flex-col items-center justify-center text-center overflow-hidden border-b border-white/5">
         <div className="absolute inset-0 z-0 opacity-20">
@@ -66,7 +66,7 @@ export default function IntegrationsPage() {
               placeholder="Search across 500+ toolkits..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 md:h-16 pl-12 md:pl-14 pr-6 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl text-sm md:text-base text-white font-body focus:outline-none focus:ring-2 focus:ring-white/20 transition-all placeholder:text-white/20"
+              className="w-full h-12 md:h-16 pl-12 md:pl-14 pr-6 bg-transparent border border-white/10 rounded-xl md:rounded-2xl text-sm md:text-base text-white font-body focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-white/20"
             />
           </div>
         </div>
@@ -78,7 +78,7 @@ export default function IntegrationsPage() {
           {filteredToolkits.map((app) => (
             <div 
               key={app.slug} 
-              className="liquid-glass group relative overflow-hidden aspect-square rounded-[24px] md:rounded-[32px] p-4 md:p-8 border border-white/5 flex flex-col items-center justify-center text-center hover:bg-white/5 transition-all cursor-pointer"
+              className="liquid-glass group relative overflow-hidden aspect-square rounded-[24px] md:rounded-[32px] p-4 md:p-8 border border-white/5 flex flex-col items-center justify-center text-center hover:border-primary/20 transition-all cursor-pointer"
             >
               <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
               
@@ -92,7 +92,7 @@ export default function IntegrationsPage() {
                 />
               </div>
 
-              <span className="relative z-10 text-white font-body text-sm md:text-lg font-medium tracking-tight truncate w-full px-1">{app.name}</span>
+              <span className="relative z-10 text-white font-body text-sm md:text-lg font-medium tracking-tight truncate w-full px-1 group-hover:text-primary transition-colors">{app.name}</span>
               <span className="relative z-10 text-white/20 font-body text-[8px] md:text-[10px] uppercase tracking-[0.2em] mt-1 md:mt-2 group-hover:text-white/40 transition-colors">{app.category}</span>
               
               <div className="absolute bottom-4 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hidden md:block">
@@ -113,7 +113,7 @@ export default function IntegrationsPage() {
         )}
 
         {/* SECURITY REASSURANCE */}
-        <div className="mt-32 p-12 lg:p-16 rounded-[48px] border border-white/5 bg-gradient-to-br from-white/[0.02] to-transparent relative overflow-hidden">
+        <div className="mt-32 p-12 lg:p-16 rounded-[48px] border border-white/5 relative overflow-hidden">
            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
               <div>
                  <h2 className="text-4xl md:text-5xl font-heading italic text-white mb-6">Managed OAuth 2.0 Security</h2>
@@ -153,7 +153,7 @@ export default function IntegrationsPage() {
         <h2 className="text-3xl md:text-7xl font-heading italic text-white mb-8 md:mb-10 text-center uppercase tracking-tighter">Hook it up.</h2>
         <Link 
           href="/chat" 
-          className="liquid-glass-strong h-12 md:h-14 px-8 md:px-10 inline-flex items-center justify-center rounded-full text-white font-body text-base md:text-lg font-medium hover:bg-white/10 transition-colors gap-2"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_30px_rgba(251,191,36,0.3)] h-12 md:h-14 px-8 md:px-10 inline-flex items-center justify-center rounded-full font-body text-base md:text-lg font-bold hover:scale-[1.05] transition-all gap-2"
         >
           Explore the Full Catalog
           <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5" />

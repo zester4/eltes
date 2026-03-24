@@ -19,8 +19,8 @@ export function Navbar({ user }: { user?: any }) {
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 py-3 md:py-4 w-full pointer-events-none">
-      <div className="liquid-glass rounded-full h-11 md:h-14 px-1.5 md:px-2 pr-1.5 md:pr-2 pl-3 md:pl-4 flex items-center justify-between w-full max-w-5xl pointer-events-auto">
+    <header className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 py-3 md:py-6 w-full pointer-events-none">
+      <div className="liquid-glass-strong rounded-full h-12 md:h-16 px-4 md:px-6 flex items-center justify-between w-full max-w-5xl pointer-events-auto shadow-[0_8px_32px_rgba(0,0,0,0.4)] border-white/10">
         {/* Left: Logo */}
         <div className="flex items-center gap-2 shrink-0">
           <Link href="/" className="flex items-center gap-2 md:gap-3 active:scale-95 transition-transform" aria-label="Etles Home">
@@ -51,7 +51,7 @@ export function Navbar({ user }: { user?: any }) {
               <Link href="/login" className="text-xs md:text-sm font-medium text-white/90 hover:text-white transition-colors px-3 hidden sm:block">Log in</Link>
               <Link 
                 href="/chat" 
-                className="h-7 md:h-10 px-2.5 md:px-4 inline-flex items-center justify-center rounded-full bg-white text-black text-[9px] md:text-sm font-bold md:font-medium hover:bg-zinc-200 transition-colors gap-1 md:gap-1.5"
+                className="h-7 md:h-10 px-2.5 md:px-4 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] md:text-sm font-bold md:font-medium hover:bg-primary/90 shadow-[0_0_15px_rgba(251,191,36,0.2)] transition-all gap-1 md:gap-1.5 active:scale-95"
               >
                 Get Started
                 <ArrowUpRight className="w-3 h-3 md:w-4 md:h-4" />

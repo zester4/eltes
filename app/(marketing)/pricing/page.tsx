@@ -5,7 +5,7 @@ import { BlurText } from '@/components/blur-text';
 
 export default function PricingPage() {
   return (
-    <div className="w-full relative overflow-visible bg-background selection:bg-primary/20">
+    <div className="w-full relative overflow-visible bg-black selection:bg-primary/20">
       {/* HERO SECTION */}
       <section className="relative w-full min-h-[400px] md:min-h-[500px] py-16 md:py-32 px-6 flex flex-col items-center justify-center text-center overflow-hidden">
         <div className="relative z-10 max-w-4xl">
@@ -38,15 +38,15 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <Link href="/chat" className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl border border-white/10 flex items-center justify-center text-white font-body font-medium text-sm md:text-base hover:bg-white/5 transition-colors">
+            <Link href="/chat" className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl border border-white/10 flex items-center justify-center text-white font-body font-medium text-sm md:text-base hover:bg-white/5 hover:border-primary/30 transition-all">
               Get Started
             </Link>
           </div>
 
           {/* PRO PLAN */}
-          <div className="liquid-glass-strong p-6 md:p-10 rounded-[32px] md:rounded-[48px] border border-white/20 flex flex-col items-start relative overflow-hidden bg-white/5">
+          <div className="liquid-glass-strong p-6 md:p-10 rounded-[32px] md:rounded-[48px] border border-primary/30 flex flex-col items-start relative overflow-hidden shadow-[0_0_40px_rgba(251,191,36,0.1)]">
             <div className="absolute top-0 right-0 p-3 md:p-4">
-               <div className="bg-white text-black text-[9px] md:text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-2xl">Popular</div>
+               <div className="bg-primary text-primary-foreground text-[9px] md:text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-2xl">Popular</div>
             </div>
             
             <span className="text-white/60 font-body text-[10px] md:text-xs uppercase tracking-widest mb-4 md:mb-6">Production</span>
@@ -62,7 +62,7 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <Link href="/chat" className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl bg-white text-black flex items-center justify-center text-xs md:text-sm font-bold hover:bg-white/90 transition-colors">
+            <Link href="/chat" className="w-full h-12 md:h-14 rounded-xl md:rounded-2xl bg-primary text-primary-foreground flex items-center justify-center text-xs md:text-sm font-bold hover:bg-primary/90 shadow-[0_0_20px_rgba(251,191,36,0.3)] transition-all hover:scale-[1.02]">
                Go Professional
             </Link>
           </div>
