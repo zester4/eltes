@@ -8,6 +8,8 @@ import {
   saveMessages,
   saveEvent,
   updateEventStatus,
+  createAgentTask,
+  updateAgentTask,
 } from "@/lib/db/queries";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
@@ -19,8 +21,28 @@ import {
 import { generateUUID } from "@/lib/utils";
 
 import { SUPPORTED_TRIGGERS } from "@/lib/ai/triggers";
+import { Index } from "@upstash/vector";
 
 const composio = new Composio({ provider: new VercelProvider() });
+
+async function recallRelevantMemory(userId: string, query: string): Promise<string> {
+  try {
+    const index = new Index({
+      url: process.env.UPSTASH_VECTOR_REST_URL!,
+      token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    });
+    const ns = index.namespace(`memory-${userId}`);
+    const results = await ns.query({ data: query, topK: 5, includeMetadata: true });
+    if (!results.length) return "";
+    const lines = results.map((r) => {
+      const meta = r.metadata as any;
+      return `• [${meta?.key ?? "memory"}]: ${meta?.content ?? ""}`;
+    });
+    return `\n\n═══════════════════════════════════════════\nUSER MEMORY (recalled for this event)\n═══════════════════════════════════════════\n${lines.join("\n")}`;
+  } catch {
+    return "";
+  }
+}
 
 export async function POST(req: NextRequest) {
   console.log("[Composio Webhook] >>> POST request received at /api/composio/webhook");
@@ -124,22 +146,49 @@ export async function POST(req: NextRequest) {
     };
 
     // 4. Run the proactive agent
-    const systemInstruction = `You are Etles, the user's proactive AI assistant. 
-An external event has just occurred: "${triggerSlug}".
-Payload data: ${JSON.stringify(payload)}
+    const memoryContext = await recallRelevantMemory(userId, triggerSlug);
+    const taskId = generateUUID();
 
-Your goal is to process this event immediately. 
-If the event is important, notify the user in their chat. 
-If you can take helpful action (e.g. "Draft a reply to this email" or "Summarize this PR"), do so using your tools.
-Today's date is ${new Date().toLocaleDateString()}.
-Be direct, helpful, and concise.`;
+    await createAgentTask({
+      id: taskId,
+      userId,
+      chatId,
+      agentType: "proactive_etles",
+      task: `[Proactive Trigger: ${triggerSlug}] ${JSON.stringify(payload).slice(0, 200)}...`,
+    });
 
+    await updateAgentTask({
+      id: taskId,
+      userId,
+      status: "running",
+    });
+
+    const systemInstruction = `You are Etles, the user's proactive AI assistant. ${memoryContext}
+ An external event has just occurred: "${triggerSlug}".
+ Payload data: ${JSON.stringify(payload)}
+ 
+ Your goal is to process this event immediately. 
+ If the event is important, notify the user in their chat. 
+ If you can take helpful action (e.g. "Draft a reply to this email" or "Summarize this PR"), do so using your tools.
+ Today's date is ${new Date().toLocaleDateString()}.
+ Be direct, helpful, and concise.`;
+ 
     const result = await generateText({
-      model: getLanguageModel("google/gemini-2.5-flash"),
+      model: getLanguageModel("google/gemini-3-flash"),
       system: systemInstruction,
       prompt: `Event triggered: ${triggerSlug}. Context: ${JSON.stringify(payload)}`,
       tools,
-      stopWhen: stepCountIs(10),
+      stopWhen: stepCountIs(25),
+    });
+
+    await updateAgentTask({
+      id: taskId,
+      userId,
+      status: "completed",
+      result: {
+        text: result.text,
+        toolCalls: result.steps?.flatMap((s) => s.toolCalls ?? []),
+      },
     });
 
     // 5. Save results to chat history

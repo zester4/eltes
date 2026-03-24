@@ -1,19 +1,21 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Navbar } from '@/components/marketing/navbar';
-import { auth } from '../(auth)/auth';
+import { Suspense } from 'react';
+import { NavbarWrapper } from '@/components/marketing/navbar-wrapper';
 
 export default async function MarketingLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
-  
   return (
     <div className="bg-background text-foreground font-body min-h-screen selection:bg-primary/20">
 
       {/* SECTION 1 — NAVBAR (client-side with mobile menu) */}
-      <Navbar user={session?.user} />
+      <Suspense fallback={<div className="h-14 md:h-20" />}>
+        <NavbarWrapper />
+      </Suspense>
       
       <main className="flex-1 flex flex-col w-full">
-        {children}
+        <Suspense fallback={null}>
+          {children}
+        </Suspense>
       </main>
       
       <footer className="py-24 border-t border-white/5 bg-black relative z-10 overflow-hidden">

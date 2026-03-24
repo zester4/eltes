@@ -19,8 +19,28 @@ import { notifySubAgentHandoffToMainAgent } from "@/lib/agent/subagent-handoff-n
 import type { DBMessage } from "@/lib/db/schema";
 import { saveMessages, updateAgentTask } from "@/lib/db/queries";
 import { generateUUID } from "@/lib/utils";
+import { Index } from "@upstash/vector";
 
 const composio = new Composio({ provider: new VercelProvider() });
+
+async function recallRelevantMemory(userId: string, query: string): Promise<string> {
+  try {
+    const index = new Index({
+      url: process.env.UPSTASH_VECTOR_REST_URL!,
+      token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+    });
+    const ns = index.namespace(`memory-${userId}`);
+    const results = await ns.query({ data: query, topK: 5, includeMetadata: true });
+    if (!results.length) return "";
+    const lines = results.map((r) => {
+      const meta = r.metadata as any;
+      return `• [${meta?.key ?? "memory"}]: ${meta?.content ?? ""}`;
+    });
+    return `\n\n═══════════════════════════════════════════\nUSER MEMORY (relevant context recalled)\n═══════════════════════════════════════════\n${lines.join("\n")}`;
+  } catch {
+    return "";
+  }
+}
 
 export interface RunSubAgentParams {
   taskId: string;
@@ -71,7 +91,9 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
     deleteMemory: deleteMemory({ userId }),
   };
 
-  const systemPrompt = `${definition.systemPrompt}
+  const memoryContext = await recallRelevantMemory(userId, task);
+
+  const systemPrompt = `${definition.systemPrompt}${memoryContext}
 
 Today's date is ${new Date().toLocaleDateString()}.
 Execute the task now. Summarize what you did in your final response.`;

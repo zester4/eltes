@@ -13,8 +13,16 @@ import {
   MessageSquare,
   RefreshCw,
   XCircle,
+  Brain,
+  Trash2,
+  Search,
+  History,
+  Info,
+  ChevronRight,
+  Database,
+  Activity,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { SidebarToggle } from "@/components/sidebar-toggle";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,37 +42,45 @@ type AgentTaskRow = {
   agentType: string;
   task: string;
   status: "pending" | "running" | "completed" | "failed";
-  result: { text?: string; error?: string } | null;
+  result: { text?: string; toolCalls?: any[]; error?: string } | null;
   createdAt: string;
   updatedAt: string;
+};
+
+type MemoryRow = {
+  id: string;
+  key: string;
+  content: string;
+  savedAt: string;
+  tags?: string[];
 };
 
 function statusBadge(status: AgentTaskRow["status"]) {
   switch (status) {
     case "pending":
       return (
-        <Badge className="gap-1" variant="secondary">
+        <Badge className="gap-1 border-blue-500/20 bg-blue-500/10 text-blue-500" variant="outline">
           <Clock className="size-3" />
           Pending
         </Badge>
       );
     case "running":
       return (
-        <Badge className="gap-1" variant="default">
+        <Badge className="gap-1 border-primary/20 bg-primary/10 text-primary" variant="outline">
           <Loader2 className="size-3 animate-spin" />
           Running
         </Badge>
       );
     case "completed":
       return (
-        <Badge className="gap-1 bg-emerald-600" variant="default">
+        <Badge className="gap-1 border-emerald-500/20 bg-emerald-500/10 text-emerald-500" variant="outline">
           <CheckCircle2 className="size-3" />
           Done
         </Badge>
       );
     case "failed":
       return (
-        <Badge className="gap-1" variant="destructive">
+        <Badge className="gap-1 border-red-500/20 bg-red-500/10 text-red-500" variant="outline">
           <XCircle className="size-3" />
           Failed
         </Badge>
@@ -74,183 +90,365 @@ function statusBadge(status: AgentTaskRow["status"]) {
   }
 }
 
-export default function AgentsActivityPage() {
+export default function AgentsSettingsPage() {
   const router = useRouter();
-  const [tasks, setTasks] = useState<AgentTaskRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  
+  // Tabs: "activity" | "memory"
+  const [activeTab, setActiveTab] = useState<"activity" | "memory">("activity");
 
-  const load = useCallback(async () => {
+  // Activity State
+  const [tasks, setTasks] = useState<AgentTaskRow[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(true);
+  
+  // Memory State
+  const [memories, setMemories] = useState<MemoryRow[]>([]);
+  const [loadingMemories, setLoadingMemories] = useState(false);
+  
+  const [refreshing, setRefreshing] = useState(false);
+  const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
+
+  const loadTasks = useCallback(async () => {
     const res = await fetch("/api/agent/tasks?all=1&limit=100");
-    if (!res.ok) {
-      const j = await res.json().catch(() => ({}));
-      throw new Error(j.error || "Failed to load agent tasks");
-    }
+    if (!res.ok) throw new Error("Failed to load tasks");
     const data = await res.json();
     setTasks(data.tasks ?? []);
   }, []);
 
+  const loadMemories = useCallback(async () => {
+    setLoadingMemories(true);
+    try {
+      const res = await fetch("/api/agent/memory");
+      if (!res.ok) throw new Error("Failed to load memory");
+      const data = await res.json();
+      setMemories(data.memories ?? []);
+    } catch (e) {
+      toast.error("Could not fetch memory");
+    } finally {
+      setLoadingMemories(false);
+    }
+  }, []);
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        await load();
-      } catch (e) {
-        if (!cancelled) {
-          toast.error(e instanceof Error ? e.message : "Load failed");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [load]);
+    if (activeTab === "activity") {
+      setLoadingTasks(true);
+      loadTasks()
+        .catch((e) => toast.error(e.message))
+        .finally(() => setLoadingTasks(false));
+    } else {
+      loadMemories();
+    }
+  }, [activeTab, loadTasks, loadMemories]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await load();
-      toast.success("Refreshed");
+      if (activeTab === "activity") await loadTasks();
+      else await loadMemories();
+      toast.success("Sync complete");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Refresh failed");
+      toast.error("Refresh failed");
     } finally {
       setRefreshing(false);
     }
   };
 
-  const active = tasks.filter(
-    (t) => t.status === "pending" || t.status === "running",
-  );
+  const deleteMemory = async (key: string) => {
+    setIsActionLoading(key);
+    try {
+      const res = await fetch(`/api/agent/memory?key=${encodeURIComponent(key)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to forget");
+      setMemories((prev) => prev.filter((m) => m.key !== key));
+      toast.success(`Forgotten: ${key}`);
+    } catch (e) {
+      toast.error("Could not forget memory");
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background">
-      <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <SidebarToggle />
-        <Button
-          className="gap-2"
-          onClick={() => router.push("/chat")}
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          <ArrowLeft className="size-4" />
-          Back
-        </Button>
-        <div className="flex flex-1 items-center gap-2 min-w-0">
-          <Bot className="size-4 md:size-5 text-primary shrink-0" />
-          <h1 className="font-bold text-sm md:text-lg tracking-tight truncate">
-            Agent activity
-          </h1>
-        </div>
-        <Button
-          disabled={refreshing}
-          onClick={onRefresh}
-          size="sm"
-          type="button"
-          variant="outline"
-          className="h-8 px-2 md:px-3"
-        >
-          <RefreshCw
-            className={cn("md:mr-2 size-3 md:size-4", refreshing && "animate-spin")}
-          />
-          <span className="hidden md:inline">Refresh</span>
-        </Button>
-      </header>
+    <div className="relative min-h-screen bg-background text-foreground overflow-hidden font-sans selection:bg-primary/30">
+      {/* Premium Background Effects */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-background to-background z-0 pointer-events-none opacity-60" />
+      <div className="absolute top-0 inset-x-0 h-[600px] bg-gradient-to-b from-primary/10 to-transparent blur-[100px] z-0 pointer-events-none opacity-50 translate-y-[-20%]" />
 
-      <main className="mx-auto w-full max-w-4xl flex-1 space-y-4 md:space-y-6 p-3 md:p-8">
-        <Card className="border-border/60 bg-card/50 rounded-xl md:rounded-2xl overflow-hidden">
-          <CardHeader className="p-4 md:p-6">
-            <CardTitle className="flex items-center gap-2 text-base md:text-xl font-bold">
-              <Bot className="size-4 md:size-5 text-primary" />
-              Sub-agents and delegations
-            </CardTitle>
-            <CardDescription className="text-xs md:text-sm leading-relaxed">
-              See every delegated agent run: what ran, current status, and
-              outcome. Active runs also show a pulsing dot in the sidebar.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-4 pt-0 md:p-6 md:pt-0 flex flex-wrap gap-x-4 gap-y-2 text-muted-foreground text-[11px] md:text-sm border-t border-border/5 pt-4 md:border-none md:pt-0">
-            <span>
-              <strong className="text-foreground">{active.length}</strong>{" "}
-              active
-            </span>
-            <span>
-              <strong className="text-foreground">{tasks.length}</strong> shown
-              (latest 100)
-            </span>
-          </CardContent>
-        </Card>
-
-        {loading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="size-10 animate-spin text-muted-foreground" />
+      <div className="flex flex-col gap-4 md:gap-8 p-3 md:p-8 lg:px-12 max-w-5xl mx-auto w-full relative z-10 min-h-screen">
+        
+        {/* Header/Nav Section */}
+        <motion.header 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 md:p-6 rounded-2xl md:rounded-[2rem] bg-card/60 border border-border/50 shadow-2xl backdrop-blur-3xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-foreground/10 to-transparent" />
+          
+          <div className="flex items-center gap-3 md:gap-4">
+            <SidebarToggle />
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => router.push("/chat")} 
+              className="size-8 md:size-9 rounded-full shrink-0"
+            >
+              <ArrowLeft className="size-4 md:size-5" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="text-lg md:text-2xl font-extrabold tracking-tight bg-gradient-to-br from-foreground to-muted-foreground bg-clip-text text-transparent truncate">
+                Agents & Memory
+              </h1>
+              <p className="text-muted-foreground text-[10px] md:text-xs font-medium mt-0.5">
+                Manage automated skills and long-term context.
+              </p>
+            </div>
           </div>
-        ) : tasks.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center text-muted-foreground">
-              No agent tasks yet. In chat, ask Etles to delegate (e.g. inbox
-              operator, SDR, chief of staff).
-            </CardContent>
-          </Card>
-        ) : (
-          <motion.ul className="space-y-3" initial={false}>
-            {tasks.map((t, i) => (
-              <motion.li
-                animate={{ opacity: 1, y: 0 }}
-                initial={{ opacity: 0, y: 8 }}
-                key={t.id}
-                transition={{ delay: i * 0.02 }}
+
+          <div className="flex items-center gap-2 self-end md:self-center">
+            <Button
+              disabled={refreshing}
+              onClick={onRefresh}
+              size="sm"
+              variant="outline"
+              className="h-8 rounded-full border-white/10 bg-white/5 hover:bg-white/10 px-3 md:px-4"
+            >
+              <RefreshCw className={cn("size-3.5 mr-2", refreshing && "animate-spin text-primary")} />
+              Sync
+            </Button>
+          </div>
+        </motion.header>
+
+        {/* Custom Tabs */}
+        <div className="flex gap-1 p-1 bg-muted/20 border border-border/30 rounded-xl w-fit">
+          <button
+            onClick={() => setActiveTab("activity")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+              activeTab === "activity" ? "bg-card text-foreground shadow-sm border border-border/40" : "text-muted-foreground hover:bg-white/5"
+            )}
+          >
+            <History size={14} className={cn(activeTab === "activity" ? "text-primary" : "text-muted-foreground")} />
+            Activity
+          </button>
+          <button
+            onClick={() => setActiveTab("memory")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+              activeTab === "memory" ? "bg-card text-foreground shadow-sm border border-border/40" : "text-muted-foreground hover:bg-white/5"
+            )}
+          >
+            <Brain size={14} className={cn(activeTab === "memory" ? "text-primary" : "text-muted-foreground")} />
+            Memory
+          </button>
+        </div>
+
+        <main className="flex-1 pb-20">
+          <AnimatePresence mode="wait">
+            {activeTab === "activity" ? (
+              <motion.div
+                key="activity"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                className="space-y-6"
               >
-                <Card className="overflow-hidden border-border/60 transition-shadow hover:shadow-md rounded-xl">
-                  <CardContent className="p-3 md:p-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {statusBadge(t.status)}
-                          <span className="font-mono text-muted-foreground text-xs">
-                            {t.agentType.replace(/_/g, " ")}
-                          </span>
-                        </div>
-                        <p className="text-foreground text-sm leading-relaxed">
-                          {t.task}
-                        </p>
-                        {(t.status === "completed" || t.status === "failed") &&
-                          (t.result?.text || t.result?.error) && (
-                            <div className="line-clamp-4 rounded-md bg-muted/50 p-3 text-muted-foreground text-xs prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-white/5 prose-pre:border border-white/10 overflow-hidden">
-                              {t.result.error ? (
-                                <span className="text-destructive font-mono">{t.result.error}</span>
-                              ) : (
-                                <Response>{t.result.text!}</Response>
-                              )}
-                            </div>
-                          )}
-                        <p className="text-muted-foreground text-[10px] md:text-xs">
-                          Started{" "}
-                          {new Date(t.createdAt).toLocaleString(undefined, {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          })}
-                        </p>
+                {/* Statistics Cards */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Card className="bg-white/[0.02] border-white/5 backdrop-blur-md rounded-xl">
+                    <CardHeader className="p-2.5 flex flex-row items-center justify-between space-y-0">
+                      <div>
+                        <CardTitle className="text-lg md:text-xl font-black">{tasks.length}</CardTitle>
+                        <CardDescription className="text-[8px] uppercase tracking-widest font-black text-muted-foreground">Total</CardDescription>
                       </div>
-                      <Button asChild size="sm" variant="secondary" className="h-8 md:h-9 text-xs md:text-sm shrink-0">
-                        <Link
-                          href={`/chat/${t.chatId}?highlightTask=${encodeURIComponent(t.id)}`}
-                        >
-                          <MessageSquare className="mr-1.5 md:mr-2 size-3.5 md:size-4" />
-                          Open chat
-                        </Link>
-                      </Button>
+                      <div className="size-7 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20 text-primary">
+                        <Activity size={14} />
+                      </div>
+                    </CardHeader>
+                  </Card>
+                  <Card className="bg-white/[0.02] border-white/5 backdrop-blur-md rounded-xl">
+                    <CardHeader className="p-2.5 flex flex-row items-center justify-between space-y-0">
+                      <div>
+                        <CardTitle className="text-lg md:text-xl font-black">
+                          {tasks.filter(t => t.status === "completed").length}
+                        </CardTitle>
+                        <CardDescription className="text-[8px] uppercase tracking-widest font-black text-muted-foreground">Success</CardDescription>
+                      </div>
+                      <div className="size-7 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 text-emerald-500">
+                        <CheckCircle2 size={14} />
+                      </div>
+                    </CardHeader>
+                  </Card>
+                </div>
+
+                {/* Task List */}
+                <div className="space-y-4">
+                  {loadingTasks ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-3">
+                      <Loader2 className="size-8 animate-spin text-primary" />
+                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Reading Agent Logs...</p>
                     </div>
-                  </CardContent>
+                  ) : tasks.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-32 text-center border-2 border-dashed rounded-[3rem] border-white/5 bg-white/[0.01] backdrop-blur-md gap-6">
+                      <div className="size-16 rounded-[2rem] bg-black/40 flex items-center justify-center border border-white/5 shadow-inner">
+                        <Info className="size-8 text-muted-foreground/30" />
+                      </div>
+                      <p className="text-sm font-bold text-muted-foreground max-w-xs leading-relaxed px-6">
+                        No sub-agent runs found. Ask Etles to perform a complex task, or wait for an external integration trigger.
+                      </p>
+                    </div>
+                  ) : (
+                    tasks.map((t, idx) => (
+                      <motion.div
+                        key={t.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.03 }}
+                      >
+                        <Card className="group overflow-hidden border-white/5 bg-white/[0.02] backdrop-blur-xl hover:border-primary/30 hover:bg-white/[0.04] transition-all duration-300 rounded-xl md:rounded-2xl shadow-lg relative">
+                           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                           
+                           <div className="p-2.5 md:p-5 space-y-2.5">
+                             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+                               <div className="space-y-1.5 min-w-0 flex-1">
+                                 <div className="flex flex-wrap items-center gap-1.5">
+                                   {statusBadge(t.status)}
+                                   <Badge variant="secondary" className="bg-zinc-800/50 text-zinc-400 border-white/5 uppercase text-[7px] font-black tracking-widest px-1 py-0 h-3.5">
+                                     {t.task.startsWith("[Trigger") ? "Automated" : "Manual"}
+                                   </Badge>
+                                 </div>
+                                 <h3 className="text-[11px] md:text-sm font-bold text-foreground leading-snug line-clamp-2 italic text-muted-foreground">
+                                   “{t.task}”
+                                 </h3>
+                               </div>
+                               <Button asChild size="sm" variant="secondary" className="h-6 md:h-8 rounded-md md:rounded-lg border-white/5 bg-white/5 hover:bg-white/10 shrink-0 text-[9px] md:text-[10px] px-2 font-bold">
+                                 <Link href={`/chat/${t.chatId}?highlightTask=${encodeURIComponent(t.id)}`}>
+                                   <MessageSquare className="mr-1 size-2.5 md:size-3" />
+                                   Details
+                                 </Link>
+                               </Button>
+                             </div>
+
+                             {(t.status === "completed" || t.status === "failed") && (t.result?.text || t.result?.error) && (
+                               <div className="rounded-xl border border-white/5 bg-black/40 p-3 font-normal text-[10px] md:text-xs text-zinc-300 overflow-hidden line-clamp-3 shadow-inner">
+                                 {t.result.error ? (
+                                   <div className="flex gap-1.5 text-destructive font-mono">
+                                     <XCircle size={12} className="shrink-0" />
+                                     <span>{t.result.error}</span>
+                                   </div>
+                                 ) : (
+                                   <Response className="[&_p]:leading-normal">{t.result.text!}</Response>
+                                 )}
+                               </div>
+                             )}
+
+                             <div className="flex items-center gap-3 text-[9px] md:text-[11px] font-bold text-muted-foreground/30 uppercase tracking-tighter">
+                               <span className="flex items-center gap-1">
+                                 <Clock size={10} />
+                                 {new Date(t.createdAt).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" })}
+                               </span>
+                               {t.result?.toolCalls && (
+                                 <span className="flex items-center gap-1">
+                                   <Database size={10} />
+                                   {t.result.toolCalls.length} tools used
+                                 </span>
+                               )}
+                             </div>
+                           </div>
+                        </Card>
+                      </motion.div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="memory"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="space-y-6"
+              >
+                {/* Memory Hero Section */}
+                <Card className="bg-primary/5 border-primary/20 backdrop-blur-md rounded-2xl md:rounded-[2.5rem] overflow-hidden">
+                  <CardHeader className="p-6 md:p-8 text-center space-y-3 md:space-y-4">
+                    <div className="size-12 md:size-16 rounded-xl md:rounded-[1.5rem] bg-primary/10 border border-primary/30 flex items-center justify-center mx-auto text-primary shadow-xl md:shadow-2xl">
+                      <Brain size={24} className="md:size-8" />
+                    </div>
+                    <div className="space-y-1 md:space-y-2">
+                      <CardTitle className="text-lg md:text-2xl font-black uppercase tracking-tighter">Your Vault</CardTitle>
+                      <CardDescription className="max-w-md mx-auto text-[10px] md:text-sm leading-relaxed px-4">
+                        Etles acts with continuity using long-term context. Manage everything currently stored in your memory vault here.
+                      </CardDescription>
+                    </div>
+                  </CardHeader>
                 </Card>
-              </motion.li>
-            ))}
-          </motion.ul>
-        )}
-      </main>
+
+                {/* Memory Listing */}
+                <div className="space-y-4">
+                   <div className="flex items-center justify-between px-4">
+                     <h3 className="font-extrabold text-sm uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                       <Search size={14} />
+                       Current Recollections ({memories.length})
+                     </h3>
+                   </div>
+
+                   {loadingMemories ? (
+                     <div className="flex flex-col items-center justify-center py-20 gap-3">
+                       <Loader2 className="size-8 animate-spin text-primary" />
+                       <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Searching Vault...</p>
+                     </div>
+                   ) : memories.length === 0 ? (
+                     <div className="flex flex-col items-center justify-center py-32 text-center border-2 border-dashed rounded-[3rem] border-white/5 bg-white/[0.01] backdrop-blur-md gap-6">
+                        <div className="size-16 rounded-[2rem] bg-black/40 flex items-center justify-center border border-white/5 shadow-inner">
+                          <Brain className="size-8 text-primary/20" />
+                        </div>
+                        <p className="text-sm font-bold text-muted-foreground max-w-xs leading-relaxed px-6">
+                          Etles hasn't saved any long-term memories yet. Share some preferences or facts in chat to see them here!
+                        </p>
+                     </div>
+                   ) : (
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                       {memories.map((m, idx) => (
+                         <motion.div
+                           key={m.id}
+                           initial={{ opacity: 0, scale: 0.98 }}
+                           animate={{ opacity: 1, scale: 1 }}
+                           transition={{ delay: idx * 0.05 }}
+                         >
+                           <Card className="group relative border-white/5 bg-white/[0.02] backdrop-blur-xl hover:border-primary/30 hover:bg-white/[0.05] transition-all duration-300 rounded-xl md:rounded-2xl overflow-hidden flex flex-col min-h-[70px]">
+                             <div className="p-2.5 md:p-4 flex-1 space-y-1.5">
+                               <div className="flex items-center justify-between">
+                                 <Badge variant="outline" className="bg-primary/5 text-primary border-primary/10 tracking-widest font-black text-[7px] uppercase h-3.5 px-1.5">
+                                   {m.key}
+                                 </Badge>
+                                 <Button
+                                   onClick={() => deleteMemory(m.key)}
+                                   disabled={isActionLoading === m.key}
+                                   size="icon"
+                                   variant="ghost"
+                                   className="size-6 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100"
+                                 >
+                                   {isActionLoading === m.key ? <Loader2 size={10} className="animate-spin" /> : <Trash2 size={10} />}
+                                 </Button>
+                               </div>
+                               <p className="text-[10px] md:text-sm font-medium leading-relaxed text-zinc-300 line-clamp-2 group-hover:text-foreground transition-colors">
+                                 {m.content}
+                               </p>
+                             </div>
+                             <div className="px-2.5 md:px-4 py-1 bg-white/[0.03] border-t border-white/5 flex items-center justify-between text-[7px] font-black text-muted-foreground/20 uppercase tracking-widest">
+                               <span>Recorded {new Date(m.savedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span>
+                             </div>
+                           </Card>
+                         </motion.div>
+                       ))}
+                     </div>
+                   )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
+      </div>
     </div>
   );
 }

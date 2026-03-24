@@ -1,3 +1,4 @@
+//app/(chat)/api/triggers/route.ts
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { auth } from "../../../(auth)/auth";

@@ -35,17 +35,17 @@ export default function ContactPage() {
            <form className="space-y-4 md:space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                  <div className="space-y-1 md:space-y-2">
-                    <label htmlFor="name" className="text-[10px] md:text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Name</label>
-                    <input id="name" type="text" className="w-full h-12 md:h-14 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl px-5 md:px-6 text-sm text-white outline-none focus:ring-2 focus:ring-white/20 transition-all" />
+                    <label className="text-[10px] md:text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Name</label>
+                    <input type="text" className="w-full h-12 md:h-14 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl px-5 md:px-6 text-sm md:text-white outline-none focus:ring-2 focus:ring-white/20 transition-all text-white" />
                  </div>
                  <div className="space-y-1 md:space-y-2">
-                    <label htmlFor="email" className="text-[10px] md:text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Email</label>
-                    <input id="email" type="email" className="w-full h-12 md:h-14 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl px-5 md:px-6 text-sm text-white outline-none focus:ring-2 focus:ring-white/20 transition-all" />
+                    <label className="text-[10px] md:text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Email</label>
+                    <input type="email" className="w-full h-12 md:h-14 bg-white/5 border border-white/10 rounded-xl md:rounded-2xl px-5 md:px-6 text-sm md:text-white outline-none focus:ring-2 focus:ring-white/20 transition-all text-white" />
                  </div>
               </div>
               <div className="space-y-1 md:space-y-2">
-                    <label htmlFor="message" className="text-[10px] md:text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Message</label>
-                    <textarea id="message" className="w-full min-h-[120px] md:min-h-[160px] bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-5 md:p-6 text-sm text-white outline-none focus:ring-2 focus:ring-white/20 transition-all" />
+                    <label className="text-[10px] md:text-xs font-bold text-white/40 uppercase tracking-widest pl-1">Message</label>
+                    <textarea className="w-full min-h-[120px] md:min-h-[160px] bg-white/5 border border-white/10 rounded-xl md:rounded-2xl p-5 md:p-6 text-sm md:text-white outline-none focus:ring-2 focus:ring-white/20 transition-all text-white" />
               </div>
               <button disabled className="w-full h-12 md:h-14 bg-white text-black text-xs md:text-sm font-bold uppercase tracking-widest rounded-xl md:rounded-2xl hover:bg-white/90 transition-colors opacity-50 cursor-not-allowed">
                  Coming Soon
