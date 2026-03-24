@@ -350,3 +350,64 @@
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
 }
+/* ProseMirror Tables */
+.prose table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.prose td, .prose th {
+  min-width: 1em;
+  border: 1px solid var(--border);
+  padding: 3px 5px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.prose th {
+  font-weight: bold;
+  text-align: left;
+  background-color: color-mix(in srgb, var(--muted) 50%, transparent);
+}
+
+.prose .column-resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  z-index: 20;
+  background-color: var(--primary);
+  pointer-events: none;
+}
+
+.prose .selectedCell:after {
+  z-index: 2;
+  position: absolute;
+  content: "";
+  left: 0; right: 0; top: 0; bottom: 0;
+  background: rgba(200, 200, 255, 0.4);
+  pointer-events: none;
+}
+
+/* ProseMirror Code Blocks */
+.prose pre {
+  @apply bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-4 overflow-x-auto border border-white/5;
+}
+
+.prose code {
+  @apply font-mono text-sm;
+}
+
+/* Chart Node */
+.chart-node-wrapper {
+  @apply w-full clear-both;
+}
+
+.chart-node-wrapper > div {
+  @apply mx-auto max-w-4xl;
+}

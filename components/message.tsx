@@ -141,6 +141,7 @@ const PurePreviewMessage = ({
               mode === "edit",
             "max-w-[calc(100%-2.5rem)] sm:max-w-[min(fit-content,80%)]":
               message.role === "user" && mode !== "edit",
+            "items-end": message.role === "user" && mode !== "edit",
           })}
         >
           {attachmentsFromMessage.length > 0 && (
@@ -195,9 +196,9 @@ const PurePreviewMessage = ({
                   <div key={key}>
                     <MessageContent
                       className={cn({
-                        "wrap-break-word w-fit rounded-2xl px-3 py-2 text-right bg-primary text-primary-foreground":
+                        "wrap-break-word w-fit rounded-2xl px-3 py-2 text-left bg-primary text-primary-foreground text-sm":
                           message.role === "user" && !partEvent && !partAgent,
-                        "bg-transparent px-0 py-0 text-left w-full":
+                        "bg-transparent px-0 py-0 text-left w-full text-sm":
                           message.role === "assistant" ||
                           partEvent ||
                           partAgent,

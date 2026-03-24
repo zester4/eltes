@@ -2,10 +2,19 @@
 
 import { exampleSetup } from "prosemirror-example-setup";
 import { inputRules } from "prosemirror-inputrules";
+import { keymap } from "prosemirror-keymap";
+import {
+  columnResizing,
+  goToNextCell,
+  tableEditing,
+} from "prosemirror-tables";
+import { type Node } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
-import { EditorView } from "prosemirror-view";
+import { EditorView, type NodeView } from "prosemirror-view";
 import { memo, useEffect, useRef } from "react";
 
+import { ChartDisplay } from "./elements/chart-display";
+import { ReactRenderer } from "@/lib/editor/react-renderer";
 import type { Suggestion } from "@/lib/db/schema";
 import {
   documentSchema,
@@ -32,6 +41,41 @@ type EditorProps = {
   suggestions: Suggestion[];
 };
 
+class ChartNodeView implements NodeView {
+  dom: HTMLElement;
+  renderer: { destroy: () => void } | null = null;
+  node: Node;
+
+  constructor(node: Node) {
+    this.node = node;
+    this.dom = document.createElement("div");
+    this.dom.classList.add("chart-node-wrapper", "my-8");
+    this.render();
+  }
+
+  render() {
+    try {
+      const spec = JSON.parse(this.node.attrs.data);
+      this.renderer = ReactRenderer.render(<ChartDisplay spec={spec} />, this.dom);
+    } catch (e) {
+      this.dom.innerText = "Invalid chart data: " + this.node.attrs.data;
+    }
+  }
+
+  update(node: Node) {
+    if (node.type !== this.node.type) return false;
+    if (node.attrs.data === this.node.attrs.data) return true;
+    this.node = node;
+    this.renderer?.destroy();
+    this.render();
+    return true;
+  }
+
+  destroy() {
+    this.renderer?.destroy();
+  }
+}
+
 function PureEditor({
   content,
   onSaveContent,
@@ -57,12 +101,21 @@ function PureEditor({
               headingRule(6),
             ],
           }),
+          columnResizing(),
+          tableEditing(),
+          keymap({
+            Tab: goToNextCell(1),
+            "Shift-Tab": goToNextCell(-1),
+          }),
           suggestionsPlugin,
         ],
       });
 
       editorRef.current = new EditorView(containerRef.current, {
         state,
+        nodeViews: {
+          chart: (node) => new ChartNodeView(node),
+        },
       });
     }
 
