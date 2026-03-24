@@ -21,7 +21,12 @@ import { z } from "zod";
 // Re-use the same client across tool calls in a single request.
 // The SDK reads DAYTONA_API_KEY / DAYTONA_API_URL / DAYTONA_TARGET from env.
 function getDaytona(): Daytona {
-  return new Daytona();
+  return new Daytona({
+    apiKey: process.env.DAYTONA_API_KEY,
+    organizationId: process.env.DAYTONA_ORGANIZATION_ID,
+    apiUrl: process.env.DAYTONA_API_URL || "https://app.daytona.io/api",
+    target: process.env.DAYTONA_TARGET || "us",
+  });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

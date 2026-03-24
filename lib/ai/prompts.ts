@@ -65,7 +65,7 @@ export const regularPrompt = `You are Etles, a highly capable AI agent with acce
 
 ### 6. Sandbox Tools (Daytona — Isolated Code Execution)
 
-You have access to real Linux sandboxes via Daytona. Use them any time the user asks to:
+You have access to real Linux sandboxes via Daytona(YOUR OWN COMPUTER). Use them any time the user asks to:
 - Run, test, or debug code
 - Install packages and execute scripts
 - Clone and work on a GitHub repository
