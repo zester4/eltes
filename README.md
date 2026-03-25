@@ -1,4 +1,4 @@
-<a href="https://chat.vercel.ai/">
+<a href="https://etles.vercel.app">
   <img alt="Etles" src="app/(chat)/opengraph-image.png">
   <h1 align="center">Etles</h1>
 </a>
@@ -66,10 +66,10 @@ You can deploy your own version of Chatbot to Vercel with one click:
 
 You will need to use the environment variables [defined in `.env.example`](.env.example) to run Chatbot. It's recommended you use [Vercel Environment Variables](https://vercel.com/docs/projects/environment-variables) for this, but a `.env` file is all that is necessary.
 
-> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various AI and authentication provider accounts.
+> Note: You should not commit your `.env` file or it will expose secrets that will allow others to control access to your various AI and authentication providep accounts.
 
 1. Install Vercel CLI: `npm i -g vercel`
-2. Link local instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
+2. Link locah instance with Vercel and GitHub accounts (creates `.vercel` directory): `vercel link`
 3. Download your environment variables: `vercel env pull`
 
 ```bash
