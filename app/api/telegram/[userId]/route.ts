@@ -1,10 +1,14 @@
 /**
- * Telegram webhook handler — inline generateText for all messages.
+ * Telegram webhook handler.
  *
  * Route: POST /api/telegram/[userId]
  *
- * Setup: Set BASE_URL to your public URL (e.g. ngrok in dev). If TELEGRAM_SECRET_TOKEN
- * is set, it must match what Telegram sends in x-telegram-bot-api-secret-token.
+ * Returns 200 immediately. All work happens in after():
+ * - Slash commands (/start, /status, /help) are handled inline — fast, no AI.
+ * - Regular messages trigger an Upstash Workflow run so AI execution is
+ *   durable and survives any Vercel serverless timeout limit.
+ *   Falls back to the original inline routeMessage() if Workflow is not
+ *   configured (QSTASH_TOKEN missing).
  */
 
 import { after } from "next/server";
@@ -46,6 +50,10 @@ import {
 } from "@/lib/ai/tools/subagents";
 import { generateUUID } from "@/lib/utils";
 import { sendLongMessage, sendTypingAction } from "@/lib/telegram/api";
+import {
+  isWorkflowEnabled,
+  triggerTelegramWorkflow,
+} from "@/lib/workflow/client";
 import type { DBMessage } from "@/lib/db/schema";
 
 const composio = new Composio({ provider: new VercelProvider() });
@@ -121,16 +129,74 @@ export async function POST(
   });
   if (!integration) {
     console.error(
-      `[Telegram] No integration for owner ${ownerUserId} — ensure you saved the bot token in Settings > Connections`,
+      `[Telegram] No integration for owner ${ownerUserId}`,
     );
     return new Response("OK", { status: 200 });
   }
+
   const botToken = integration.botToken;
   const baseUrl = process.env.BASE_URL || new URL(request.url).origin;
 
   // Return 200 immediately — all work happens in after()
   after(async () => {
     try {
+      // ── Slash commands: fast, handled inline, no AI needed ──────────────────
+      if (userText === "/start") {
+        if (redis) {
+          const key = `tg:chat:${ownerUserId}:${telegramChatId}`;
+          await redis.del(key);
+        }
+        await sendLongMessage(
+          botToken,
+          telegramChatId,
+          "👋 Hi! I'm your AI assistant. Send me any message or task — I can handle both quick questions and long-running research.",
+        );
+        return;
+      }
+
+      if (userText === "/status") {
+        await sendLongMessage(
+          botToken,
+          telegramChatId,
+          "✅ **Integration status**\n\nBot is connected and responding. Your keys are stored correctly.\n\nIf you're not getting AI responses, check:\n• BASE_URL must be a public URL (not localhost)\n• Use ngrok for local development",
+        );
+        return;
+      }
+
+      if (userText === "/help") {
+        await sendLongMessage(
+          botToken,
+          telegramChatId,
+          "🤖 <b>What I can do:</b>\n\n" +
+          "• Answer questions instantly\n" +
+          "• Remember things for you\n" +
+          "• Set reminders and recurring tasks\n" +
+          "• Research topics in depth\n" +
+          "• Perform multi-step tasks (even hours-long ones)\n" +
+          "• Ask for your approval before irreversible actions\n\n" +
+          "<b>Commands:</b>\n/start — Reset conversation\n/help — Show this message\n/status — Verify integration is working",
+        );
+        return;
+      }
+
+      // ── Regular messages: offload to Workflow if available ──────────────────
+      if (isWorkflowEnabled()) {
+        try {
+          const triggered = await triggerTelegramWorkflow({
+            ownerUserId,
+            botToken,
+            telegramChatId,
+            senderName,
+            userText,
+            baseUrl,
+          });
+          if (triggered) return; // Workflow will handle the rest
+        } catch (e) {
+          console.error("[Telegram] Failed to trigger workflow, falling back:", e);
+        }
+      }
+
+      // ── Fallback: run inline (original behaviour, no Workflow configured) ───
       await routeMessage({
         ownerUserId,
         botToken,
@@ -154,7 +220,7 @@ export async function POST(
   return new Response("OK", { status: 200 });
 }
 
-// ── Core router ───────────────────────────────────────────────────────────────
+// ── Inline fallback (used when Workflow is not configured) ────────────────────
 
 async function routeMessage({
   ownerUserId,
@@ -171,68 +237,23 @@ async function routeMessage({
   userText: string;
   baseUrl: string;
 }) {
-  // Handle /start — reset conversation (clear Redis cache if available)
-  if (userText === "/start") {
-    if (redis) {
-      const key = `tg:chat:${ownerUserId}:${telegramChatId}`;
-      await redis.del(key);
-    }
-    await sendLongMessage(
-      botToken,
-      telegramChatId,
-      "👋 Hi! I'm your AI assistant. Send me any message or task — I can handle both quick questions and long-running research.",
-    );
-    return;
-  }
-
-  // Handle /status — verify integration is working (no token exposed)
-  if (userText === "/status") {
-    await sendLongMessage(
-      botToken,
-      telegramChatId,
-      "✅ **Integration status**\n\nBot is connected and responding. Your keys are stored correctly.\n\nIf you're not getting AI responses, check:\n• BASE_URL must be a public URL (not localhost)\n• Use ngrok for local development",
-    );
-    return;
-  }
-
-  // Handle /help
-  if (userText === "/help") {
-    await sendLongMessage(
-      botToken,
-      telegramChatId,
-      "🤖 <b>What I can do:</b>\n\n" +
-      "• Answer questions instantly\n" +
-      "• Remember things for you\n" +
-      "• Set reminders and recurring tasks\n" +
-      "• Research topics in depth\n" +
-      "• Perform multi-step tasks (even hours-long ones)\n" +
-      "• Ask for your approval before irreversible actions\n\n" +
-      "<b>Commands:</b>\n/start — Reset conversation\n/help — Show this message\n/status — Verify integration is working",
-    );
-    return;
-  }
-
-  // Get or create DB chat
   const chatId = await getOrCreateChat(ownerUserId, telegramChatId, senderName);
 
-  // Save user message to DB
   await saveMessages({
     messages: [
       {
         id: generateUUID(),
         chatId,
         role: "user",
-        parts: [{ type: "text", text: userText }],
+        parts: [{ type: "text" as const, text: userText }],
         attachments: [],
         createdAt: new Date(),
       },
     ] as any,
   });
 
-  // Inline conversational response
   await sendTypingAction(botToken, telegramChatId);
 
-  // Load history
   const dbMessages: DBMessage[] = await getMessagesByChatId({ id: chatId });
   const history = dbMessages
     .filter((m) => m.role === "user" || m.role === "assistant")
@@ -244,13 +265,10 @@ async function routeMessage({
 
   const allMessages = [...history, { role: "user" as const, content: userText }];
 
-  // Load Composio tools (Gmail, etc.) — same as chat route
   let composioTools: Record<string, unknown> = {};
   try {
-    const composioSession = await composio.create(ownerUserId, {
-      manageConnections: true,
-    });
-    composioTools = await composioSession.tools();
+    const session = await composio.create(ownerUserId, { manageConnections: true });
+    composioTools = await session.tools();
   } catch (e) {
     console.error("[Telegram] Failed to load Composio tools:", e);
   }
@@ -265,7 +283,7 @@ async function routeMessage({
         city: undefined,
         country: undefined,
       },
-      skipArtifacts: true, // Telegram has no artifact UI
+      skipArtifacts: true,
     }),
     messages: allMessages,
     stopWhen: stepCountIs(15),
@@ -293,7 +311,6 @@ async function routeMessage({
     },
   });
 
-  // Save assistant message
   await saveMessages({
     messages: [
       {
@@ -301,7 +318,7 @@ async function routeMessage({
         chatId,
         role: "assistant",
         parts: [
-          { type: "text", text: aiText },
+          { type: "text" as const, text: aiText },
           ...(toolCalls?.map((tc) => ({
             type: "tool-call" as const,
             toolCallId: tc.toolCallId,
@@ -348,9 +365,11 @@ async function getOrCreateChat(
     visibility: "private",
     platformThreadId: `telegram:${ownerUserId}:${telegramChatId}`,
   });
+
   if (redis) {
     const key = redisChatKey(ownerUserId, telegramChatId);
     await redis.set(key, chatId, { ex: 60 * 60 * 24 * 90 });
   }
+
   return chatId;
 }
