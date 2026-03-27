@@ -17,6 +17,7 @@ import { guestRegex } from "@/lib/constants";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
+import { generateImageTool } from "@/lib/ai/tools/generate-image";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { renderChart } from "@/lib/ai/tools/render-chart";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
@@ -275,12 +276,13 @@ export async function POST(request: Request) {
           }),
           messages: modelMessages,
           stopWhen: stepCountIs(25),
-          experimental_activeTools: (isReasoningModel
-            ? []
-            : [
-                "getWeather",
-                "renderChart",
-                "createDocument",
+            experimental_activeTools: (isReasoningModel
+              ? []
+              : [
+                  "getWeather",
+                  "generateImage",
+                  "renderChart",
+                  "createDocument",
                 "updateDocument",
                 "requestSuggestions",
                 "saveMemory",
@@ -313,6 +315,7 @@ export async function POST(request: Request) {
           tools: {
             ...composioTools,
             getWeather,
+            generateImage: generateImageTool(dataStream),
             renderChart,
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),

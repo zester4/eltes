@@ -12,7 +12,7 @@ export const imageArtifact = new Artifact({
         ...draftArtifact,
         content: streamPart.data,
         isVisible: true,
-        status: "streaming",
+        status: streamPart.data ? "idle" : "streaming",
       }));
     }
   },

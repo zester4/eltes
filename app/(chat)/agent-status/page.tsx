@@ -20,6 +20,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SidebarToggle } from "@/components/sidebar-toggle";
 
 export default async function AgentStatusPage() {
   const session = await auth();
@@ -33,7 +34,10 @@ export default async function AgentStatusPage() {
     <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 md:space-y-8 bg-background">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
         <div className="flex flex-col space-y-1 sm:space-y-2">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Agent Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <SidebarToggle />
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Agent Dashboard</h1>
+          </div>
           <p className="text-muted-foreground text-[10px] sm:text-xs md:text-sm">
             Monitor Etles's proactive activities, automation schedules, and intelligence briefs.
           </p>

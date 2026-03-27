@@ -37,18 +37,24 @@ export function isResult(data: AgentActionData): data is AgentResultData {
 }
 
 export const parseAgentDelegatedMessage = (text: string): AgentDelegatedData | null => {
-  if (!text.startsWith("###AGENT_DELEGATED###")) return null;
+  const marker = "###AGENT_DELEGATED###";
+  if (!text.startsWith(marker)) return null;
+
   try {
-    return JSON.parse(text.replace("###AGENT_DELEGATED###", ""));
+    const jsonStr = text.slice(marker.length);
+    return JSON.parse(jsonStr);
   } catch {
     return null;
   }
 };
 
 export const parseAgentResultMessage = (text: string): AgentResultData | null => {
-  if (!text.startsWith("###AGENT_RESULT###")) return null;
+  const marker = "###AGENT_RESULT###";
+  if (!text.startsWith(marker)) return null;
+
   try {
-    return JSON.parse(text.replace("###AGENT_RESULT###", ""));
+    const jsonStr = text.slice(marker.length);
+    return JSON.parse(jsonStr);
   } catch {
     return null;
   }

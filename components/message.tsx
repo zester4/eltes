@@ -31,6 +31,7 @@ import { MessageActions } from "./message-actions";
 import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
+import { ImageEditor } from "./image-editor";
 import { Button } from "./ui/button";
 import { Weather } from "./weather";
 
@@ -124,11 +125,11 @@ const PurePreviewMessage = ({
           "justify-start": role === "assistant" || role === "tool",
         })}
       >
-        {message.role === "assistant" && !hasAgentResult && (
+        {/* {message.role === "assistant" && !hasAgentResult && (
           <div className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border">
             <SparklesIcon size={14} />
           </div>
-        )}
+        )} */}
 
         <div
           className={cn("flex flex-col", {
@@ -239,26 +240,40 @@ const PurePreviewMessage = ({
                     </MessageContent>
                   </div>
                 );
+            }
 
-              if (mode === "edit") {
-                return (
-                  <div
-                    className="flex w-full flex-row items-start gap-3"
-                    key={key}
-                  >
-                    <div className="size-8" />
-                    <div className="min-w-0 flex-1">
-                      <MessageEditor
-                        key={message.id}
-                        message={message}
-                        regenerate={regenerate}
-                        setMessages={setMessages}
-                        setMode={setMode}
-                      />
-                    </div>
+            if ((type as string) === "imageDelta") {
+              return (
+                <div className="flex w-full flex-col gap-2" key={key}>
+                  <div className="overflow-hidden rounded-lg border border-border bg-muted/50">
+                    <ImageEditor
+                      content={(part as any).data}
+                      currentVersionIndex={0}
+                      isCurrentVersion={true}
+                      isInline={true}
+                      status={(part as any).data ? "idle" : "streaming"}
+                      title="Generated Image"
+                    />
                   </div>
-                );
-              }
+                </div>
+              );
+            }
+
+            if (mode === "edit") {
+              return (
+                <div className="flex w-full flex-row items-start gap-3" key={key}>
+                  <div className="size-8" />
+                  <div className="min-w-0 flex-1">
+                    <MessageEditor
+                      key={message.id}
+                      message={message}
+                      regenerate={regenerate}
+                      setMessages={setMessages}
+                      setMode={setMode}
+                    />
+                  </div>
+                </div>
+              );
             }
 
             if (type === "tool-getWeather") {
@@ -603,11 +618,11 @@ export const ThinkingMessage = () => {
       data-testid="message-assistant-loading"
     >
       <div className="flex items-start justify-start gap-3">
-        <div className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border">
+        {/* <div className="-mt-1 flex size-8 shrink-0 items-center justify-center rounded-full bg-background ring-1 ring-border">
           <div className="animate-pulse">
             <SparklesIcon size={14} />
           </div>
-        </div>
+        </div> */}
 
         <div className="flex w-full flex-col gap-2 md:gap-4">
           <div className="flex items-center gap-1 p-0 text-muted-foreground text-sm">
