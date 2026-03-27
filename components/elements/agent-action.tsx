@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Bot, ChevronDown, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { useActiveAgentTasks } from "@/hooks/use-active-agent-tasks";
 import { Response } from "./response";
 
 export type AgentDelegatedData = {
@@ -70,14 +71,25 @@ export const parseAgentMessage = (text: string): AgentActionData | null => {
 
 export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-
-  const delegated = isDelegated(agent);
-  const hasError = isResult(agent) && (agent as AgentResultData).error;
+  const { tasks } = useActiveAgentTasks();
 
   const taskId =
     "taskId" in agent && typeof agent.taskId === "string"
       ? agent.taskId
       : undefined;
+
+  const delegated = isDelegated(agent);
+  const hasError = isResult(agent) && (agent as AgentResultData).error;
+
+  // If the task is no longer running, it should reflect its state even if this is the delegated message.
+  const status = useMemo(() => {
+    if (!delegated) return hasError ? "failed" : "completed";
+    
+    const activeTask = tasks.find((t) => t.id === taskId);
+    if (!activeTask) return "completed"; // Default to completed if no longer active
+    
+    return activeTask.status;
+  }, [delegated, hasError, tasks, taskId]);
 
   return (
     <div
@@ -101,19 +113,19 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
               variant="outline"
               className={cn(
                 "w-fit text-[9px] px-1.5 py-0 rounded-md font-medium tracking-wide font-mono",
-                delegated
+                status === "running" || status === "pending"
                   ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
-                  : hasError
+                  : status === "failed"
                     ? "border-red-500/30 bg-red-500/10 text-red-400"
                     : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
               )}
             >
-              {delegated ? (
+              {status === "running" || status === "pending" ? (
                 <>
                   <Loader2 size={10} className="animate-spin mr-0.5" />
                   RUNNING
                 </>
-              ) : hasError ? (
+              ) : status === "failed" ? (
                 <>
                   <XCircle size={10} className="mr-0.5" />
                   FAILED
