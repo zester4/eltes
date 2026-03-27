@@ -8,6 +8,7 @@ import type { ChartToolPayload } from "@/lib/ai/tools/render-chart";
 import { parseSubAgentHandoffMarker } from "@/lib/agent/sub-agent-handoff-markers";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
+import { isToolCall, isToolResult } from "@/lib/utils";
 import { cn, sanitizeText } from "@/lib/utils";
 import { useDataStream } from "./data-stream-provider";
 import { DocumentToolResult } from "./document";
@@ -177,6 +178,12 @@ const PurePreviewMessage = ({
             }
             const { type } = part;
             const key = `message-${message.id}-part-${index}`;
+
+            const isConsecutiveTool =
+              index > 0 &&
+              (isToolCall(message.parts[index - 1]) ||
+                isToolResult(message.parts[index - 1])) &&
+              (isToolCall(part) || isToolResult(part));
 
             if (type === "reasoning") {
               const hasContent = part.text?.trim().length > 0;
@@ -521,7 +528,12 @@ const PurePreviewMessage = ({
                   : undefined;
 
               return (
-                <div className="w-[min(100%,500px)]" key={toolCallId}>
+                <div
+                  className={cn("w-[min(100%,500px)]", {
+                    "-mt-2": isConsecutiveTool,
+                  })}
+                  key={toolCallId}
+                >
                   <Tool
                     defaultOpen={
                       state === "approval-requested" || state === "output-error"
@@ -564,14 +576,16 @@ const PurePreviewMessage = ({
           })}
 
           {!isReadonly && (
-            <MessageActions
-              chatId={chatId}
-              isLoading={isLoading}
-              key={`action-${message.id}`}
-              message={message}
-              setMode={setMode}
-              vote={vote}
-            />
+            <div className="opacity-0 group-hover/message:opacity-100 group-focus-within/message:opacity-100 transition-opacity duration-200 mt-1 md:mt-2">
+              <MessageActions
+                chatId={chatId}
+                isLoading={isLoading}
+                key={`action-${message.id}`}
+                message={message}
+                setMode={setMode}
+                vote={vote}
+              />
+            </div>
           )}
         </div>
       </div>

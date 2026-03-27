@@ -56,6 +56,21 @@ export const saveMemory = ({ userId }: { userId: string }) =>
           },
         });
 
+        // After setup steps, if key is "onboarding_complete", trigger the completion hook
+        if (key === "onboarding_complete") {
+          const baseUrl = process.env.BASE_URL || (typeof window !== 'undefined' ? window.location.origin : "");
+          if (baseUrl) {
+            void fetch(`${baseUrl}/api/onboarding/complete`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-agent-secret": process.env.AGENT_DELEGATE_SECRET ?? "dev-internal",
+              },
+              body: JSON.stringify({ userId }),
+            }).catch(() => {});
+          }
+        }
+
         return {
           success: true,
           message: `Memory saved: "${key}" → "${content}"`,

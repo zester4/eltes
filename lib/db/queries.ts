@@ -607,7 +607,7 @@ export async function getMessageCountByUserId({
   differenceInHours: number;
 }) {
   try {
-    const twentyFourHoursAgo = new Date(
+    const timeAgo = new Date(
       Date.now() - differenceInHours * 60 * 60 * 1000
     );
 
@@ -618,7 +618,7 @@ export async function getMessageCountByUserId({
       .where(
         and(
           eq(chat.userId, id),
-          gte(message.createdAt, twentyFourHoursAgo),
+          gte(message.createdAt, timeAgo),
           eq(message.role, "user")
         )
       )

@@ -114,6 +114,24 @@ export async function POST(
   }
 
   const msg = update.message;
+  const cq = (update as any).callback_query;
+
+  // If it's a callback query, forward to the callback handler
+  if (cq) {
+    const callbackUrl = `${process.env.BASE_URL || new URL(request.url).origin}/api/telegram/callback/${ownerUserId}`;
+    after(async () => {
+      await fetch(callbackUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-telegram-bot-api-secret-token": request.headers.get("x-telegram-bot-api-secret-token") || "",
+        },
+        body: JSON.stringify(update),
+      });
+    });
+    return new Response("OK", { status: 200 });
+  }
+
   if (!msg?.text) return new Response("OK", { status: 200 });
 
   const telegramChatId = msg.chat.id;

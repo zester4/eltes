@@ -520,6 +520,21 @@ export const InfoIcon = ({ size = 16 }: { size?: number }) => {
   );
 };
 
+export const ActivityIcon = ({ size = 16 }: { size?: number }) => (
+  <svg
+    fill="none"
+    height={size}
+    stroke="currentColor"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth="2"
+    viewBox="0 0 24 24"
+    width={size}
+  >
+    <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+  </svg>
+);
+
 export const ArrowUpIcon = ({
   size = 16,
   ...props

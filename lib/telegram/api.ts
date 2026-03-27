@@ -14,6 +14,74 @@ export async function sendTypingAction(token: string, chatId: number) {
   });
 }
 
+export interface InlineKeyboardButton {
+  text: string;
+  callback_data: string;
+}
+
+export async function sendMessageWithInlineKeyboard(
+  token: string,
+  chatId: number,
+  text: string,
+  replyMarkup: InlineKeyboardButton[][]
+): Promise<number | null> {
+  const res = await fetch(`${TELEGRAM_API}/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: "HTML",
+      reply_markup: { inline_keyboard: replyMarkup },
+    }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json();
+    console.error("[Telegram] sendMessageWithInlineKeyboard failed:", error);
+    return null;
+  }
+
+  const data = await res.json();
+  return data.result.message_id;
+}
+
+export async function answerCallbackQuery(
+  token: string,
+  callbackQueryId: string,
+  text?: string,
+  showAlert = false
+) {
+  await fetch(`${TELEGRAM_API}/bot${token}/answerCallbackQuery`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      callback_query_id: callbackQueryId,
+      text,
+      show_alert: showAlert,
+    }),
+  });
+}
+
+export async function editMessageText(
+  token: string,
+  chatId: number,
+  messageId: number,
+  text: string,
+  parseMode: "HTML" | "Markdown" | undefined = "HTML"
+) {
+  await fetch(`${TELEGRAM_API}/bot${token}/editMessageText`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+      text,
+      parse_mode: parseMode,
+    }),
+  });
+}
+
 export async function sendMessage(
   token: string,
   chatId: number,

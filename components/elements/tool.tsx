@@ -21,7 +21,7 @@ export type ToolProps = ComponentProps<typeof Collapsible>;
 export const Tool = ({ className, ...props }: ToolProps) => (
   <Collapsible
     className={cn(
-      "not-prose mb-3 w-full rounded-lg border border-border/50 bg-muted/30 overflow-hidden",
+      "not-prose w-full rounded-lg border border-border/50 bg-muted/30 overflow-hidden",
       className
     )}
     {...props}
@@ -202,6 +202,8 @@ export type ToolOutputProps = ComponentProps<"div"> & {
 
 const safeRenderOutput = (output: unknown) => {
   // Never render plain objects — always stringify them
+  const containerClass = "max-h-[280px] overflow-y-auto overflow-x-auto p-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/30 transition-colors";
+  
   if (
     output !== null &&
     output !== undefined &&
@@ -209,24 +211,24 @@ const safeRenderOutput = (output: unknown) => {
     !isValidElement(output)
   ) {
     return (
-      <pre className="overflow-x-auto p-2 font-mono text-xs text-foreground/80 leading-relaxed">
+      <pre className={cn(containerClass, "font-mono text-xs text-foreground/80 leading-relaxed")}>
         {JSON.stringify(output, null, 2)}
       </pre>
     );
   }
   if (typeof output === "string") {
     return (
-      <pre className="overflow-x-auto p-2 font-mono text-xs text-foreground/80">
+      <pre className={cn(containerClass, "font-mono text-xs text-foreground/80 leading-relaxed")}>
         {output}
       </pre>
     );
   }
   if (isValidElement(output)) {
-    return <div className="p-2">{output}</div>;
+    return <div className={containerClass}>{output}</div>;
   }
   if (output !== null && output !== undefined) {
     return (
-      <pre className="overflow-x-auto p-2 font-mono text-xs text-foreground/80">
+      <pre className={cn(containerClass, "font-mono text-xs text-foreground/80 leading-relaxed")}>
         {String(output)}
       </pre>
     );

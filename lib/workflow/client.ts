@@ -129,4 +129,64 @@ export async function cancelWorkflow(workflowRunId: string): Promise<void> {
  
   await client.cancel({ ids: workflowRunId });
 }
+
+// ── Heartbeat and Synthesis triggers ──────────────────────────────────────────
+
+export async function triggerHeartbeatWorkflow(payload: { userId: string }): Promise<void> {
+  const client = getWorkflowClient();
+  if (!client || !appBaseUrl) return;
+
+  await client.trigger({
+    url: `${appBaseUrl}/api/agent/heartbeat/workflow`,
+    body: payload,
+    retries: 2,
+  });
+}
+
+export async function triggerWeeklySynthesisWorkflow(payload: { userId: string }): Promise<void> {
+  const client = getWorkflowClient();
+  if (!client || !appBaseUrl) return;
+
+  await client.trigger({
+    url: `${appBaseUrl}/api/agent/heartbeat/synthesis`,
+    body: payload,
+    retries: 2,
+  });
+}
+
+export async function registerUserCrons(userId: string): Promise<void> {
+  const token = process.env.QSTASH_TOKEN;
+  const qstashUrl = process.env.QSTASH_URL || "https://qstash.upstash.io";
+  if (!token || !appBaseUrl) return;
+
+  const heartbeatUrl = `${appBaseUrl}/api/agent/heartbeat`;
+
+  // Hourly heartbeat: every hour at minute 0
+  await fetch(`${qstashUrl}/v2/schedules`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      destination: heartbeatUrl,
+      cron: "0 * * * *",
+      body: JSON.stringify({ userId, type: "heartbeat" }),
+    }),
+  });
+
+  // Weekly synthesis: every Monday at 8am UTC
+  await fetch(`${qstashUrl}/v2/schedules`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      destination: heartbeatUrl,
+      cron: "0 8 * * 1",
+      body: JSON.stringify({ userId, type: "weekly_synthesis" }),
+    }),
+  });
+}
  

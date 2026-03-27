@@ -43,6 +43,8 @@ import {
   getSubAgentResult,
   listSubAgents,
 } from "@/lib/ai/tools/subagents";
+import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
+import { queueApproval } from "@/lib/ai/tools/queue-approval";
 // Daytona sandbox tools
 import {
   createSandbox,
@@ -134,7 +136,7 @@ export async function POST(request: Request) {
     });
 
     if (
-      messageCount >
+      messageCount >=
       (entitlementsByUserType[userType] as any).maxMessagesPerHour
     ) {
       return new ChatbotError("rate_limit:chat").toResponse();
@@ -163,9 +165,33 @@ export async function POST(request: Request) {
       titlePromise = generateTitleFromUserMessage({ message });
     }
 
-    const sessionTail = !chat
+    let sessionTail = !chat
       ? await getSessionTail(session.user.id)
       : undefined;
+
+    const isGuest = guestRegex.test(session?.user?.email ?? "");
+
+    // Onboarding check for new users (no chat history) — Authenticated users only
+    if (!chat && !isGuest) {
+      try {
+        const index = new (await import("@upstash/vector")).Index({
+          url: process.env.UPSTASH_VECTOR_REST_URL!,
+          token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+        });
+        const ns = index.namespace(`memory-${session.user.id}`);
+        const onboarding = await ns.fetch(["onboarding_complete"]);
+        if (!onboarding || onboarding.length === 0) {
+          // User hasn't finished setup — inject onboarding instructions into session tail
+          const onboardingTail = {
+            role: "assistant" as const,
+            text: "SYSTEM: User is new. You MUST start with a guided setup: 'Hi! I'm Etles. Let's take 2 minutes to set you up. What do you do for work? what apps do you use (Gmail, Slack, GitHub, etc.)?' Proactively save every answer using saveMemory. When they finish, saveMemory with key 'onboarding_complete' to register their background jobs.",
+          };
+          sessionTail = sessionTail ? [...sessionTail, onboardingTail] : [onboardingTail];
+        }
+      } catch (e) {
+        console.error("Onboarding check failed:", e);
+      }
+    }
 
     const uiMessages = isToolApprovalFlow
       ? (messages as ChatMessage[])
@@ -201,8 +227,6 @@ export async function POST(request: Request) {
         !selectedChatModel.includes("non-reasoning"));
 
     const modelMessages = await convertToModelMessages(uiMessages);
-
-    const isGuest = guestRegex.test(session?.user?.email ?? "");
 
     let composioTools: Record<string, any> = {};
     if (session?.user?.id && !isGuest) {
@@ -273,6 +297,9 @@ export async function POST(request: Request) {
                 "delegateToSubAgent",
                 "getSubAgentResult",
                 "listSubAgents",
+                "launchMission",
+                "getMissionStatus",
+                "queueApproval",
                 ...Object.keys(sandboxTools),
                 ...Object.keys(composioTools),
               ]) as any,
@@ -321,6 +348,16 @@ export async function POST(request: Request) {
                   }),
                   getSubAgentResult: getSubAgentResult({ userId: session.user.id! }),
                   listSubAgents: listSubAgents(),
+                  launchMission: launchMission({
+                    userId: session.user.id!,
+                    chatId: id,
+                    baseUrl: process.env.BASE_URL || new URL(request.url).origin,
+                  }),
+                  getMissionStatus: getMissionStatus({ userId: session.user.id! }),
+                  queueApproval: queueApproval({
+                    userId: session.user.id!,
+                    chatId: id,
+                  }),
                 }),
             // Daytona sandbox tools (authenticated users only)
             ...(sandboxTools as any),

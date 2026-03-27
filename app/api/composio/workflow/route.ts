@@ -1,7 +1,7 @@
 /**
  * Composio webhook AI workflow — durable via Upstash Workflow.
  *
- * Route: POST /api/composio/workflow
+ * Route: POST /api/composio/workflow/route.ts
  *
  * The inline webhook handler saves the event and returns 200 immediately.
  * This workflow endpoint picks up the heavy AI work asynchronously, with

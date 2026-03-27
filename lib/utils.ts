@@ -114,3 +114,14 @@ export function getTextFromMessage(message: ChatMessage | UIMessage): string {
     .map((part) => (part as { type: 'text'; text: string}).text)
     .join('');
 }
+
+export function isToolCall(part: UIMessagePart<CustomUIDataTypes, ChatTools>): boolean {
+  const type = part.type as string;
+  return type === 'tool-invocation' || type === 'tool-call';
+}
+
+export function isToolResult(part: UIMessagePart<CustomUIDataTypes, ChatTools>): boolean {
+  const type = part.type as string;
+  if (typeof type !== 'string') { return false; }
+  return type.startsWith('tool-') && type !== 'tool-invocation' && type !== 'tool-call';
+}
