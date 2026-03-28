@@ -16,7 +16,7 @@ export async function proxy(request: NextRequest) {
     lowerPath.startsWith("/login") ||
     lowerPath.startsWith("/register") ||
     lowerPath.startsWith("/api/auth") ||
-    lowerPath.startsWith("/api/composio/webhook") ||
+    lowerPath.startsWith("/api/composio") ||
     lowerPath.startsWith("/api/webhooks") ||
     lowerPath.startsWith("/api/agent/workflow") ||
     lowerPath.startsWith("/api/agent/notify") ||
@@ -24,6 +24,7 @@ export async function proxy(request: NextRequest) {
     lowerPath.startsWith("/api/agent/handoff") ||
     lowerPath.startsWith("/api/telegram") ||
     lowerPath.startsWith("/api/scheduled") ||
+    lowerPath.startsWith("/api/approval") ||
     /\.(png|jpg|jpeg|gif|svg|webp|ico|m3u8|ts)$/.test(lowerPath)
   ) {
     console.log(`[Proxy] Allowing public path: ${pathname}`);

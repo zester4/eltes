@@ -34,9 +34,11 @@ const redis =
 export const queueApproval = ({
   userId,
   chatId,
+  skipTelegram = false,
 }: {
   userId: string;
   chatId: string;
+  skipTelegram?: boolean;
 }) =>
   tool({
     description:
@@ -99,8 +101,10 @@ export const queueApproval = ({
         ],
       ];
 
-      // Get Telegram integration
-      const integration = await getBotIntegration({ userId, platform: "telegram" });
+      // Get Telegram integration (only if not skipping)
+      const integration = skipTelegram 
+        ? null 
+        : await getBotIntegration({ userId, platform: "telegram" });
       let messageId: number | null = null;
       let telegramChatId: number | null = null;
 

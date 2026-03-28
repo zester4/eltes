@@ -360,6 +360,7 @@ export async function POST(request: Request) {
                   queueApproval: queueApproval({
                     userId: session.user.id!,
                     chatId: id,
+                    skipTelegram: true,
                   }),
                 }),
             // Daytona sandbox tools (authenticated users only)

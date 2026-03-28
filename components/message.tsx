@@ -34,6 +34,17 @@ import { PreviewAttachment } from "./preview-attachment";
 import { ImageEditor } from "./image-editor";
 import { Button } from "./ui/button";
 import { Weather } from "./weather";
+import {
+  Confirmation,
+  ConfirmationAction,
+  ConfirmationActions,
+  ConfirmationAccepted,
+  ConfirmationRejected,
+  ConfirmationRequest,
+  ConfirmationTitle,
+} from "./ai-elements/confirmation";
+import { toast } from "sonner";
+import { CheckCircle2, XCircle, Pencil } from "lucide-react";
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -335,35 +346,56 @@ const PurePreviewMessage = ({
                         state === "approval-requested") && (
                         <ToolInput input={part.input} />
                       )}
-                      {state === "approval-requested" && approvalId && (
-                        <div className="flex items-center justify-end gap-2 border-t px-4 py-3">
-                          <button
-                            className="rounded-md px-3 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted hover:text-foreground"
-                            onClick={() => {
-                              addToolApprovalResponse({
-                                id: approvalId,
-                                approved: false,
-                                reason: "User denied weather lookup",
-                              });
-                            }}
-                            type="button"
-                          >
-                            Deny
-                          </button>
-                          <button
-                            className="rounded-md bg-primary px-3 py-1.5 text-primary-foreground text-sm transition-colors hover:bg-primary/90"
-                            onClick={() => {
-                              addToolApprovalResponse({
-                                id: approvalId,
-                                approved: true,
-                              });
-                            }}
-                            type="button"
-                          >
-                            Allow
-                          </button>
-                        </div>
-                      )}
+                      
+                      <Confirmation
+                        className="mx-4 mb-4"
+                        state={state}
+                        approval={{ id: approvalId! }}
+                      >
+                        <ConfirmationRequest>
+                          <ConfirmationTitle>
+                            Approve checking the weather for {part.input?.city || `${part.input?.latitude}, ${part.input?.longitude}`}?
+                          </ConfirmationTitle>
+                          <ConfirmationActions>
+                            <ConfirmationAction
+                              variant="outline"
+                              onClick={() => {
+                                addToolApprovalResponse({
+                                  id: approvalId!,
+                                  approved: false,
+                                  reason: "User denied weather lookup",
+                                });
+                              }}
+                            >
+                              Deny
+                            </ConfirmationAction>
+                            <ConfirmationAction
+                              onClick={() => {
+                                addToolApprovalResponse({
+                                  id: approvalId!,
+                                  approved: true,
+                                });
+                              }}
+                            >
+                              Allow
+                            </ConfirmationAction>
+                          </ConfirmationActions>
+                        </ConfirmationRequest>
+
+                        <ConfirmationAccepted>
+                          <div className="flex items-center gap-2 text-emerald-500">
+                            <CheckCircle2 className="size-4" />
+                            <span className="text-sm font-medium">Weather lookup approved.</span>
+                          </div>
+                        </ConfirmationAccepted>
+
+                        <ConfirmationRejected>
+                          <div className="flex items-center gap-2 text-destructive">
+                            <XCircle className="size-4" />
+                            <span className="text-sm font-medium">Weather lookup denied.</span>
+                          </div>
+                        </ConfirmationRejected>
+                      </Confirmation>
                     </ToolContent>
                   </Tool>
                 </div>
@@ -542,23 +574,152 @@ const PurePreviewMessage = ({
                   ? (part.output as any).url || (part.output as any).redirectUrl
                   : undefined;
 
+              // Special handling for queueApproval result
+              if ((type as any) === "tool-queueApproval" && "output" in part && (part.output as any).status === "pending_approval") {
+                const output = part.output as any;
+                const draftId = output.draftId;
+                
+                return (
+                  <div className="w-[min(100%,500px)]" key={toolCallId}>
+                     <Tool defaultOpen={true}>
+                        <ToolHeader state="output-available" type="tool-queueApproval" />
+                        <ToolContent>
+                           <div className="px-4 py-3 bg-muted/20 border-b border-border text-sm">
+                              {output.message}
+                           </div>
+                           <Confirmation
+                             className="mx-3 my-3"
+                             state="approval-requested"
+                             approval={{ id: draftId }}
+                           >
+                             <ConfirmationRequest>
+                               <div className="flex flex-col gap-3">
+                                 <ConfirmationActions className="flex-wrap justify-start sm:justify-end">
+                                   <ConfirmationAction
+                                     variant="outline"
+                                     className="h-8 text-xs border-destructive/20 text-destructive hover:bg-destructive/5"
+                                     onClick={async () => {
+                                       const res = await fetch("/api/approval", {
+                                         method: "POST",
+                                         body: JSON.stringify({ draftId, action: "reject" }),
+                                       });
+                                       if (res.ok) {
+                                         toast.success("Action rejected");
+                                         // In a real app, we might want to refresh the chat or update local state
+                                       }
+                                     }}
+                                   >
+                                     <XCircle size={14} className="mr-1" />
+                                     Reject
+                                   </ConfirmationAction>
+
+                                   <ConfirmationAction
+                                     variant="outline"
+                                     className="h-8 text-xs border-primary/20"
+                                     onClick={() => {
+                                        const editPrompt = window.prompt("What settings would you like to change?");
+                                        if (editPrompt) {
+                                          fetch("/api/approval", {
+                                            method: "POST",
+                                            body: JSON.stringify({ draftId, action: "edit", editPrompt }),
+                                          }).then(() => {
+                                            toast.success("Revision requested");
+                                          });
+                                        }
+                                     }}
+                                   >
+                                     <Pencil size={14} className="mr-1" />
+                                     Edit
+                                   </ConfirmationAction>
+
+                                   <ConfirmationAction
+                                     className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700"
+                                     onClick={async () => {
+                                       const res = await fetch("/api/approval", {
+                                         method: "POST",
+                                         body: JSON.stringify({ draftId, action: "approve" }),
+                                       });
+                                       if (res.ok) {
+                                         toast.success("Action approved and executing...");
+                                       } else {
+                                         toast.error("Execution failed");
+                                       }
+                                     }}
+                                   >
+                                     <CheckCircle2 size={14} className="mr-1" />
+                                     Approve
+                                   </ConfirmationAction>
+                                 </ConfirmationActions>
+                               </div>
+                             </ConfirmationRequest>
+                           </Confirmation>
+                        </ToolContent>
+                     </Tool>
+                  </div>
+                );
+              }
+
+              const fallbackToolCallId = "toolCallId" in part ? (part.toolCallId as string) : "";
+              const fallbackState = "state" in part ? (part.state as string) : "output-available";
+              const actualToolCallId = toolCallId || fallbackToolCallId;
+              const actualState = state || fallbackState;
+              const approvalId = (part as any).approval?.id;
+
               return (
                 <div
                   className={cn("w-[min(100%,500px)]", {
                     "-mt-2": isConsecutiveTool,
                   })}
-                  key={toolCallId}
+                  key={actualToolCallId}
                 >
                   <Tool
                     defaultOpen={
-                      state === "approval-requested" || state === "output-error"
+                      actualState === "approval-requested" || actualState === "output-error"
                     }
                   >
-                    <ToolHeader state={state} type={type as any} />
+                    <ToolHeader state={actualState as any} type={type as any} />
                     <ToolContent>
                       {"input" in part && !!part.input && (
                         <ToolInput input={part.input} />
                       )}
+                      
+                      {actualState === "approval-requested" && approvalId && (
+                        <Confirmation
+                          className="mx-4 mb-4"
+                          state={actualState as any}
+                          approval={{ id: approvalId }}
+                        >
+                          <ConfirmationRequest>
+                            <ConfirmationTitle>
+                              Approve execution of {type}?
+                            </ConfirmationTitle>
+                            <ConfirmationActions>
+                              <ConfirmationAction
+                                variant="outline"
+                                onClick={() => {
+                                  addToolApprovalResponse({
+                                    id: approvalId,
+                                    approved: false,
+                                  });
+                                }}
+                              >
+                                Deny
+                              </ConfirmationAction>
+                              <ConfirmationAction
+                                onClick={() => {
+                                  addToolApprovalResponse({
+                                    id: approvalId,
+                                    approved: true,
+                                  });
+                                }}
+                              >
+                                Allow
+                              </ConfirmationAction>
+                            </ConfirmationActions>
+                          </ConfirmationRequest>
+                        </Confirmation>
+                      )}
+
                       {"output" in part && !!part.output && (
                         <>
                           {redirectUrl && (

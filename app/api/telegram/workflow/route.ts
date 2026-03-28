@@ -21,7 +21,7 @@ import {
   saveChat,
   saveMessages,
 } from "@/lib/db/queries";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
 import { systemPrompt } from "@/lib/ai/prompts";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
@@ -162,7 +162,7 @@ export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
     ];
 
     const { text, toolCalls } = await generateText({
-      model: getLanguageModel("google/gemini-2.5-flash"),
+      model: getGoogleModel("gemini-2.5-flash"),
       system: systemPrompt({
         selectedChatModel: "google/gemini-2.5-flash",
         requestHints: {

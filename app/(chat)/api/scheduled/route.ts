@@ -2,7 +2,7 @@
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { NextRequest, NextResponse } from "next/server";
 import { generateText, stepCountIs } from "ai";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import {
@@ -72,7 +72,7 @@ Today's date is ${new Date().toLocaleDateString()}.
 Be direct and helpful.`;
 
     const result = await generateText({
-      model: getLanguageModel("google/gemini-3-flash"),
+      model: getGoogleModel("gemini-2.5-flash"),
       system: systemInstruction,
       prompt: `Reminder triggered: ${message}`,
       tools,

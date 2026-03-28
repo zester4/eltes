@@ -1,5 +1,7 @@
+
 /**
  * Runs a sub-agent with Composio tools. Mirrors the chat route pattern.
+ * lib/agent/subagent-runner.ts is called by the main agent when delegating a task to a sub-agent.
  */
 
 import { Composio } from "@composio/core";
@@ -7,7 +9,7 @@ import { VercelProvider } from "@composio/vercel";
 import { generateText, stepCountIs } from "ai";
 import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
   deleteMemory,
@@ -101,9 +103,13 @@ Execute the task now. Summarize what you did in your final response.`;
   const subagentModel =
     process.env.SUBAGENT_MODEL?.trim() || DEFAULT_CHAT_MODEL;
 
+  const model = subagentModel.startsWith("google/")
+    ? getGoogleModel(subagentModel)
+    : getLanguageModel(subagentModel);
+
   try {
     const result = await generateText({
-      model: getLanguageModel(subagentModel),
+      model,
       system: systemPrompt,
       prompt: `Task: ${task}`,
       tools,

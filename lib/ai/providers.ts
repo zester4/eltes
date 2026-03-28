@@ -1,4 +1,6 @@
+//lib/ai/providers.ts
 import { gateway } from "@ai-sdk/gateway";
+import { google } from "@ai-sdk/google";
 import {
   customProvider,
   extractReasoningMiddleware,
@@ -46,6 +48,21 @@ export function getLanguageModel(modelId: string) {
   }
 
   return gateway.languageModel(modelId);
+}
+
+/**
+ * Returns a direct Google Gemini model, bypassing the AI Gateway.
+ * Used for subagents and critical background tasks for maximum reliability.
+ */
+export function getGoogleModel(modelId: string) {
+  if (isTestEnvironment && myProvider) {
+    return myProvider.languageModel(modelId);
+  }
+
+  // Remove provider prefix if present (e.g., google/gemini-2.0-flash -> gemini-2.0-flash)
+  const directId = modelId.replace(/^google\//, "");
+
+  return google(directId);
 }
 
 export function getTitleModel() {

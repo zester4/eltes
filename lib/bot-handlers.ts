@@ -1,7 +1,7 @@
 import { Chat, toAiMessages } from "chat";
 import type { SlackAdapter } from "@chat-adapter/slack";
 import { streamText } from "ai";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
 import { createGuestUser, saveChat, saveMessages } from "@/lib/db/queries";
 import { generateUUID } from "@/lib/utils";
 import { getWeather } from "@/lib/ai/tools/get-weather";
@@ -55,7 +55,7 @@ async function handleFirstMessage(
   });
 
   const response = await streamText({
-    model: getLanguageModel("google/gemini-2.5-flash"),
+    model: getGoogleModel("gemini-2.5-flash"),
     prompt: message?.text || "",
     tools: { getWeather },
     onFinish: async ({ text, toolCalls }) => {
@@ -156,7 +156,7 @@ export function attachHandlers(bot: Chat, platform: string, ownerUserId: string)
     const history = await toAiMessages(messages);
 
     const response = await streamText({
-      model: getLanguageModel("google/gemini-2.5-flash"),
+      model: getGoogleModel("gemini-2.5-flash"),
       messages: history,
       tools: { getWeather },
       onFinish: async ({ text, toolCalls }) => {

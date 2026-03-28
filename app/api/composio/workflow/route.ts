@@ -15,7 +15,7 @@ import { generateText, stepCountIs } from "ai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { saveMessages, updateEventStatus } from "@/lib/db/queries";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
   saveMemory,
@@ -39,7 +39,7 @@ export const { POST } = serve<ComposioWebhookWorkflowPayload>(async (context) =>
   const { aiText, steps: aiSteps } = await context.run("run-agent", async () => {
     let composioTools: Record<string, any> = {};
     try {
-      const session = await composio.create(userId);
+      const session = await composio.create(userId, { manageConnections: true });
       composioTools = await session.tools();
     } catch (e) {
       console.error("[ComposioWorkflow] Composio tools failed:", e);
@@ -54,18 +54,24 @@ export const { POST } = serve<ComposioWebhookWorkflowPayload>(async (context) =>
       deleteMemory: deleteMemory({ userId }),
     };
 
-    const systemInstruction = `You are Etles, the user's proactive AI assistant.
-An external event has just occurred: "${triggerSlug}".
-Payload data: ${JSON.stringify(payload)}
+    const systemInstruction = `You are Etles, an elite, highly autonomous, and proactive agent executive assistant.
+An external integration event has just triggered: "${triggerSlug}".
+Event Payload: ${JSON.stringify(payload)}
 
-Your goal is to process this event immediately.
-If the event is important, notify the user in their chat.
-If you can take helpful action (e.g. "Draft a reply to this email" or "Summarize this PR"), do so using your tools.
-Today's date is ${new Date().toLocaleDateString()}.
-Be direct, helpful, and concise.`;
+YOUR PRIME DIRECTIVES:
+1. ANALYSIS: Instantly process the payload to understand the context, sender, and urgency of the event.
+2. ACTION: Proactively take the most helpful next step using your available tools. 
+   - If it's an email: Draft a highly professional, context-aware reply if appropriate, or summarize it if it's informational.
+   - If it's a Slack/Discord message: Draft a response or summarize the thread.
+   - If it's a GitHub PR/Issue: Summarize the changes or draft a comment.
+3. SAFETY & APPROVALS: Do NOT send irreversible outward communication (like sending an email or posting a public message) without the user's explicit consent, unless the user has given you prior blanket approval. Instead, save it as a draft or stage the action, and notify the user.
+4. NOTIFICATION: Always leave a concise, formatted message in the user's chat detailing what happened and what action you took (or drafted) on their behalf.
+5. TONE: Be direct, highly competent, concise, and professional. Do not use filler words.
+
+Today's date is ${new Date().toLocaleDateString()}. Execute your duties flawlessly.`;
 
     const result = await generateText({
-      model: getLanguageModel("google/gemini-2.5-flash"),
+      model: getGoogleModel("google/gemini-2.5-flash"),
       system: systemInstruction,
       prompt: `Event triggered: ${triggerSlug}. Context: ${JSON.stringify(payload)}`,
       tools,

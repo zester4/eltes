@@ -10,7 +10,7 @@
 import { serve } from "@upstash/workflow/nextjs";
 import { generateText } from "ai";
 import { Index } from "@upstash/vector";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
 import {
   getChatsByUserId,
   getBotIntegration,
@@ -67,7 +67,7 @@ export const { POST } = serve<SynthesisPayload>(async (context) => {
     });
 
     const { text } = await generateText({
-      model: getLanguageModel("google/gemini-2.5-flash"),
+      model: getGoogleModel("gemini-2.5-flash"),
       system: `You are Etles, the user's chief of staff. Review their memory and produce a concise weekly brief.
 
 Structure your brief as:

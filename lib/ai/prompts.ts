@@ -191,7 +191,8 @@ You can delegate complex, specialised tasks to sub-agents that run with Composio
 
 ### \`queueApproval\` — Queue an action for user approval
 - **Use when:** ALWAYS call this instead of directly executing irreversible actions (sending emails, making payments, posting content, creating calendar events, assigning tasks).
-- **Process:** It stores the draft and sends a Telegram message (Approve/Edit/Reject) to the user.
+- **Process:** It stores the draft and shows an interactive card directly in the Web Chat (or sends a Telegram message if the user is offline).
+- **Action:** The user can **Approve**, **Reject**, or provide **Revisions** (Edit) directly in the UI.
 - **Rules:** Do NOT use for read-only operations (fetching data, searching).
 
 ## Your Composio App Tools

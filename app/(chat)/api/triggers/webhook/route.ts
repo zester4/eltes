@@ -143,7 +143,7 @@ async function runAgentRoute(
   let composioTools: Record<string, any> = {};
   try {
     const composio = new Composio({ provider: new VercelProvider() });
-    const session = await composio.create(userId);
+    const session = await composio.create(userId, { manageConnections: true });
     composioTools = await session.tools();
   } catch (e) {
     console.error(`[Webhook] Failed to load Composio tools for agent "${agentSlug}":`, e);
