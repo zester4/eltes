@@ -8,6 +8,7 @@ import { VercelProvider } from "@composio/vercel";
 import {
   getChatsByUserId,
   saveMessages,
+  updateAgentTask,
 } from "@/lib/db/queries";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
@@ -150,6 +151,21 @@ Be direct and helpful.`;
     }
 
     await saveMessages({ messages: messagesToSave });
+
+    // 5. Update AgentTask status if it exists
+    const qstashMessageId = req.headers.get("upstash-message-id");
+    if (qstashMessageId) {
+      try {
+        await updateAgentTask({
+          id: qstashMessageId,
+          userId,
+          status: "completed",
+          result: { text: result.text, toolCalls: result.toolCalls },
+        });
+      } catch (err) {
+        console.warn(`[QStash] Could not update AgentTask ${qstashMessageId}:`, err);
+      }
+    }
 
     return NextResponse.json({
       ok: true,

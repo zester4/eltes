@@ -45,6 +45,19 @@ export async function getAgentStatus(): Promise<AgentStatusData> {
 
   const userId = session.user.id;
 
+  // 0. Fetch last runs from Redis
+  let lastHeartbeat: { lastRun?: string; status?: string } | null = null;
+  let lastSynthesis: { lastRun?: string; status?: string } | null = null;
+  
+  if (redis) {
+    const [hb, syn] = await Promise.all([
+      redis.get(`agent:status:${userId}:heartbeat`),
+      redis.get(`agent:status:${userId}:synthesis`),
+    ]);
+    lastHeartbeat = typeof hb === 'string' ? JSON.parse(hb) : (hb as any);
+    lastSynthesis = typeof syn === 'string' ? JSON.parse(syn) : (syn as any);
+  }
+
   // 1. Fetch synthesis from Vector
   let synthesisData: { lastBrief?: string; savedAt?: string } = {};
   try {
@@ -58,8 +71,12 @@ export async function getAgentStatus(): Promise<AgentStatusData> {
       const m = results[0].metadata as any;
       synthesisData = {
         lastBrief: m?.content,
-        savedAt: m?.savedAt,
+        savedAt: m?.savedAt || lastSynthesis?.lastRun,
       };
+    } else if (lastSynthesis?.lastRun) {
+        synthesisData = {
+            savedAt: lastSynthesis.lastRun,
+        };
     }
   } catch (e) {
     console.error("Failed to fetch synthesis:", e);
@@ -107,17 +124,29 @@ export async function getAgentStatus(): Promise<AgentStatusData> {
 
             if (!body.type || body.type === "heartbeat") {
               heartbeatStatus = {
-                status: "active",
-                nextRun: new Date(s.nextRun * 1000).toISOString(),
+                status: lastHeartbeat?.status === "success" ? "active" : "inactive",
+                lastRun: lastHeartbeat?.lastRun,
+                nextRun: (s.nextRun && typeof s.nextRun === "number") 
+                  ? new Date(s.nextRun * 1000).toISOString() 
+                  : undefined,
               };
+            } else if (body.type === "weekly_synthesis") {
+              // Force synthesis savedAt if not from vector
+              if (!synthesisData.savedAt) {
+                 synthesisData.savedAt = lastSynthesis?.lastRun;
+              }
             } else if (body.type === "cron") {
               activeCronJobs.push({
                 id: s.scheduleId,
                 task: body.name || "Unnamed Job",
                 status: "active",
-                createdAt: new Date(s.createdAt * 1000),
+                createdAt: (s.createdAt && typeof s.createdAt === "number") 
+                  ? new Date(s.createdAt * 1000) 
+                  : new Date(),
                 cron: s.cron,
-                nextRun: new Date(s.nextRun * 1000).toISOString(),
+                nextRun: (s.nextRun && typeof s.nextRun === "number") 
+                  ? new Date(s.nextRun * 1000).toISOString() 
+                  : undefined,
               });
             }
           } catch (err) {
@@ -131,9 +160,17 @@ export async function getAgentStatus(): Promise<AgentStatusData> {
     }
   }
 
-  // Merge with recent agent tasks from DB (keeping them distinct if needed)
-  // For now, let's just use the active ones from QStash as the primary source for "Active Jobs"
-  const finalCronJobs = activeCronJobs.length > 0 ? activeCronJobs : cronJobs;
+  // 5. Merge Strategy:
+  // - Pending tasks from DB (reminders)
+  // - Recurring tasks from QStash
+  // - Recent completed tasks from DB for history
+  const finalCronJobs = [
+    ...activeCronJobs,
+    ...cronJobs.filter(tj => 
+      !activeCronJobs.some(aqj => aqj.id === tj.id) &&
+      (tj.status === "pending" || tj.status === "running")
+    )
+  ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return {
     heartbeat: heartbeatStatus,

@@ -27,6 +27,7 @@ export type SynthesisPayload = {
 
 export const { POST } = serve<SynthesisPayload>(async (context) => {
   const { userId } = context.requestPayload;
+  console.log(`[Synthesis] Starting weekly synthesis for user: ${userId}`);
 
   // ── Step 1: Pull last 7 days of memory ───────────────────────────────────
   const allMemories = await context.run("recall-all-memory", async () => {
@@ -148,5 +149,23 @@ Write in first person as Etles addressing the user.`,
         await sendLongMessage(integration.botToken, telegramChatId, message);
       }
     }
+  });
+
+  // ── Step 5: Update Synthesis Status ───────────────────────────────────────
+  await context.run("update-status", async () => {
+    const redis =
+      process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+        ? new (await import("@upstash/redis")).Redis({
+            url: process.env.UPSTASH_REDIS_REST_URL,
+            token: process.env.UPSTASH_REDIS_REST_TOKEN,
+          })
+        : null;
+    if (!redis) return;
+
+    await redis.set(`agent:status:${userId}:synthesis`, JSON.stringify({
+      lastRun: new Date().toISOString(),
+      status: "success"
+    }));
+    console.log(`[Synthesis] Weekly brief completed and saved for user: ${userId}`);
   });
 });

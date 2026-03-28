@@ -2,6 +2,8 @@
 import { tool } from "ai";
 import { Client } from "@upstash/qstash";
 import { z } from "zod";
+import { createAgentTask } from "@/lib/db/queries";
+import { generateUUID } from "@/lib/utils";
 
 // Etles scheduling tools powered by QStash.
 //
@@ -66,6 +68,15 @@ export const setReminder = ({ userId, baseUrl }: { userId: string; baseUrl: stri
           retries: 3,
           label: label ?? "reminder",
         });
+        
+        // Log to AgentTask for dashboard visibility
+        await createAgentTask({
+          id: result.messageId, // Use QStash messageId as reference
+          userId,
+          chatId: "", // Reminders aren't bound to a chat until they fire
+          agentType: "reminder",
+          task: message,
+        });
 
         const fireAt = new Date(Date.now() + delaySeconds * 1000);
         return {
@@ -123,6 +134,15 @@ export const setCronJob = ({ userId, baseUrl }: { userId: string; baseUrl: strin
           retries: 3,
           deduplicationId: `${userId}-${name}`,
         } as any);
+
+        // Log to AgentTask for dashboard visibility
+        await createAgentTask({
+          id: schedule.scheduleId,
+          userId,
+          chatId: "",
+          agentType: "cron",
+          task: `${name}: ${message}`,
+        });
 
         return {
           success: true,

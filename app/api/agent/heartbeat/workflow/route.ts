@@ -37,6 +37,8 @@ export type HeartbeatPayload = {
 export const { POST } = serve<HeartbeatPayload>(async (context) => {
   const { userId } = context.requestPayload;
 
+  console.log(`[Heartbeat] Starting workflow for user: ${userId}`);
+  
   // ── Step 1: Recall context ────────────────────────────────────────────────
   const memoryContext = await context.run("recall-context", async () => {
     try {
@@ -138,6 +140,7 @@ Use Telegram HTML formatting only: <b>bold</b>, <i>italic</i>.`,
   });
 
   // ── Step 5: Save to chat + push Telegram ─────────────────────────────────
+  console.log(`[Heartbeat] Delivering urgent notification to user: ${userId}`);
   await context.run("deliver", async () => {
     // Save to chat
     await saveMessages({
@@ -173,5 +176,23 @@ Use Telegram HTML formatting only: <b>bold</b>, <i>italic</i>.`,
         await sendLongMessage(integration.botToken, telegramChatId, proactiveMessage);
       }
     }
+  });
+
+  // ── Step 6: Update Heartbeat Status ───────────────────────────────────────
+  await context.run("update-status", async () => {
+    const redis =
+      process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+        ? new (await import("@upstash/redis")).Redis({
+            url: process.env.UPSTASH_REDIS_REST_URL,
+            token: process.env.UPSTASH_REDIS_REST_TOKEN,
+          })
+        : null;
+    if (!redis) return;
+
+    await redis.set(`agent:status:${userId}:heartbeat`, JSON.stringify({
+      lastRun: new Date().toISOString(),
+      status: "success"
+    }), { ex: 86400 * 7 }); // 7 days TTL
+    console.log(`[Heartbeat] Workflow completed for user: ${userId}`);
   });
 });
