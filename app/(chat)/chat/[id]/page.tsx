@@ -8,6 +8,7 @@ import { DataStreamHandler } from "@/components/data-stream-handler";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
 import { convertToUIMessages } from "@/lib/utils";
+import { isUserOnboarded } from "@/lib/ai/tools/memory";
 
 export default function Page(props: { params: Promise<{ id: string }> }) {
   return (
@@ -29,6 +30,14 @@ async function ChatPage({ params }: { params: Promise<{ id: string }> }) {
 
   if (!session) {
     redirect("/api/auth/guest");
+  }
+
+  // Robust server-side check for onboarding status for real users
+  if (session.user?.id) {
+    const onboarded = await isUserOnboarded(session.user.id);
+    if (!onboarded) {
+      return redirect("/onboarding");
+    }
   }
 
   if (chat.visibility === "private") {

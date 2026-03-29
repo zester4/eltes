@@ -12,7 +12,7 @@ import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { auth, type UserType } from "@/app/(auth)/auth";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
-import { allowedModelIds } from "@/lib/ai/models";
+import { allowedModelIds, DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { guestRegex } from "@/lib/constants";
 import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
@@ -44,6 +44,7 @@ import {
   getSubAgentResult,
   listSubAgents,
 } from "@/lib/ai/tools/subagents";
+import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
 import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
 import { queueApproval } from "@/lib/ai/tools/queue-approval";
 // Daytona sandbox tools
@@ -123,11 +124,14 @@ export async function POST(request: Request) {
       return new ChatbotError("unauthorized:chat").toResponse();
     }
 
-    if (!allowedModelIds.has(selectedChatModel)) {
+    const isOnboarding = selectedChatModel === "onboarding_specialist";
+
+    if (!isOnboarding && !allowedModelIds.has(selectedChatModel)) {
       return new ChatbotError("bad_request:api").toResponse();
     }
 
-    await checkIpRateLimit(ipAddress(request));
+    const isGuest = guestRegex.test(session?.user?.email ?? "");
+    await checkIpRateLimit(ipAddress(request), isGuest);
 
     const userType: UserType = session.user.type;
 
@@ -169,8 +173,6 @@ export async function POST(request: Request) {
     let sessionTail = !chat
       ? await getSessionTail(session.user.id)
       : undefined;
-
-    const isGuest = guestRegex.test(session?.user?.email ?? "");
 
     // Onboarding check for new users (no chat history) — Authenticated users only
     if (!chat && !isGuest) {
@@ -267,13 +269,21 @@ export async function POST(request: Request) {
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
-        const result = streamText({
-          model: getLanguageModel(selectedChatModel),
-          system: systemPrompt({
-            selectedChatModel,
-            requestHints,
-            sessionTail,
-          }),
+        const corePrompt = isOnboarding
+      ? getSubAgentBySlug("onboarding_specialist")?.systemPrompt ?? systemPrompt({
+          selectedChatModel,
+          requestHints: requestHints as RequestHints,
+          sessionTail: sessionTail as any,
+        })
+      : systemPrompt({
+          selectedChatModel,
+          requestHints: requestHints as RequestHints,
+          sessionTail: sessionTail as any,
+        });
+
+    const result = streamText({
+      model: getLanguageModel(isOnboarding ? DEFAULT_CHAT_MODEL : selectedChatModel),
+      system: corePrompt,
           messages: modelMessages,
           stopWhen: stepCountIs(25),
             experimental_activeTools: (isReasoningModel

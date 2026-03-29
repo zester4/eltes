@@ -43,7 +43,7 @@ export default function Page() {
 
       setIsSuccessful(true);
       updateSession();
-      router.push("/chat");
+      router.push("/onboarding");
       router.refresh();
     }
   }, [state.status]);

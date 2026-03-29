@@ -50,7 +50,7 @@ export function Navbar({ user }: { user?: any }) {
             <>
               <Link href="/login" className="text-xs md:text-sm font-medium text-white/90 hover:text-white transition-colors px-3 hidden sm:block">Log in</Link>
               <Link 
-                href="/chat" 
+                href="/register" 
                 className="h-7 md:h-10 px-2.5 md:px-4 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] md:text-sm font-bold md:font-medium hover:bg-primary/90 shadow-[0_0_15px_rgba(251,191,36,0.2)] transition-all gap-1 md:gap-1.5 active:scale-95"
               >
                 Get Started

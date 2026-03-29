@@ -1,6 +1,7 @@
 import { tool } from "ai";
 import { Index } from "@upstash/vector";
 import { z } from "zod";
+import { unstable_noStore as noStore } from "next/cache";
 
 // Per-user memory stored in namespaced Upstash Vector index.
 // Each user gets their own namespace: `memory-{userId}`
@@ -8,11 +9,28 @@ import { z } from "zod";
 // (e.g., "text-embedding-3-small") so we can use `data` strings directly
 // without generating embeddings manually.
 
-function getMemoryIndex() {
+export function getMemoryIndex() {
   return new Index({
     url: process.env.UPSTASH_VECTOR_REST_URL!,
     token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
   });
+}
+
+/**
+ * Checks if the user has completed the conversational onboarding.
+ * Queries the Upstash Vector memory for the 'onboarding_complete' key.
+ */
+export async function isUserOnboarded(userId: string): Promise<boolean> {
+  noStore();
+  try {
+    const index = getMemoryIndex();
+    const ns = index.namespace(`memory-${userId}`);
+    const [result] = await ns.fetch(["onboarding_complete"]);
+    return !!result;
+  } catch (error) {
+    console.error("Failed to check onboarding status:", error);
+    return false;
+  }
 }
 
 // ─── saveMemory ───────────────────────────────────────────────────────────────

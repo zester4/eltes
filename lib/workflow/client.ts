@@ -171,6 +171,7 @@ export async function registerUserCrons(userId: string): Promise<void> {
     body: JSON.stringify({
       destination: heartbeatUrl,
       cron: "0 * * * *",
+      scheduleId: `hb-${userId}`,
       body: JSON.stringify({ userId, type: "heartbeat" }),
     }),
   });
@@ -185,6 +186,7 @@ export async function registerUserCrons(userId: string): Promise<void> {
     body: JSON.stringify({
       destination: heartbeatUrl,
       cron: "0 8 * * 1",
+      scheduleId: `syn-${userId}`,
       body: JSON.stringify({ userId, type: "weekly_synthesis" }),
     }),
   });

@@ -4,6 +4,9 @@ import { Chat } from "@/components/chat";
 import { DataStreamHandler } from "@/components/data-stream-handler";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { generateUUID } from "@/lib/utils";
+import { auth } from "@/app/(auth)/auth";
+import { isUserOnboarded } from "@/lib/ai/tools/memory";
+import { redirect } from "next/navigation";
 
 export default function Page() {
   return (
@@ -14,6 +17,18 @@ export default function Page() {
 }
 
 async function NewChatPage() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return redirect("/login");
+  }
+
+  // Robust server-side check for onboarding status
+  const onboarded = await isUserOnboarded(session.user.id);
+  if (!onboarded) {
+    return redirect("/onboarding");
+  }
+
   const cookieStore = await cookies();
   const modelIdFromCookie = cookieStore.get("chat-model");
   const id = generateUUID();

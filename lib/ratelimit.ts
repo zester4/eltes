@@ -3,7 +3,10 @@ import { createClient } from "redis";
 import { isProductionEnvironment } from "@/lib/constants";
 import { ChatbotError } from "@/lib/errors";
 
-const MAX_MESSAGES = 10;
+// IP rate limit is a spam guard for unauthenticated/guest requests only.
+// Regular authenticated users are controlled by the per-user DB entitlement check.
+const GUEST_MAX_MESSAGES = 10;
+const AUTHENTICATED_MAX_MESSAGES = 100;
 const TTL_SECONDS = 60 * 60;
 
 let client: ReturnType<typeof createClient> | null = null;
@@ -19,8 +22,17 @@ function getClient() {
   return client;
 }
 
-export async function checkIpRateLimit(ip: string | undefined) {
+export async function checkIpRateLimit(
+  ip: string | undefined,
+  isGuest = true
+) {
   if (!isProductionEnvironment || !ip) {
+    return;
+  }
+
+  // Authenticated (non-guest) users are rate-limited per-user via the DB count,
+  // not per-IP. Skip the IP check for them entirely.
+  if (!isGuest) {
     return;
   }
 
@@ -37,7 +49,8 @@ export async function checkIpRateLimit(ip: string | undefined) {
       .expire(key, TTL_SECONDS, "NX")
       .exec();
 
-    if (typeof count === "number" && count > MAX_MESSAGES) {
+    const limit = isGuest ? GUEST_MAX_MESSAGES : AUTHENTICATED_MAX_MESSAGES;
+    if (typeof count === "number" && count > limit) {
       throw new ChatbotError("rate_limit:chat");
     }
   } catch (error) {
