@@ -36,6 +36,8 @@ import {
   type BotIntegration,
   agentTask,
   type AgentTask,
+  messageDeprecated,
+  voteDeprecated,
 } from "./schema";
 import { generateHashedPassword } from "./utils";
 
@@ -151,15 +153,20 @@ export async function saveChat({
 
 export async function deleteChatById({ id }: { id: string }) {
   try {
-    await db.delete(vote).where(eq(vote.chatId, id));
-    await db.delete(message).where(eq(message.chatId, id));
-    await db.delete(stream).where(eq(stream.chatId, id));
+    return await db.transaction(async (tx) => {
+      await tx.delete(vote).where(eq(vote.chatId, id));
+      await tx.delete(message).where(eq(message.chatId, id));
+      await tx.delete(voteDeprecated).where(eq(voteDeprecated.chatId, id));
+      await tx.delete(messageDeprecated).where(eq(messageDeprecated.chatId, id));
+      await tx.delete(stream).where(eq(stream.chatId, id));
+      await tx.delete(agentTask).where(eq(agentTask.chatId, id));
 
-    const [chatsDeleted] = await db
-      .delete(chat)
-      .where(eq(chat.id, id))
-      .returning();
-    return chatsDeleted;
+      const [chatsDeleted] = await tx
+        .delete(chat)
+        .where(eq(chat.id, id))
+        .returning();
+      return chatsDeleted;
+    });
   } catch (_error) {
     throw new ChatbotError(
       "bad_request:database",
@@ -170,27 +177,32 @@ export async function deleteChatById({ id }: { id: string }) {
 
 export async function deleteAllChatsByUserId({ userId }: { userId: string }) {
   try {
-    const userChats = await db
-      .select({ id: chat.id })
-      .from(chat)
-      .where(eq(chat.userId, userId));
+    return await db.transaction(async (tx) => {
+      const userChats = await tx
+        .select({ id: chat.id })
+        .from(chat)
+        .where(eq(chat.userId, userId));
 
-    if (userChats.length === 0) {
-      return { deletedCount: 0 };
-    }
+      if (userChats.length === 0) {
+        return { deletedCount: 0 };
+      }
 
-    const chatIds = userChats.map((c) => c.id);
+      const chatIds = userChats.map((c) => c.id);
 
-    await db.delete(vote).where(inArray(vote.chatId, chatIds));
-    await db.delete(message).where(inArray(message.chatId, chatIds));
-    await db.delete(stream).where(inArray(stream.chatId, chatIds));
+      await tx.delete(vote).where(inArray(vote.chatId, chatIds));
+      await tx.delete(message).where(inArray(message.chatId, chatIds));
+      await tx.delete(voteDeprecated).where(inArray(voteDeprecated.chatId, chatIds));
+      await tx.delete(messageDeprecated).where(inArray(messageDeprecated.chatId, chatIds));
+      await tx.delete(stream).where(inArray(stream.chatId, chatIds));
+      await tx.delete(agentTask).where(inArray(agentTask.chatId, chatIds));
 
-    const deletedChats = await db
-      .delete(chat)
-      .where(eq(chat.userId, userId))
-      .returning();
+      const deletedChats = await tx
+        .delete(chat)
+        .where(eq(chat.userId, userId))
+        .returning();
 
-    return { deletedCount: deletedChats.length };
+      return { deletedCount: deletedChats.length };
+    });
   } catch (_error) {
     throw new ChatbotError(
       "bad_request:database",
