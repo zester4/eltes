@@ -11,6 +11,7 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
   cacheComponents: true,
   serverExternalPackages: ["zlib-sync"],
+  turbopack: {},
   experimental: {
     serverActions: {
       allowedOrigins: [
