@@ -109,6 +109,8 @@ export default function EventsPage() {
   const [selectedTrigger, setSelectedTrigger] = useState<TriggerDefinition | null>(null);
   const [triggerConfig, setTriggerConfig] = useState<Record<string, any>>({});
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const router = useRouter();
 
@@ -134,6 +136,8 @@ export default function EventsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to fetch events");
       setEventLogs(data.events || []);
+      // Reset to first page when data changes
+      setCurrentPage(1);
     } catch (error: any) {
       console.error(error);
     } finally {
@@ -241,6 +245,13 @@ export default function EventsPage() {
         return <Activity size={size} className="text-primary" />;
     }
   };
+
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return eventLogs.slice(start, start + itemsPerPage);
+  }, [eventLogs, currentPage]);
+
+  const totalPages = Math.ceil(eventLogs.length / itemsPerPage);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -475,8 +486,8 @@ export default function EventsPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-3 sm:gap-5">
-                    {eventLogs.map((event, idx) => {
+                   <div className="flex flex-col gap-3 sm:gap-5">
+                    {paginatedLogs.map((event, idx) => {
                       const rawSlug = event.triggerSlug || "";
                       const triggerDef = availableTriggers.find(a => a.slug.toLowerCase() === rawSlug.toLowerCase());
                       const displaySlug = triggerDef?.name || rawSlug;
@@ -550,6 +561,38 @@ export default function EventsPage() {
                           </div>
                         );
                       })}
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between px-3 sm:px-6 py-4 bg-muted/10 border border-border rounded-xl mt-4">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">
+                          Showing <span className="text-foreground font-bold">{Math.min(eventLogs.length, (currentPage - 1) * itemsPerPage + 1)}-{Math.min(eventLogs.length, currentPage * itemsPerPage)}</span> of <span className="text-foreground font-bold">{eventLogs.length}</span> signals
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => prev - 1)}
+                            className="h-8 px-3 rounded-lg border-border text-[10px] sm:text-xs transition-all active:scale-95 disabled:opacity-50"
+                          >
+                            Previous
+                          </Button>
+                          <div className="flex items-center justify-center min-w-[60px] text-[10px] sm:text-xs font-bold text-muted-foreground">
+                            {currentPage} / {totalPages}
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => prev + 1)}
+                            className="h-8 px-3 rounded-lg border-border text-[10px] sm:text-xs transition-all active:scale-95 disabled:opacity-50"
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
