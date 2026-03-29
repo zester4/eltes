@@ -882,8 +882,9 @@ export const PromptInputTextarea = ({
     }
 
     const files: File[] = [];
+    const itemList = Array.from(items);
 
-    for (const item of items) {
+    for (const item of itemList) {
       if (item.kind === "file") {
         const file = item.getAsFile();
         if (file) {

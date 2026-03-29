@@ -96,7 +96,8 @@ export function useScrollToBottom() {
     resizeObserver.observe(container);
 
     // Also observe children for size changes
-    for (const child of container.children) {
+    const childList = Array.from(container.children);
+    for (const child of childList) {
       resizeObserver.observe(child);
     }
 

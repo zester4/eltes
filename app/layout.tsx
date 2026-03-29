@@ -3,6 +3,7 @@ import { Inter, Source_Serif_4, JetBrains_Mono, Instrument_Serif, Barlow } from 
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { PwaUpdater } from "@/components/pwa-updater";
+import { SerwistProvider } from "./serwist";
 
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
@@ -101,9 +102,11 @@ export default function RootLayout({
           disableTransitionOnChange
           enableSystem
         >
-          <Toaster position="top-center" />
-          <PwaUpdater />
-          <SessionProvider>{children}</SessionProvider>
+          <SerwistProvider swUrl="/sw.js">
+            <Toaster position="top-center" />
+            <PwaUpdater />
+            <SessionProvider>{children}</SessionProvider>
+          </SerwistProvider>
         </ThemeProvider>
       </body>
     </html>

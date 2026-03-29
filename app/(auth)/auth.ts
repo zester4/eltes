@@ -64,6 +64,7 @@ export const {
         return { ...user, type: "regular" };
       },
     }),
+    /*
     Credentials({
       id: "guest",
       credentials: {},
@@ -72,6 +73,7 @@ export const {
         return { ...guestUser, type: "guest" };
       },
     }),
+    */
   ],
   callbacks: {
     jwt({ token, user }) {

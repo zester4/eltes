@@ -57,9 +57,10 @@ export async function proxy(request: NextRequest) {
     
     const redirectUrl = encodeURIComponent(currentUrl.toString());
 
-    // Always use guest flow for unauthenticated users; /login is only for explicit sign-in
+    // Redirect unauthenticated users to the login page
     return NextResponse.redirect(
-      new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url)
+      // new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url)
+      new URL(`/login?redirectUrl=${redirectUrl}`, request.url)
     );
   }
 

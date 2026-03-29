@@ -1,3 +1,4 @@
+//app/(chat)/api/connextions/route.ts
 import { Composio } from "@composio/core";
 import { auth } from "../../../(auth)/auth";
 import { guestRegex } from "@/lib/constants";
@@ -53,14 +54,16 @@ export async function GET() {
 
     return Response.json({
       toolkits: allApps
-        .filter((t: any) => !t.noAuth && !t.no_auth) // Only show apps requiring auth
         .map((t: any) => {
           const slug = t.slug || t.key || "";
+          const requiresAuth = !t.noAuth && !t.no_auth;
           return {
-            slug: slug,
+            slug,
             name: formatAppName(t.name || slug),
             logo: t.meta?.logo || t.logo,
-            isConnected: connectedApps.has(slug.toLowerCase()),
+            requiresAuth,
+            // No-auth tools are always available — treat as connected by default
+            isConnected: !requiresAuth || connectedApps.has(slug.toLowerCase()),
             connectedAccountId: connectedApps.get(slug.toLowerCase()),
           };
         }),
