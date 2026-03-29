@@ -1,8 +1,51 @@
 import Link from 'next/link';
-import { ArrowUpRight, Cpu, MemoryStick, Zap } from 'lucide-react';
+import { ArrowUpRight, Cpu, MemoryStick, Zap, Inbox, Target, ShieldAlert, Activity, Repeat, Terminal, Database } from 'lucide-react';
 import * as motion from 'framer-motion/client';
 import { BlurText } from '@/components/blur-text';
 import Image from 'next/image';
+
+const DEPARTMENTS = [
+  {
+    icon: <Inbox className="w-6 h-6 text-white" />,
+    title: "The 24/7 Inbox Operator",
+    description: "Never reads your email without taking action. Classifies every message, responds in your voice, routes what needs you, and follows up on silence.",
+  },
+  {
+    icon: <Target className="w-6 h-6 text-white" />,
+    title: "The Autonomous SDR",
+    description: "Finds your ideal customers, researches them, writes personalized outreach from scratch, handles objections, and drops booked meetings into your calendar.",
+  },
+  {
+    icon: <ShieldAlert className="w-6 h-6 text-white" />,
+    title: "The Dead Man's Switch",
+    description: "Three days of silence triggers autonomous mode. Etles monitors for true emergencies, sends alerts, and runs core ops for 30 days.",
+  },
+  {
+    icon: <Activity className="w-6 h-6 text-white" />,
+    title: "The Self-Improving Eval System",
+    description: "Every 24 hours, an agent team reviews every action Etles took — scoring accuracy, flagging failures, and queuing improvements.",
+  },
+  {
+    icon: <Repeat className="w-6 h-6 text-white" />,
+    title: "Long-Running Workflows",
+    description: "Built on Upstash. Your agents don't time out. A complex mission that requires 47 sequential steps across 6 tools finishes.",
+  },
+  {
+    icon: <Zap className="w-6 h-6 text-white" />,
+    title: "Event-Triggered Response",
+    description: "An email arrives → the Inbox Operator fires. A payment fails → the Churn Defense activates. Etles lives at the edge of your business.",
+  },
+  {
+    icon: <Terminal className="w-6 h-6 text-white" />,
+    title: "Sandboxed Code Execution",
+    description: "Agents can write, run, test, and deploy code inside isolated E2B sandboxes. Your Cloud Cost agent terminates idle resources natively.",
+  },
+  {
+    icon: <Database className="w-6 h-6 text-white" />,
+    title: "Persistent Vector Memory",
+    description: "Etles remembers everything: preferences, quirks, pricing. Every agent queries this memory before acting.",
+  }
+];
 
 export default function FeaturesPage() {
   return (
@@ -21,12 +64,30 @@ export default function FeaturesPage() {
 
         <div className="relative z-10 max-w-4xl">
           <BlurText 
-            text="Capabilities of the Future"
-            className="text-4xl sm:text-6xl md:text-8xl font-heading italic text-white leading-tight tracking-[-2px] md:tracking-[-4px] mb-4 md:mb-8"
+            text="These aren't features. These are departments."
+            className="text-4xl sm:text-6xl md:text-7xl font-heading italic text-white leading-tight tracking-[-1px] md:tracking-[-3px] mb-4 md:mb-8"
           />
           <p className="font-body font-light text-white/60 text-base md:text-xl max-w-2xl mx-auto leading-relaxed">
-            Etles isn't just another chatbot. It's a localized, highly-specialized agent engine designed for precision and power.
+            Stop buying software features. Start hiring autonomous systems that execute end-to-end objectives.
           </p>
+        </div>
+      </section>
+
+      {/* DEPARTMENTS SECTION */}
+      <section className="py-12 md:py-24 px-6 md:px-16 lg:px-24 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {DEPARTMENTS.map((dept, index) => (
+            <div key={index} className="liquid-glass group relative overflow-hidden rounded-3xl p-6 flex flex-col items-start text-left border border-white/5 hover:border-primary/20 transition-all shadow-xl">
+              <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mb-6 relative z-10">
+                {dept.icon}
+              </div>
+              <h3 className="text-xl font-heading italic text-white mb-3 relative z-10 leading-tight">{dept.title}</h3>
+              <p className="font-body font-light text-white/60 text-sm leading-relaxed relative z-10">
+                {dept.description}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 

@@ -25,6 +25,9 @@ export default async function MarketingLayout({ children }: { children: React.Re
                 <Image src="/logo.png" alt="Etles" width={32} height={32} />
                 <span className="font-heading italic text-xl text-white">Etles</span>
              </Link>
+             <p className="text-primary font-heading italic text-2xl mb-4 leading-tight tracking-tight">
+               Etles doesn't work for you. It works as you.
+             </p>
              <p className="text-white/40 font-body text-sm leading-relaxed max-w-[200px]">
                The autonomous agent orchestration layer for modern teams.
              </p>

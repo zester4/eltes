@@ -1,40 +1,25 @@
 "use client";
 
-import { useState, useMemo } from 'react';
-import { Search, Globe, Shield, Zap, ExternalLink, ArrowUpRight } from 'lucide-react';
+import { Globe, Shield, Zap, ExternalLink, ArrowUpRight } from 'lucide-react';
 import * as motion from 'framer-motion/client';
 import { BlurText } from '@/components/blur-text';
 import Image from 'next/image';
 import Link from 'next/link';
 
-// Mock toolkit data inspired by the internal connections page
-const ALL_TOOLKITS = [
-  { name: 'Slack', slug: 'slack', category: 'Communication', logo: '/logos/vercel.svg' },
-  { name: 'GitHub', slug: 'github', category: 'Development', logo: '/logos/vercel.svg' },
-  { name: 'Linear', slug: 'linear', category: 'Project Management', logo: '/logos/linear.svg' },
-  { name: 'Stripe', slug: 'stripe', category: 'Finance', logo: '/logos/stripe.svg' },
-  { name: 'Notion', slug: 'notion', category: 'Docs', logo: '/logos/notion.svg' },
-  { name: 'Figma', slug: 'figma', category: 'Design', logo: '/logos/figma.svg' },
-  { name: 'Gmail', slug: 'gmail', category: 'Communication', logo: '/logos/vercel.svg' },
-  { name: 'Discord', slug: 'discord', category: 'Communication', logo: '/logos/vercel.svg' },
-  { name: 'Salesforce', slug: 'salesforce', category: 'CRM', logo: '/logos/vercel.svg' },
-  { name: 'Jira', slug: 'jira', category: 'Devops', logo: '/logos/vercel.svg' },
-  { name: 'Airtable', slug: 'airtable', category: 'Database', logo: '/logos/vercel.svg' },
-  { name: 'Asana', slug: 'asana', category: 'Project Management', logo: '/logos/vercel.svg' },
-  { name: 'Zoom', slug: 'zoom', category: 'Communication', logo: '/logos/vercel.svg' },
-  { name: 'Shopify', slug: 'shopify', category: 'E-commerce', logo: '/logos/vercel.svg' },
-  { name: 'PostgreSQL', slug: 'postgres', category: 'Database', logo: '/logos/vercel.svg' },
+const DOMAINS = [
+  { category: "Communication", tools: ["Gmail", "Outlook", "Slack", "WhatsApp", "Telegram", "Discord", "Teams"] },
+  { category: "Sales & CRM", tools: ["HubSpot", "Salesforce", "Pipedrive", "Apollo", "LinkedIn", "Calendly"] },
+  { category: "Finance", tools: ["Stripe", "Wise", "PayPal", "QuickBooks", "Xero", "FreshBooks"] },
+  { category: "Project & Code", tools: ["GitHub", "GitLab", "Jira", "Linear", "Asana", "ClickUp", "Notion"] },
+  { category: "Product & Analytics", tools: ["Amplitude", "Mixpanel", "Segment", "PostHog"] },
+  { category: "Cloud & Infrastructure", tools: ["AWS", "GCP", "Azure", "Vercel", "Netlify", "Cloudflare", "Datadog", "Sentry"] },
+  { category: "Marketing & Content", tools: ["Mailchimp", "ConvertKit", "Klaviyo", "Twitter/X", "LinkedIn"] },
+  { category: "Legal & Contracts", tools: ["DocuSign", "PandaDoc"] },
+  { category: "Scheduling & Automation", tools: ["QStash", "Upstash Workflow", "Calendly"] },
+  { category: "Sandboxes", tools: ["E2B", "Daytona (Live Code Execution)"] }
 ];
 
 export default function IntegrationsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredToolkits = useMemo(() => {
-    return ALL_TOOLKITS.filter(t => 
-      t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      t.category.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [searchQuery]);
 
   return (
     <div className="w-full relative overflow-visible bg-black selection:bg-primary/20">
@@ -51,66 +36,45 @@ export default function IntegrationsPage() {
              </span>
           </div>
           <BlurText 
-            text="The Connectivity Layer for AI."
-            className="text-3xl sm:text-5xl md:text-8xl font-heading italic text-white leading-tight tracking-[-1px] md:tracking-[-4px] mb-6 md:mb-8"
+            text="Etles lives where your business already lives."
+            className="text-3xl sm:text-5xl md:text-7xl font-heading italic text-white leading-tight tracking-[-1px] md:tracking-[-3px] mb-6 md:mb-8"
           />
           <p className="font-body font-light text-white/60 text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-8 md:mb-12">
-            Etles leverages Composio's massive toolkit library to give your agent hands-on access to the world's most popular software.
+            1,000+ integrations via Composio. Your agents don't need you to migrate to a new tool — they come to yours.
           </p>
-
-          {/* Search Bar inspired by connections/page.tsx */}
-          <div className="relative max-w-xl mx-auto w-full group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 md:w-5 md:h-5 text-white/30 group-focus-within:text-white transition-colors" />
-            <input 
-              type="text" 
-              placeholder="Search across 500+ toolkits..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 md:h-16 pl-12 md:pl-14 pr-6 bg-transparent border border-white/10 rounded-xl md:rounded-2xl text-sm md:text-base text-white font-body focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all placeholder:text-white/20"
-            />
-          </div>
         </div>
       </section>
 
       {/* CATALOG SECTION */}
       <section className="py-16 md:py-24 px-6 md:px-16 lg:px-24 max-w-7xl mx-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-6">
-          {filteredToolkits.map((app) => (
-            <div 
-              key={app.slug} 
-              className="liquid-glass group relative overflow-hidden aspect-square rounded-[24px] md:rounded-[32px] p-4 md:p-8 border border-white/5 flex flex-col items-center justify-center text-center hover:border-primary/20 transition-all cursor-pointer"
-            >
-              <div className="absolute inset-0 bg-white/[0.02] opacity-0 group-hover:opacity-100 transition-opacity" />
-              
-              <div className="relative size-10 md:size-16 mb-3 md:mb-6 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
-                <div className="absolute inset-0 bg-white/5 blur-2xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
-                <Image 
-                  src={app.logo} 
-                  alt={app.name} 
-                  fill 
-                  className="object-contain brightness-0 invert opacity-60 group-hover:opacity-100 transition-opacity" 
-                />
-              </div>
-
-              <span className="relative z-10 text-white font-body text-sm md:text-lg font-medium tracking-tight truncate w-full px-1 group-hover:text-primary transition-colors">{app.name}</span>
-              <span className="relative z-10 text-white/20 font-body text-[8px] md:text-[10px] uppercase tracking-[0.2em] mt-1 md:mt-2 group-hover:text-white/40 transition-colors">{app.category}</span>
-              
-              <div className="absolute bottom-4 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hidden md:block">
-                 <Zap className="w-4 h-4 text-white/40" />
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-24">
+          {DOMAINS.map((domain) => (
+            <div key={domain.category} className="liquid-glass rounded-[32px] p-8 border border-white/5 shadow-2xl">
+              <h3 className="text-xl md:text-2xl font-heading italic text-white mb-6 tracking-tight">{domain.category}</h3>
+              <ul className="flex flex-col gap-3">
+                {domain.tools.map((tool) => (
+                  <li key={tool} className="text-white/60 font-body text-base flex items-center gap-3">
+                     <Globe className="w-4 h-4 text-white/20" /> {tool}
+                  </li>
+                ))}
+              </ul>
             </div>
           ))}
         </div>
 
-        {filteredToolkits.length === 0 && (
-          <div className="py-32 text-center">
-             <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-white/5 border border-white/10 mb-6">
-                <Search className="w-8 h-8 text-white/20" />
-             </div>
-             <h3 className="text-2xl font-heading italic text-white mb-2">No matching toolkits</h3>
-             <p className="text-white/40 font-body">Try searching for broader categories or different names.</p>
-          </div>
-        )}
+        {/* UNIVERSAL CONNECTOR CALLOUT */}
+        <div className="mt-16 text-center max-w-3xl mx-auto liquid-glass p-12 rounded-[40px] border border-white/5">
+           <h3 className="text-2xl md:text-4xl font-heading italic text-white mb-6">Don't see your tool?</h3>
+           <p className="font-body text-white/60 mb-8 text-lg">
+              Etles uses Composio's universal connector layer. If it has an API, your agents can use it.
+           </p>
+           <Link 
+             href="mailto:request@etles.com" 
+             className="text-primary hover:text-white transition-colors font-body font-bold border-b border-primary hover:border-white pb-1"
+           >
+             Request an integration →
+           </Link>
+        </div>
 
         {/* SECURITY REASSURANCE */}
         <div className="mt-32 p-12 lg:p-16 rounded-[48px] border border-white/5 relative overflow-hidden">
@@ -150,6 +114,9 @@ export default function IntegrationsPage() {
 
       {/* FOOTER CTA */}
       <section className="py-20 md:py-32 px-6 flex flex-col items-center justify-center border-t border-white/10 mt-20 md:mt-32">
+        <p className="text-lg md:text-2xl font-body font-light text-white/60 mb-10 text-center max-w-3xl">
+          Etles doesn't replace your stack. It becomes the intelligence layer that sits above it and operates it on your behalf.
+        </p>
         <h2 className="text-3xl md:text-7xl font-heading italic text-white mb-8 md:mb-10 text-center uppercase tracking-tighter">Hook it up.</h2>
         <Link 
           href="/chat" 
