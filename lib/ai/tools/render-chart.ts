@@ -17,6 +17,8 @@ export const chartToolInputSchema = z.object({
     "radar",
     "scatter",
     "composed",
+    "funnel",
+    "radial",
   ]),
   title: z.string().optional(),
   description: z.string().optional(),
@@ -26,6 +28,7 @@ export const chartToolInputSchema = z.object({
   yAxisLabel: z.string().optional(),
   layout: z.enum(["vertical", "horizontal"]).optional(),
   stacked: z.boolean().optional(),
+  valueFormatter: z.enum(["currency", "percent", "compact", "none"]).optional(),
   /** Optional palette (hex or CSS colors), applied to series in order */
   colors: z.array(z.string()).max(16).optional(),
   /** Required for `composed`: one of line | bar | area per series */
@@ -40,18 +43,17 @@ function validateChartPayload(
   const L = input.labels.length;
   const { chartType, series } = input;
 
-  if (chartType === "pie") {
+  if (chartType === "pie" || chartType === "radial" || chartType === "funnel") {
     if (series.length !== 1) {
       return {
         ok: false,
-        error:
-          "Pie charts require exactly one series (slice values per label).",
+        error: `${chartType} charts require exactly one series.`,
       };
     }
     if (series[0].data.length !== L) {
       return {
         ok: false,
-        error: `Pie chart: need ${L} data points (one per label), got ${series[0].data.length}.`,
+        error: `${chartType} chart: need ${L} data points (one per label), got ${series[0].data.length}.`,
       };
     }
     return { ok: true, data: input };
@@ -82,7 +84,7 @@ function validateChartPayload(
 
 export const renderChart = tool({
   description:
-    "Render an interactive, high-end premium chart in the chat with 'Liquid Glass' aesthetic. Use when the user asks for insights, trends, comparisons, or analytics. Types: line, bar, area, pie, radar, scatter, composed. The UI handles curated premium color palettes automatically.",
+    "Render an interactive, high-end premium chart in the chat with 'Liquid Glass' aesthetic. Use when the user asks for insights, trends, comparisons, or analytics. Types: line, bar, area, pie, radar, scatter, composed, funnel, radial. The UI handles curated premium color palettes automatically.",
   inputSchema: chartToolInputSchema,
   execute: (input) => {
     const parsed = chartToolInputSchema.safeParse(input);

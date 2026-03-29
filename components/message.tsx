@@ -784,7 +784,7 @@ const PurePreviewMessage = ({
           })}
 
           {!isReadonly && (
-            <div className="opacity-0 group-hover/message:opacity-100 group-focus-within/message:opacity-100 transition-opacity duration-200 mt-1 md:mt-2">
+            <div className="opacity-100 md:opacity-0 md:group-hover/message:opacity-100 group-focus-within/message:opacity-100 transition-opacity duration-200 mt-1 md:mt-2">
               <MessageActions
                 chatId={chatId}
                 isLoading={isLoading}

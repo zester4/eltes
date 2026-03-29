@@ -25,6 +25,11 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  RadialBarChart,
+  RadialBar,
+  FunnelChart,
+  Funnel,
+  LabelList,
 } from "recharts";
 import type { ChartToolPayload } from "@/lib/ai/tools/render-chart";
 import { cn } from "@/lib/utils";
@@ -102,8 +107,32 @@ function buildPieData(spec: ChartToolPayload) {
   return spec.labels.map((name, i) => ({
     name,
     value: s0.data[i] ?? 0,
+    fill: pickSeriesColor(i, undefined, spec.colors)
   }));
 }
+
+function buildFunnelData(spec: ChartToolPayload) {
+  const s0 = spec.series[0];
+  return spec.labels.map((name, i) => ({
+    name,
+    value: s0.data[i] ?? 0,
+    fill: pickSeriesColor(i, undefined, spec.colors)
+  }));
+}
+
+const formatValue = (value: any, formatterType?: "currency" | "percent" | "compact" | "none") => {
+  if (typeof value !== "number") return value;
+  switch (formatterType) {
+    case "currency":
+      return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+    case "percent":
+      return new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 }).format(value / 100);
+    case "compact":
+      return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+    default:
+      return value.toLocaleString("en-US");
+  }
+};
 
 function buildScatterSeries(spec: ChartToolPayload): {
   key: string;
@@ -130,6 +159,8 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
   const radarData = buildRadarData(spec);
   const pieData = buildPieData(spec);
   const scatterSeries = buildScatterSeries(spec);
+  const funnelData = spec.chartType === "funnel" ? buildFunnelData(spec) : [];
+  const radialData = spec.chartType === "radial" ? buildPieData(spec) : [];
 
   const commonMargin = { top: 8, right: 8, left: 0, bottom: 8 };
   const xAxisTick = { fill: colors.axis, fontSize: 10 };
@@ -178,6 +209,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
     width: isHorizontal ? 80 : 40,
     type: (isHorizontal ? "category" : "number") as "number" | "category",
     dataKey: isHorizontal ? "name" : undefined,
+    tickFormatter: (val: any) => formatValue(val, isHorizontal ? "none" : spec.valueFormatter),
   };
 
   const chartInner = (() => {
@@ -190,6 +222,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
             <YAxis {...yAxisProps} />
             <Tooltip 
               contentStyle={tooltipContentStyle} 
+              formatter={(value: any) => formatValue(value, spec.valueFormatter)}
               cursor={{ stroke: colors.grid, strokeWidth: 1 }}
             />
             <Legend {...legendProps} />
@@ -213,7 +246,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
                 stroke={pickSeriesColor(i, s.color, spec.colors)}
                 strokeWidth={3}
                 strokeDasharray={s.lineStyle === "dashed" ? "5 5" : undefined}
-                type="monotone"
+                type="natural"
                 animationDuration={1500}
               />
             ))}
@@ -228,6 +261,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
             <YAxis {...yAxisProps} />
             <Tooltip 
               contentStyle={tooltipContentStyle} 
+              formatter={(value: any) => formatValue(value, spec.valueFormatter)}
               cursor={{ fill: "rgba(255,255,255,0.03)" }}
             />
             <Legend {...legendProps} />
@@ -263,6 +297,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
             <YAxis {...yAxisProps} />
             <Tooltip 
               contentStyle={tooltipContentStyle}
+              formatter={(value: any) => formatValue(value, spec.valueFormatter)}
               cursor={{ fill: "rgba(255,255,255,0.03)" }}
             />
             <Legend {...legendProps} />
@@ -287,7 +322,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
                   stroke={c}
                   strokeWidth={2}
                   stackId={stacking}
-                  type="monotone"
+                  type="natural"
                   animationDuration={1500}
                 />
               );
@@ -319,7 +354,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
                 />
               ))}
             </Pie>
-            <Tooltip contentStyle={tooltipContentStyle} />
+            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
             <Legend {...legendProps} />
           </PieChart>
         );
@@ -339,7 +374,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
               stroke={colors.axis}
               tick={{ fill: colors.axis, fontSize: 9 }}
             />
-            <Tooltip contentStyle={tooltipContentStyle} />
+            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
             <Legend {...legendProps} />
             {spec.series.map((s, i) => (
               <Radar
@@ -371,7 +406,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
               tickMargin={4}
               width={40}
             />
-            <Tooltip contentStyle={tooltipContentStyle} />
+            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
             <Legend {...legendProps} />
             {scatterSeries.map((ss) => (
               <Scatter
@@ -403,7 +438,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
               tickMargin={4}
               width={40}
             />
-            <Tooltip contentStyle={tooltipContentStyle} />
+            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
             <Legend {...legendProps} />
             {spec.series.map((s, i) => {
               const c = pickSeriesColor(i, s.color, spec.colors);
@@ -416,7 +451,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
                     key={s.name}
                     stroke={c}
                     strokeWidth={2}
-                    type="monotone"
+                    type="natural"
                   />
                 );
               }
@@ -428,7 +463,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
                     fillOpacity={0.3}
                     key={s.name}
                     stroke={c}
-                    type="monotone"
+                    type="natural"
                   />
                 );
               }
@@ -444,6 +479,37 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
           </ComposedChart>
         );
       }
+
+      case "radial":
+        return (
+          <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="80%" barSize={16} data={radialData}>
+            <PolarAngleAxis type="number" domain={[0, 'dataMax']} angleAxisId={0} tick={false} />
+            <RadialBar
+              background={{ fill: colors.grid }}
+              dataKey="value"
+              cornerRadius={8}
+            >
+              {radialData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
+            </RadialBar>
+            <Legend {...legendProps} />
+            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
+          </RadialBarChart>
+        );
+
+      case "funnel":
+        return (
+          <FunnelChart margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
+            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
+            <Funnel dataKey="value" data={funnelData} isAnimationActive>
+              <LabelList position="right" fill={colors.axis} stroke="none" dataKey="name" fontSize={12} />
+              {funnelData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
+            </Funnel>
+          </FunnelChart>
+        );
 
       default:
         return null;
