@@ -58,6 +58,10 @@ export const PromptInputTextarea = ({
         return;
       }
 
+      if (typeof window !== "undefined" && window.innerWidth < 768) {
+        return;
+      }
+
       e.preventDefault();
 
       const form = e.currentTarget.form;

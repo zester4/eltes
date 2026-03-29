@@ -12,6 +12,8 @@ export async function POST(req: NextRequest) {
     name?: string;
     role?: string;
     painPoints?: string[];
+    telegramChatId?: string;
+    automationPreference?: string;
   };
 
   try {
@@ -63,6 +65,36 @@ export async function POST(req: NextRequest) {
             key: "user_pain_points",
             content: `User's biggest time drains are: ${painPointStr}.`,
             tags: ["profile", "preferences"],
+            savedAt: new Date().toISOString(),
+          },
+        })
+      );
+    }
+
+    if (body.telegramChatId) {
+      upserts.push(
+        ns.upsert({
+          id: "telegram_chat_id",
+          data: `User's Telegram Chat ID is ${body.telegramChatId}. Use this to push alerts to Telegram.`,
+          metadata: {
+            key: "telegram_chat_id",
+            content: `User's Telegram Chat ID is ${body.telegramChatId}. Use this to push alerts to Telegram.`,
+            tags: ["profile", "telegram", "contact"],
+            savedAt: new Date().toISOString(),
+          },
+        })
+      );
+    }
+
+    if (body.automationPreference) {
+      upserts.push(
+        ns.upsert({
+          id: "automation_preference",
+          data: `User requested a recurring automation: ${body.automationPreference}. Handle this during heartbeat.`,
+          metadata: {
+            key: "automation_preference",
+            content: `User requested a recurring automation: ${body.automationPreference}. Handle this during heartbeat.`,
+            tags: ["profile", "automation", "preferences"],
             savedAt: new Date().toISOString(),
           },
         })

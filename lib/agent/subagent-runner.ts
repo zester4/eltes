@@ -22,6 +22,13 @@ import type { DBMessage } from "@/lib/db/schema";
 import { saveMessages, updateAgentTask } from "@/lib/db/queries";
 import { generateUUID } from "@/lib/utils";
 import { Index } from "@upstash/vector";
+import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
+import {
+  setReminder,
+  setCronJob,
+  listSchedules,
+  deleteSchedule,
+} from "@/lib/ai/tools/schedule";
 
 const composio = new Composio({ provider: new VercelProvider() });
 
@@ -84,6 +91,13 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
     /* Composio optional — agent still runs with built-in tools */
   }
 
+  const baseUrl =
+    process.env.BASE_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : undefined) ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+
   const tools = {
     ...composioTools,
     getWeather,
@@ -91,6 +105,12 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
     recallMemory: recallMemory({ userId }),
     updateMemory: updateMemory({ userId }),
     deleteMemory: deleteMemory({ userId }),
+    launchMission: launchMission({ userId, chatId, baseUrl }),
+    getMissionStatus: getMissionStatus({ userId }),
+    setReminder: setReminder({ userId, baseUrl }),
+    setCronJob: setCronJob({ userId, baseUrl }),
+    listSchedules: listSchedules({ userId }),
+    deleteSchedule: deleteSchedule(),
   };
 
   const memoryContext = await recallRelevantMemory(userId, task);

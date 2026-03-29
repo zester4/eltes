@@ -54,18 +54,18 @@ export function MessageEditor({
   };
 
   return (
-    <div className="flex w-full flex-col gap-2">
+    <div className="flex w-full flex-col gap-2 relative">
       <Textarea
-        className="w-full resize-none overflow-hidden rounded-xl bg-transparent text-base! outline-hidden"
+        className="w-full resize-none overflow-hidden rounded-2xl bg-zinc-800 text-zinc-100 p-4 min-h-[60px] text-[14px] leading-relaxed border border-white/10 shadow-sm focus-visible:ring-1 focus-visible:ring-amber-500/50 outline-none"
         data-testid="message-editor"
         onChange={handleInput}
         ref={textareaRef}
         value={draftContent}
       />
 
-      <div className="flex flex-row justify-end gap-2">
+      <div className="flex flex-row justify-end gap-2 mt-1 -mr-1">
         <Button
-          className="h-fit px-3 py-2"
+          className="h-fit px-4 py-1.5 text-xs bg-zinc-800 text-zinc-300 hover:text-white hover:bg-zinc-700 border-transparent rounded-full transition-colors"
           onClick={() => {
             setMode("view");
           }}
@@ -74,9 +74,9 @@ export function MessageEditor({
           Cancel
         </Button>
         <Button
-          className="h-fit px-3 py-2"
+          className="h-fit px-4 py-1.5 text-xs bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-full transition-colors disabled:opacity-50"
           data-testid="message-editor-send-button"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !draftContent.trim()}
           onClick={async () => {
             setIsSubmitting(true);
 
@@ -104,7 +104,7 @@ export function MessageEditor({
           }}
           variant="default"
         >
-          {isSubmitting ? "Sending..." : "Send"}
+          {isSubmitting ? "Sending..." : "Send updated"}
         </Button>
       </div>
     </div>

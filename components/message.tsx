@@ -13,7 +13,7 @@ import { cn, sanitizeText } from "@/lib/utils";
 import { useDataStream } from "./data-stream-provider";
 import { DocumentToolResult } from "./document";
 import { DocumentPreview } from "./document-preview";
-import { AgentActionCard, AgentMessageBubble, isResult, parseAgentMessage, type AgentResultData } from "./elements/agent-action";
+import { AgentActionCard, AgentActionData, AgentMessageBubble, isResult, parseAgentMessage, type AgentResultData } from "./elements/agent-action";
 import { ChartDisplay } from "./elements/chart-display";
 import { EventCard, parseEventMessage } from "./elements/event";
 import { ExpandableContent } from "./elements/expandable-content";
@@ -217,40 +217,73 @@ const PurePreviewMessage = ({
               if (parseSubAgentHandoffMarker(rawText)) {
                 return null;
               }
-              const partEvent = parseEventMessage(rawText);
-              const partAgent = parseAgentMessage(rawText);
 
-                return (
-                  <div key={key}>
+              let conversationalText = rawText;
+              let partAgent: AgentActionData | null = null;
+              let partEvent: any = null;
+
+              if (rawText.includes("###AGENT_DELEGATED###")) {
+                const [prefix, ...rest] = rawText.split("###AGENT_DELEGATED###");
+                conversationalText = prefix;
+                try { partAgent = JSON.parse(rest.join("###AGENT_DELEGATED###")); } catch {}
+              } else if (rawText.includes("###AGENT_RESULT###")) {
+                const [prefix, ...rest] = rawText.split("###AGENT_RESULT###");
+                conversationalText = prefix;
+                try { partAgent = JSON.parse(rest.join("###AGENT_RESULT###")); } catch {}
+              } else if (rawText.includes("###EVENT###")) {
+                const [prefix, ...rest] = rawText.split("###EVENT###");
+                conversationalText = prefix;
+                try { partEvent = JSON.parse(rest.join("###EVENT###")); } catch {}
+              } else {
+                partAgent = parseAgentMessage(rawText);
+                if (!partAgent) {
+                  partEvent = parseEventMessage(rawText);
+                }
+                if (partAgent || partEvent) {
+                  conversationalText = "";
+                }
+              }
+
+              return (
+                <div key={key} className="flex flex-col gap-3 w-full">
+                  {conversationalText.trim() && (
                     <MessageContent
                       className={cn({
-                        "wrap-break-word w-fit rounded-2xl px-3 py-2 text-left bg-primary text-primary-foreground text-sm":
-                          message.role === "user" && !partEvent && !partAgent,
+                        "wrap-break-word w-fit max-w-[90%] rounded-2xl px-4 py-2.5 text-left bg-zinc-800 text-zinc-100 text-[14px] leading-relaxed border border-white/[0.05] shadow-sm ml-auto":
+                          message.role === "user",
                         "bg-transparent px-0 py-0 text-left w-full text-sm":
-                          message.role === "assistant" ||
-                          partEvent ||
-                          partAgent,
+                          message.role === "assistant",
                       })}
                       data-testid="message-content"
+                    >
+                      {message.role === "user" ? (
+                        <ExpandableContent>
+                          <div className="whitespace-pre-wrap">{conversationalText}</div>
+                        </ExpandableContent>
+                      ) : (
+                        <Response>{conversationalText}</Response>
+                      )}
+                    </MessageContent>
+                  )}
+
+                  {(partEvent || partAgent) && (
+                    <MessageContent
+                      className="bg-transparent px-0 py-0 text-left w-full text-sm"
+                      data-testid="message-content-cards"
                     >
                       {partEvent ? (
                         <EventCard event={partEvent} />
                       ) : partAgent ? (
-                        isResult(partAgent) && !partAgent.error ? (
+                        isResult(partAgent) && !(partAgent as AgentResultData).error ? (
                           <AgentMessageBubble agent={partAgent as AgentResultData} />
                         ) : (
                           <AgentActionCard agent={partAgent} />
                         )
-                      ) : message.role === "user" ? (
-                        <ExpandableContent>
-                          <Response>{rawText}</Response>
-                        </ExpandableContent>
-                      ) : (
-                        <Response>{rawText}</Response>
-                      )}
+                      ) : null}
                     </MessageContent>
-                  </div>
-                );
+                  )}
+                </div>
+              );
             }
 
             if ((type as string) === "imageDelta") {
@@ -272,9 +305,8 @@ const PurePreviewMessage = ({
 
             if (mode === "edit") {
               return (
-                <div className="flex w-full flex-row items-start gap-3" key={key}>
-                  <div className="size-8" />
-                  <div className="min-w-0 flex-1">
+                <div className="flex w-full flex-row items-start justify-end gap-3" key={key}>
+                  <div className="min-w-0 flex-1 md:max-w-[80%]">
                     <MessageEditor
                       key={message.id}
                       message={message}

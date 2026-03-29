@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Plus, ArrowRight, Loader2 } from "lucide-react";
+import { Check, Plus, ArrowRight, Loader2, Send } from "lucide-react";
 import { initiateComposioAuthFlow } from "@/lib/composio-auth";
 import { cn } from "@/lib/utils";
 
@@ -70,6 +70,24 @@ const PAIN_POINTS = [
   "Data entry",
   "Code reviews",
   "Other",
+];
+
+const AUTOMATIONS = [
+  {
+    id: "morning_digest",
+    title: "Morning Digest 🌅",
+    desc: "Summarize unread messages and emails at 8:00 AM.",
+  },
+  {
+    id: "evening_review",
+    title: "End of Day Review 🌙",
+    desc: "Compile open tasks and pull requests at 5:00 PM.",
+  },
+  {
+    id: "urgent_watch",
+    title: "Urgent Alerts Only 🚨",
+    desc: "Only ping me if an important meeting or email comes up.",
+  }
 ];
 
 // Suggestions per connected app
@@ -153,7 +171,7 @@ function AppLogo({ app }: { app: (typeof FEATURED_APPS)[number] }) {
   if (failed) {
     return (
       <div
-        className="h-8 w-8 rounded-lg flex items-center justify-center text-white text-xs font-bold"
+        className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg flex items-center justify-center text-white text-[10px] sm:text-xs font-bold"
         style={{ backgroundColor: app.fallbackColor }}
       >
         {app.name[0]}
@@ -164,7 +182,7 @@ function AppLogo({ app }: { app: (typeof FEATURED_APPS)[number] }) {
     <img
       src={app.logo}
       alt={app.name}
-      className="h-8 w-8 object-contain"
+      className="h-7 w-7 sm:h-8 sm:w-8 object-contain"
       onError={() => setFailed(true)}
       style={{ filter: "invert(1) brightness(0.9)" }}
     />
@@ -174,9 +192,9 @@ function AppLogo({ app }: { app: (typeof FEATURED_APPS)[number] }) {
 // ─── Steps ────────────────────────────────────────────────────────────────
 
 const slideVariants = {
-  enter: { opacity: 0, y: 24 },
+  enter: { opacity: 0, y: 16 },
   center: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } },
-  exit: { opacity: 0, y: -16, transition: { duration: 0.2, ease: "easeIn" } },
+  exit: { opacity: 0, y: -12, transition: { duration: 0.2, ease: "easeIn" } },
 };
 
 // ─── Wizard ───────────────────────────────────────────────────────────────
@@ -187,10 +205,22 @@ export function OnboardingWizard() {
   const [nameLoading, setNameLoading] = useState(false);
   const [connectedApps, setConnectedApps] = useState<string[]>([]);
   const [connectingApp, setConnectingApp] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  
+  // Telegram
+  const [telegramChatId, setTelegramChatId] = useState("");
+  const [telegramLoading, setTelegramLoading] = useState(false);
+  
+  // Custom Role
   const [role, setRole] = useState<string>("");
   const [painPoints, setPainPoints] = useState<string[]>([]);
   const [roleLoading, setRoleLoading] = useState(false);
+  
+  // Automation
+  const [automationPreference, setAutomationPreference] = useState("");
+  const [customAutomationText, setCustomAutomationText] = useState("");
+  const [automationLoading, setAutomationLoading] = useState(false);
+  
+  const [toastStr, setToastStr] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -201,8 +231,8 @@ export function OnboardingWizard() {
 
   // Toast helper
   function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3500);
+    setToastStr(msg);
+    setTimeout(() => setToastStr(null), 3500);
   }
 
   // Step 1: Save name
@@ -222,7 +252,7 @@ export function OnboardingWizard() {
     setStep(2);
   }
 
-  // Step 2: Connect an app via popup
+  // Step 2 + Step 3: Connect an app via popup
   async function handleConnect(slug: string) {
     if (connectedApps.includes(slug) || connectingApp) return;
     setConnectingApp(slug);
@@ -248,17 +278,31 @@ export function OnboardingWizard() {
     }
   }
 
-  // Step 2: Continue to step 3
+  // Step 2: Continue to step 3 (Telegram)
   function handleContinueToStep3() {
     setStep(3);
   }
-
-  // Step 2: Skip to step 3
   function handleSkipApps() {
     setStep(3);
   }
+  
+  // Step 3: Save Telegram Info
+  async function handleTelegramSubmit() {
+    setTelegramLoading(true);
+    try {
+      if (telegramChatId.trim()) {
+        await fetch("/api/onboarding/save-profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ telegramChatId: telegramChatId.trim() }),
+        });
+      }
+    } catch {}
+    setTelegramLoading(false);
+    setStep(4);
+  }
 
-  // Step 3: Save role + pain points, go to step 4
+  // Step 4: Save role + pain points, go to step 5 (Automation)
   async function handleRoleSubmit() {
     if (!role) return;
     setRoleLoading(true);
@@ -270,10 +314,25 @@ export function OnboardingWizard() {
       });
     } catch {}
     setRoleLoading(false);
-    setStep(4);
+    setStep(5);
+  }
+  
+  // Step 5: Save Automation, go to step 6 (Suggestions)
+  async function handleAutomationSubmit() {
+    if (!automationPreference) return;
+    setAutomationLoading(true);
+    try {
+      await fetch("/api/onboarding/save-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ automationPreference }),
+      });
+    } catch {}
+    setAutomationLoading(false);
+    setStep(6);
   }
 
-  // Step 4: Complete onboarding + navigate
+  // Step 6: Complete onboarding + navigate
   async function handleComplete(query?: string) {
     setCompleting(true);
     try {
@@ -299,16 +358,16 @@ export function OnboardingWizard() {
   const suggestions = buildSuggestions(connectedApps, role);
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#0f0f0f] px-6 py-12 overflow-hidden">
+    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center bg-[#0f0f0f] px-4 py-8 sm:px-6 sm:py-12 overflow-hidden">
       {/* Amber glow blob */}
-      <div className="pointer-events-none absolute top-0 left-0 h-[500px] w-[500px] -translate-x-1/3 -translate-y-1/3 rounded-full bg-amber-600/10 blur-[140px]" />
+      <div className="pointer-events-none absolute top-0 left-0 h-[350px] w-[350px] sm:h-[500px] sm:w-[500px] -translate-x-1/3 -translate-y-1/3 rounded-full bg-amber-600/10 blur-[100px] sm:blur-[140px]" />
 
       {/* Skip button — top right */}
-      <div className="absolute top-5 right-5 z-20">
+      <div className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20">
         <button
           onClick={handleSkipAll}
           disabled={skipping}
-          className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-300 transition-colors disabled:opacity-50"
+          className="flex items-center gap-1.5 text-[11px] sm:text-xs text-zinc-500 hover:text-zinc-300 transition-colors disabled:opacity-50"
         >
           {skipping ? (
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -319,19 +378,19 @@ export function OnboardingWizard() {
 
       {/* Toast */}
       <AnimatePresence>
-        {toast && (
+        {toastStr && (
           <motion.div
             key="toast"
             initial={{ opacity: 0, y: -8, x: 0 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="fixed top-5 right-5 z-50 flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-4 py-2 text-xs text-zinc-200 shadow-xl"
+            className="fixed top-12 right-4 sm:top-5 sm:right-5 z-50 flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs text-zinc-200 shadow-xl"
           >
             <span className="text-blue-400">ⓘ</span>
-            {toast}
+            {toastStr}
             <button
               className="ml-1 text-zinc-500 hover:text-zinc-300"
-              onClick={() => setToast(null)}
+              onClick={() => setToastStr(null)}
             >
               ×
             </button>
@@ -340,13 +399,13 @@ export function OnboardingWizard() {
       </AnimatePresence>
 
       {/* Etles Sparkle Icon */}
-      <div className="mb-6 self-start sm:self-auto sm:absolute sm:top-10 sm:left-10">
+      <div className="mb-4 sm:mb-6 self-start sm:self-auto sm:absolute sm:top-8 sm:left-8">
         <svg
-          width="40"
-          height="40"
+          width="32"
+          height="32"
           viewBox="0 0 40 40"
           fill="none"
-          className="text-amber-500"
+          className="text-amber-500 sm:w-10 sm:h-10"
         >
           <path
             d="M20 2L22.5 15.5L36 13L24.5 20L36 27L22.5 24.5L20 38L17.5 24.5L4 27L15.5 20L4 13L17.5 15.5L20 2Z"
@@ -357,7 +416,7 @@ export function OnboardingWizard() {
       </div>
 
       {/* Step content */}
-      <div className="relative z-10 w-full max-w-[520px]">
+      <div className="relative z-10 w-full max-w-[500px]">
         <AnimatePresence mode="wait">
           {/* ── Step 1: Name ── */}
           {step === 1 && (
@@ -367,32 +426,32 @@ export function OnboardingWizard() {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col gap-8"
+              className="flex flex-col gap-6 sm:gap-8"
             >
-              <h1 className="text-2xl font-semibold leading-snug text-white">
+              <h1 className="text-xl sm:text-2xl font-semibold leading-snug text-white">
                 Before we get started, what should I call you?
               </h1>
               <form onSubmit={handleNameSubmit}>
-                <div className="flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900/80 px-4 py-3 focus-within:border-amber-500/60 transition-colors">
-                  <div className="h-7 w-7 rounded-full bg-zinc-800 border border-zinc-700 flex-shrink-0" />
+                <div className="flex items-center gap-2 rounded-full border border-zinc-700 bg-zinc-900/80 px-3 py-2.5 sm:px-4 sm:py-3 focus-within:border-amber-500/60 transition-colors">
+                  <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-zinc-800 border border-zinc-700 flex-shrink-0" />
                   <input
                     ref={nameRef}
                     type="text"
                     placeholder="Enter your name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-500 outline-none"
+                    className="flex-1 bg-transparent text-sm text-white placeholder:text-zinc-500 outline-none w-full"
                     maxLength={60}
                   />
                   <button
                     type="submit"
                     disabled={!name.trim() || nameLoading}
-                    className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-zinc-700 text-white transition-all hover:bg-amber-500 disabled:opacity-40"
+                    className="flex h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0 items-center justify-center rounded-full bg-zinc-700 text-white transition-all hover:bg-amber-500 disabled:opacity-40"
                   >
                     {nameLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                     ) : (
-                      <ArrowRight className="h-4 w-4" />
+                      <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     )}
                   </button>
                 </div>
@@ -408,20 +467,20 @@ export function OnboardingWizard() {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col gap-6"
+              className="flex flex-col gap-5 sm:gap-6"
             >
               <div>
-                <h1 className="text-2xl font-semibold leading-snug text-white">
+                <h1 className="text-xl sm:text-2xl font-semibold leading-snug text-white">
                   Nice to meet you,{" "}
                   <span className="text-amber-400">{name.trim()}</span>.{" "}
                   I'd love to learn more about the way you work.
                 </h1>
-                <p className="mt-2 text-sm text-zinc-400">
+                <p className="mt-1 sm:mt-2 text-[13px] sm:text-sm text-zinc-400">
                   Connect your tools and I'll have a much better sense of what's useful to you.
                 </p>
               </div>
 
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 sm:gap-2">
                 {FEATURED_APPS.map((app) => {
                   const isConnected = connectedApps.includes(app.slug);
                   const isConnecting = connectingApp === app.slug;
@@ -429,29 +488,29 @@ export function OnboardingWizard() {
                     <button
                       key={app.slug}
                       onClick={() => handleConnect(app.slug)}
-                      disabled={isConnecting || !!connectingApp && !isConnecting}
+                      disabled={isConnecting || (!!connectingApp && !isConnecting)}
                       className={cn(
-                        "group flex w-full items-center gap-4 rounded-xl border px-4 py-3.5 text-left transition-all",
+                        "group flex w-full items-center gap-3 sm:gap-4 rounded-xl border px-3 py-2.5 sm:px-4 sm:py-3.5 text-left transition-all",
                         isConnected
                           ? "border-zinc-600 bg-zinc-800/60"
                           : "border-zinc-800 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-800/60"
                       )}
                     >
-                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-800">
+                      <div className="flex h-8 w-8 sm:h-9 sm:w-9 flex-shrink-0 items-center justify-center rounded-lg bg-zinc-800">
                         <AppLogo app={app} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-white">{app.name}</p>
-                        <p className="text-xs text-zinc-500 truncate">{app.description}</p>
+                        <p className="text-[13px] sm:text-sm font-semibold text-white">{app.name}</p>
+                        <p className="text-[11px] sm:text-xs text-zinc-500 truncate">{app.description}</p>
                       </div>
                       <div className="flex-shrink-0">
                         {isConnecting ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />
+                          <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin text-zinc-400" />
                         ) : isConnected ? (
-                          <Check className="h-4 w-4 text-emerald-400" />
+                          <Check className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-400" />
                         ) : (
-                          <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 transition-all group-hover:border-zinc-500 group-hover:text-zinc-200">
-                            <Plus className="h-3.5 w-3.5" />
+                          <div className="flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 transition-all group-hover:border-zinc-500 group-hover:text-zinc-200">
+                            <Plus className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                           </div>
                         )}
                       </div>
@@ -460,16 +519,16 @@ export function OnboardingWizard() {
                 })}
               </div>
 
-              <div className="flex flex-col items-center gap-2 pt-2">
+              <div className="flex flex-col items-center gap-1.5 sm:gap-2 pt-2">
                 <button
                   onClick={handleContinueToStep3}
-                  className="w-full max-w-xs rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black transition-all hover:bg-zinc-100 active:scale-95"
+                  className="w-full max-w-[280px] sm:max-w-xs rounded-full bg-white px-5 py-2 sm:px-6 sm:py-2.5 text-[13px] sm:text-sm font-semibold text-black transition-all hover:bg-zinc-100 active:scale-95"
                 >
                   Continue
                 </button>
                 <button
                   onClick={handleSkipApps}
-                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1"
+                  className="text-[11px] sm:text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1"
                 >
                   Skip for now
                 </button>
@@ -477,7 +536,7 @@ export function OnboardingWizard() {
             </motion.div>
           )}
 
-          {/* ── Step 3: Role & Pain Points ── */}
+          {/* ── Step 3: Telegram Setup ── */}
           {step === 3 && (
             <motion.div
               key="step3"
@@ -485,19 +544,92 @@ export function OnboardingWizard() {
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col gap-6"
+              className="flex flex-col gap-5 sm:gap-6"
             >
-              <h1 className="text-2xl font-semibold leading-snug text-white">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-semibold leading-snug text-white">
+                  Chat with me anywhere.
+                </h1>
+                <p className="mt-1 sm:mt-2 text-[13px] sm:text-sm text-zinc-400">
+                  Connect Telegram to message me on the go, or receive proactive alerts and daily digests.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-3 sm:gap-4">
+                <button
+                  onClick={() => handleConnect("telegram")}
+                  disabled={connectingApp === "telegram" || connectedApps.includes("telegram")}
+                  className={cn(
+                    "group flex w-full items-center justify-center gap-2.5 sm:gap-3 rounded-xl border px-3 py-2.5 sm:px-4 sm:py-3.5 transition-all outline-none",
+                    connectedApps.includes("telegram") 
+                      ? "border-emerald-500/50 bg-emerald-500/10 text-emerald-400" 
+                      : "border-zinc-700 bg-[#2AABEE]/10 text-[#2AABEE] hover:border-zinc-500 hover:bg-[#2AABEE]/20"
+                  )}
+                >
+                  {connectingApp === "telegram" ? (
+                    <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                  ) : connectedApps.includes("telegram") ? (
+                    <Check className="h-4 w-4 sm:h-5 sm:w-5" />
+                  ) : (
+                    <Send className="w-4 h-4 sm:w-5 sm:h-5 -ml-1 fill-current opacity-90" />
+                  )}
+                  <span className="text-[13px] sm:text-sm font-semibold">{connectedApps.includes("telegram") ? "Telegram connected" : "Connect with Composio"}</span>
+                </button>
+
+                <div className="mt-1 sm:mt-2 p-3 sm:p-4 rounded-xl border border-zinc-800 bg-zinc-900/50">
+                  <p className="text-[11px] sm:text-xs font-medium text-zinc-300 mb-1.5 sm:mb-2">Want push alerts immediately?</p>
+                  <p className="text-[11px] sm:text-xs text-zinc-500 mb-2 sm:mb-3">
+                    Start a chat with our bot, type `/start`, and paste your Telegram Chat ID here so I know exactly where to reach you.
+                  </p>
+                  <input
+                    type="text"
+                    placeholder="e.g. 123456789"
+                    value={telegramChatId}
+                    onChange={(e) => setTelegramChatId(e.target.value)}
+                    className="w-full rounded-lg border border-zinc-700 bg-zinc-900/80 px-2.5 py-2 sm:px-3 sm:py-2.5 text-[13px] sm:text-sm text-white placeholder:text-zinc-600 focus:border-amber-500/50 focus:outline-none transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-1.5 sm:gap-2 pt-2 sm:pt-4">
+                <button
+                  onClick={handleTelegramSubmit}
+                  disabled={(!connectedApps.includes("telegram") && !telegramChatId) ? false : telegramLoading}
+                  className="w-full max-w-[280px] sm:max-w-xs rounded-full bg-white px-5 py-2 sm:px-6 sm:py-2.5 text-[13px] sm:text-sm font-semibold text-black transition-all hover:bg-zinc-100 active:scale-95 disabled:opacity-40"
+                >
+                  {telegramLoading ? <Loader2 className="mx-auto h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" /> : "Continue"}
+                </button>
+                <button
+                  onClick={() => setStep(4)}
+                  className="text-[11px] sm:text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1"
+                >
+                  Skip for now
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Step 4: Role & Pain Points ── */}
+          {step === 4 && (
+            <motion.div
+              key="step4"
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="flex flex-col gap-5 sm:gap-6"
+            >
+              <h1 className="text-xl sm:text-2xl font-semibold leading-snug text-white">
                 Almost done! What best describes your role?
               </h1>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {ROLES.map((r) => (
                   <button
                     key={r}
                     onClick={() => setRole(r)}
                     className={cn(
-                      "rounded-full border px-4 py-1.5 text-sm font-medium transition-all",
+                      "rounded-full border px-3 py-1 sm:px-4 sm:py-1.5 text-[11px] sm:text-sm font-medium transition-all",
                       role === r
                         ? "border-amber-500 bg-amber-500/10 text-amber-300"
                         : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
@@ -508,11 +640,11 @@ export function OnboardingWizard() {
                 ))}
               </div>
 
-              <div className="flex flex-col gap-3">
-                <p className="text-sm font-medium text-zinc-300">
+              <div className="flex flex-col gap-2 sm:gap-3 mt-1 sm:mt-0">
+                <p className="text-[13px] sm:text-sm font-medium text-zinc-300">
                   What takes up too much of your time?
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {PAIN_POINTS.map((p) => {
                     const selected = painPoints.includes(p);
                     return (
@@ -526,7 +658,7 @@ export function OnboardingWizard() {
                           )
                         }
                         className={cn(
-                          "rounded-full border px-4 py-1.5 text-sm font-medium transition-all",
+                          "rounded-full border px-3 py-1 sm:px-4 sm:py-1.5 text-[11px] sm:text-sm font-medium transition-all",
                           selected
                             ? "border-amber-500 bg-amber-500/10 text-amber-300"
                             : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-500 hover:text-zinc-200"
@@ -539,21 +671,21 @@ export function OnboardingWizard() {
                 </div>
               </div>
 
-              <div className="flex flex-col items-center gap-2 pt-2">
+              <div className="flex flex-col items-center gap-1.5 sm:gap-2 pt-2">
                 <button
                   onClick={handleRoleSubmit}
                   disabled={!role || roleLoading}
-                  className="w-full max-w-xs rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black transition-all hover:bg-zinc-100 active:scale-95 disabled:opacity-40"
+                  className="w-full max-w-[280px] sm:max-w-xs rounded-full bg-white px-5 py-2 sm:px-6 sm:py-2.5 text-[13px] sm:text-sm font-semibold text-black transition-all hover:bg-zinc-100 active:scale-95 disabled:opacity-40"
                 >
                   {roleLoading ? (
-                    <Loader2 className="mx-auto h-4 w-4 animate-spin" />
+                    <Loader2 className="mx-auto h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                   ) : (
                     "Continue"
                   )}
                 </button>
                 <button
-                  onClick={() => handleComplete()}
-                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1"
+                  onClick={() => setStep(5)}
+                  className="text-[11px] sm:text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1"
                 >
                   Skip for now
                 </button>
@@ -561,21 +693,101 @@ export function OnboardingWizard() {
             </motion.div>
           )}
 
-          {/* ── Step 4: Suggestions ── */}
-          {step === 4 && (
+          {/* ── Step 5: First Automation ── */}
+          {step === 5 && (
             <motion.div
-              key="step4"
+              key="step5"
               variants={slideVariants}
               initial="enter"
               animate="center"
               exit="exit"
-              className="flex flex-col gap-6"
+              className="flex flex-col gap-5 sm:gap-6"
             >
               <div>
-                <h1 className="text-2xl font-semibold leading-snug text-white">
+                <h1 className="text-xl sm:text-2xl font-semibold leading-snug text-white">
+                  Your first automation.
+                </h1>
+                <p className="mt-1 sm:mt-2 text-[13px] sm:text-sm text-zinc-400">
+                  Put me to work right out of the box. Pick one recurring task we can start with.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:gap-3 mt-1 sm:mt-2">
+                {AUTOMATIONS.map(auto => {
+                  const selected = automationPreference === auto.desc && customAutomationText === "";
+                  return (
+                    <button
+                      key={auto.id}
+                      onClick={() => {
+                        setAutomationPreference(auto.desc);
+                        setCustomAutomationText("");
+                      }}
+                      className={cn(
+                        "flex flex-col items-start gap-0.5 sm:gap-1 rounded-xl border px-3 py-2.5 sm:px-4 sm:py-3.5 text-left transition-all",
+                        selected 
+                        ? "border-amber-500 bg-amber-500/10" 
+                        : "border-zinc-800 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-800/60"
+                      )}
+                    >
+                      <h3 className={cn("text-[13px] sm:text-sm font-semibold transition-colors", selected ? "text-amber-400" : "text-white")}>{auto.title}</h3>
+                      <p className={cn("text-[11px] sm:text-xs transition-colors", selected ? "text-amber-200/80" : "text-zinc-400")}>{auto.desc}</p>
+                    </button>
+                  )
+                })}
+
+                <div className="mt-1 flex flex-col gap-1.5 sm:gap-2">
+                  <p className="text-[11px] sm:text-xs font-medium text-zinc-400 ml-1">Or create your own:</p>
+                  <input
+                    type="text"
+                    placeholder="e.g. Find empty slots in my calendar and reschedule..."
+                    value={customAutomationText}
+                    onChange={(e) => {
+                      setCustomAutomationText(e.target.value);
+                      setAutomationPreference(e.target.value.trim());
+                    }}
+                    className={cn(
+                      "w-full rounded-xl border px-3 py-2.5 sm:px-4 sm:py-3 text-[13px] sm:text-sm text-white placeholder:text-zinc-600 focus:outline-none transition-colors",
+                      customAutomationText.length > 0
+                        ? "border-amber-500/50 bg-amber-500/5"
+                        : "border-zinc-800 bg-zinc-900/60 hover:border-zinc-600 hover:bg-zinc-800/60"
+                    )}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-1.5 sm:gap-2 pt-2 sm:pt-4">
+                <button
+                  onClick={handleAutomationSubmit}
+                  disabled={!automationPreference || automationLoading}
+                  className="w-full max-w-[280px] sm:max-w-xs rounded-full bg-white px-5 py-2 sm:px-6 sm:py-2.5 text-[13px] sm:text-sm font-semibold text-black transition-all hover:bg-zinc-100 active:scale-95 disabled:opacity-40"
+                >
+                  {automationLoading ? <Loader2 className="mx-auto h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" /> : "Continue"}
+                </button>
+                <button
+                  onClick={() => setStep(6)}
+                  className="text-[11px] sm:text-xs text-zinc-500 hover:text-zinc-300 transition-colors py-1"
+                >
+                  Skip for now
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Step 6: Suggestions ── */}
+          {step === 6 && (
+            <motion.div
+              key="step6"
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              className="flex flex-col gap-5 sm:gap-6"
+            >
+              <div>
+                <h1 className="text-xl sm:text-2xl font-semibold leading-snug text-white">
                   All set! Here are a few ideas just for you.
                 </h1>
-                <p className="mt-1 text-sm text-zinc-400">
+                <p className="mt-1 text-[13px] sm:text-sm text-zinc-400">
                   Where should we start?
                 </p>
               </div>
@@ -588,16 +800,16 @@ export function OnboardingWizard() {
                       key={i}
                       onClick={() => handleComplete(s.text)}
                       disabled={completing}
-                      className="group flex w-full items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3.5 text-left transition-all hover:border-zinc-600 hover:bg-zinc-800/60 disabled:opacity-50"
+                      className="group flex w-full items-center gap-3 sm:gap-4 rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-2.5 sm:px-4 sm:py-3.5 text-left transition-all hover:border-zinc-600 hover:bg-zinc-800/60 disabled:opacity-50"
                     >
                       {app ? (
-                        <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-zinc-800">
+                        <div className="flex h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0 items-center justify-center rounded-md bg-zinc-800">
                           <AppLogo app={app} />
                         </div>
                       ) : (
-                        <div className="h-7 w-7 flex-shrink-0 rounded-md bg-zinc-800" />
+                        <div className="h-6 w-6 sm:h-7 sm:w-7 flex-shrink-0 rounded-md bg-zinc-800" />
                       )}
-                      <span className="text-sm text-zinc-200">{s.text}</span>
+                      <span className="text-[13px] sm:text-sm text-zinc-200">{s.text}</span>
                     </button>
                   );
                 })}
@@ -607,10 +819,10 @@ export function OnboardingWizard() {
                 <button
                   onClick={() => handleComplete()}
                   disabled={completing}
-                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors underline underline-offset-2"
+                  className="text-[11px] sm:text-xs text-zinc-500 hover:text-zinc-300 transition-colors underline underline-offset-2"
                 >
                   {completing ? (
-                    <Loader2 className="h-3 w-3 animate-spin inline mr-1" />
+                    <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin inline mr-1" />
                   ) : null}
                   I have my own topic
                 </button>
