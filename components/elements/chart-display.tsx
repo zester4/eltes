@@ -534,7 +534,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
         </p>
       ) : null}
       <div className="h-[260px] w-full overflow-hidden sm:h-[300px] md:h-[min(52vh,340px)] md:min-h-[280px]">
-        <ResponsiveContainer height="100%" width="100%">
+        <ResponsiveContainer height="100%" width="100%" minWidth={0} minHeight={0}>
           {chartInner}
         </ResponsiveContainer>
       </div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Source_Serif_4, JetBrains_Mono, Instrument_Serif, Barlow } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { PwaUpdater } from "@/components/pwa-updater";
 
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
@@ -10,6 +11,12 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://chat.vercel.ai"),
   title: "Etles AI Agent",
   description: "Etles AI Agent connected to 700+ tools.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Etles AI",
+  },
 };
 
 export const viewport = {
@@ -95,6 +102,7 @@ export default function RootLayout({
           enableSystem
         >
           <Toaster position="top-center" />
+          <PwaUpdater />
           <SessionProvider>{children}</SessionProvider>
         </ThemeProvider>
       </body>

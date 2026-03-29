@@ -26,6 +26,10 @@ export async function proxy(request: NextRequest) {
     lowerPath.startsWith("/api/telegram") ||
     lowerPath.startsWith("/api/scheduled") ||
     lowerPath.startsWith("/api/approval") ||
+    lowerPath === "/sw.js" ||
+    lowerPath === "/manifest.json" ||
+    lowerPath.startsWith("/swe-worker") ||
+    lowerPath.startsWith("/workbox") ||
     /\.(png|jpg|jpeg|gif|svg|webp|ico|m3u8|ts)$/.test(lowerPath)
   ) {
     console.log(`[Proxy] Allowing public path: ${pathname}`);
