@@ -49,17 +49,22 @@ export function PwaUpdater() {
   const handleUpdate = async () => {
     setIsUpdating(true);
     const serwist = (window as any).__serwist;
+    
+    // Fallback: forcefully reload the window after 2 seconds no matter what,
+    // to prevent infinite "Updating..." state if the controllerchange event fails
+    // or if the service worker is stuck.
+    const fallbackTimeout = setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+
     if (serwist) {
       serwist.messageSW({ type: "SKIP_WAITING" });
       if (navigator.serviceWorker.controller) {
         navigator.serviceWorker.addEventListener("controllerchange", () => {
+          clearTimeout(fallbackTimeout);
           window.location.reload();
         });
-      } else {
-        window.location.reload();
       }
-    } else {
-      window.location.reload();
     }
   };
 

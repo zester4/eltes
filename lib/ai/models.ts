@@ -55,31 +55,6 @@ export const chatModels: ChatModel[] = [
     provider: "google",
     description: "Latest lightweight preview model",
   },
-  {
-    id: "google/gemini-3-pro-preview",
-    name: "Gemini 3 Pro",
-    provider: "google",
-    description: "Most capable Google model",
-  },
-  // Google Image Generation
-  {
-    id: "google/gemini-2.5-flash-image",
-    name: "Gemini 2.5 Flash Image",
-    provider: "google",
-    description: "Fast image generation with editing support",
-  },
-  {
-    id: "google/gemini-3.1-flash-image-preview",
-    name: "Gemini 3.1 Flash Image",
-    provider: "google",
-    description: "Latest fast image generation model",
-  },
-  {
-    id: "google/gemini-3-pro-image-preview",
-    name: "Gemini 3 Pro Image",
-    provider: "google",
-    description: "Most capable image generation with advanced editing",
-  },
   // MoonshotAI
   {
     id: "moonshotai/kimi-k2.5",
