@@ -1,6 +1,6 @@
 {
   "name": "etles",
-  "version": "3.1.0",
+  "version": "3.1.8",
   "private": true,
   "scripts": {
     "dev": "concurrently -p none \"serwist build --watch\" \"next dev --turbo\"",

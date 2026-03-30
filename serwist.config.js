@@ -13,5 +13,14 @@ export default {
   globIgnores: [
     ".next/server/pages/**/*.json",
     ".next/server/app/ignored.html",
+    "node_modules/**/*",
+    "app/**/*",
+    "lib/**/*",
+    "components/**/*",
+    "hooks/**/*",
+    "*.ts",
+    "*.js"
   ],
+  // Increase limit from default 2MB to 10MB to handle large chunks if they legitimately occur
+  maximumFileSizeToCacheInBytes: 10485760,
 };

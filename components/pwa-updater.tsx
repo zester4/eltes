@@ -4,73 +4,41 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
 
+import { useState } from "react";
+import { useSidebar } from "@/components/ui/sidebar";
+
 export function PwaUpdater() {
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const sidebar = null; // Removed since this is outside SidebarProvider
+  const isMobile = false; // We can't rely on useSidebar if we are outside
+
   useEffect(() => {
-    // Only run in the browser, if service workers are supported, and in production mode
-    // because next.config.ts disables serwist generation in development (causing 404s).
-    if (
-      typeof window !== "undefined" &&
-      "serviceWorker" in navigator &&
-      process.env.NODE_ENV === "production"
-    ) {
-      // Dynamic import ensures this only runs on the client
+    if (typeof window === "undefined") return;
+
+    // Check if the app is installed (running in standalone mode)
+    const mediaQuery = window.matchMedia("(display-mode: standalone)");
+    setIsStandalone(mediaQuery.matches || (navigator as any).standalone === true);
+
+    mediaQuery.addEventListener("change", (e) => {
+      setIsStandalone(e.matches);
+    });
+
+    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
       import("@serwist/window").then(({ Serwist }) => {
         const serwist = new Serwist("/sw.js", {
           scope: "/",
           type: "classic",
         });
 
-        // Listen for the "waiting" event, which means a new SW is installed
-        // but waiting to take control (because skipWaiting is false).
         serwist.addEventListener("waiting", () => {
-          toast(
-            <div className="flex w-full flex-col gap-2">
-              <span className="font-semibold text-foreground">
-                🚀 New Update Available
-              </span>
-              <span className="text-sm text-muted-foreground">
-                We've shipped some fresh improvements. Reload to apply them!
-              </span>
-            </div>,
-            {
-              duration: Infinity, // Keep open until acted upon
-              onDismiss: () => {},
-              action: {
-                label: "Reload Now",
-                onClick: () => {
-                  toast.promise(
-                    new Promise<void>((resolve) => {
-                      // Post the message to skip waiting phase
-                      serwist.messageSW({ type: "SKIP_WAITING" });
-                      
-                      // Wait specifically for the controlling service worker to change
-                      // before reloading, preventing a race condition where the page
-                      // reloads before the new worker activates.
-                      if (navigator.serviceWorker.controller) {
-                        navigator.serviceWorker.addEventListener("controllerchange", () => {
-                          window.location.reload();
-                          resolve();
-                        });
-                      } else {
-                        // Fallback reload
-                        window.location.reload();
-                        resolve();
-                      }
-                    }),
-                    {
-                      loading: "Applying update...",
-                      success: "Update successful!",
-                      error: "Failed to update.",
-                    }
-                  );
-                },
-              },
-              icon: <RefreshCw className="h-5 w-5 text-amber-500 animate-spin-slow" />,
-            }
-          );
+          setUpdateAvailable(true);
         });
 
-        // Register the service worker
+        // Expose serwist instance globally so we can trigger the update
+        (window as any).__serwist = serwist;
+
         serwist.register().catch((err) => {
           console.error("Serwist service worker registration failed", err);
         });
@@ -78,6 +46,38 @@ export function PwaUpdater() {
     }
   }, []);
 
-  // Doesn't render any DOM footprint initially
-  return null;
+  const handleUpdate = async () => {
+    setIsUpdating(true);
+    const serwist = (window as any).__serwist;
+    if (serwist) {
+      serwist.messageSW({ type: "SKIP_WAITING" });
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.addEventListener("controllerchange", () => {
+          window.location.reload();
+        });
+      } else {
+        window.location.reload();
+      }
+    } else {
+      window.location.reload();
+    }
+  };
+
+  // Only display if there's an update AND the user has installed the app
+  if (!updateAvailable || !isStandalone) return null;
+
+  // Since this renders globally, we place it fixed in the bottom-left corner
+  // z-[100] ensures it sits above the sidebar
+  return (
+    <div className="fixed bottom-4 left-4 z-[100] flex flex-col gap-2 transition-all duration-300 ease-in-out">
+      <button
+        onClick={handleUpdate}
+        disabled={isUpdating}
+        className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
+      >
+        <RefreshCw className={`h-4 w-4 ${isUpdating ? "animate-spin" : ""}`} />
+        {isUpdating ? "Updating..." : "App Update Available"}
+      </button>
+    </div>
+  );
 }
