@@ -28,6 +28,7 @@ import { fetcher } from "@/lib/utils";
 import { useActiveAgentTasksByChat } from "@/hooks/use-active-agent-tasks";
 import { LoaderIcon } from "./icons";
 import { ChatItem } from "./sidebar-history-item";
+import { PwaUpdater } from "@/components/pwa-updater";
 
 type GroupedChats = {
   today: Chat[];
@@ -358,6 +359,8 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
               <div>Loading Chats...</div>
             </div>
           )}
+          
+          <PwaUpdater />
         </SidebarGroupContent>
       </SidebarGroup>
 

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter, Source_Serif_4, JetBrains_Mono, Instrument_Serif, Barlow } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { PwaUpdater } from "@/components/pwa-updater";
 import { SerwistProvider } from "./serwist";
 
 import "./globals.css";
@@ -104,7 +103,6 @@ export default function RootLayout({
         >
           <SerwistProvider swUrl="/sw.js">
             <Toaster position="top-center" />
-            <PwaUpdater />
             <SessionProvider>{children}</SessionProvider>
           </SerwistProvider>
         </ThemeProvider>

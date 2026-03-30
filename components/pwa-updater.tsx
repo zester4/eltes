@@ -71,17 +71,15 @@ export function PwaUpdater() {
   // Only display if there's an update AND the user has installed the app
   if (!updateAvailable || !isStandalone) return null;
 
-  // Since this renders globally, we place it fixed in the bottom-left corner
-  // z-[100] ensures it sits above the sidebar
   return (
-    <div className="fixed bottom-4 left-4 z-[100] flex flex-col gap-2 transition-all duration-300 ease-in-out">
+    <div className="px-2 mt-4 mb-2">
       <button
         onClick={handleUpdate}
         disabled={isUpdating}
-        className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-md bg-zinc-800 dark:bg-zinc-800/50 border border-zinc-700/50 px-3 py-1.5 text-xs font-medium text-zinc-100 hover:bg-zinc-700/80 transition-colors disabled:opacity-50"
       >
-        <RefreshCw className={`h-4 w-4 ${isUpdating ? "animate-spin" : ""}`} />
-        {isUpdating ? "Updating..." : "App Update Available"}
+        <RefreshCw className={`h-3 w-3 text-emerald-400 ${isUpdating ? "animate-spin" : ""}`} />
+        {isUpdating ? "Updating..." : "Update Available"}
       </button>
     </div>
   );
