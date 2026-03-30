@@ -19,8 +19,9 @@ import {
   ListTodo,
   Zap,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { SidebarToggle } from "@/components/sidebar-toggle";
+import { AgentStatusActions } from "@/components/agent-status-actions";
+import { cn } from "@/lib/utils";
 
 export default async function AgentStatusPage() {
   const session = await auth();
@@ -42,9 +43,17 @@ export default async function AgentStatusPage() {
             Monitor Etles's proactive activities, automation schedules, and intelligence briefs.
           </p>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3 bg-muted/50 p-1.5 sm:p-2 rounded-lg px-3 sm:px-4 border w-fit">
-          <div className={`h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full ${status.heartbeat.status === "active" ? "bg-green-500 animate-pulse" : "bg-red-500"}`} />
-          <span className="text-[9px] sm:text-xs font-semibold uppercase tracking-wider">{status.heartbeat.status}</span>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+          <AgentStatusActions status={status.heartbeat.status} />
+          
+          <div className="flex items-center gap-2 sm:gap-3 bg-muted/50 p-1.5 sm:p-2 rounded-lg px-3 sm:px-4 border w-fit">
+            <div className={cn(
+               "h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full",
+               status.heartbeat.status === "active" ? "bg-green-500 animate-pulse" : 
+               status.heartbeat.status === "paused" ? "bg-amber-500" : "bg-red-500"
+            )} />
+            <span className="text-[9px] sm:text-xs font-semibold uppercase tracking-wider">{status.heartbeat.status}</span>
+          </div>
         </div>
       </div>
 

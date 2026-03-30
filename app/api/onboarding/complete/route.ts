@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import { Index } from "@upstash/vector";
-import { registerUserCrons } from "@/lib/workflow/client";
+import { registerUserCrons, triggerHeartbeatWorkflow } from "@/lib/workflow/client";
 
 export async function POST(req: NextRequest) {
   // Accept both authenticated users and internal agent calls
@@ -57,6 +57,9 @@ export async function POST(req: NextRequest) {
 
     // 2. Register QStash crons (idempotent — uses deduplicationId)
     await registerUserCrons(userId);
+
+    // 3. Trigger immediate heartbeat so the user sees "Active" status right away
+    await triggerHeartbeatWorkflow({ userId });
 
     return NextResponse.json({
       ok: true,

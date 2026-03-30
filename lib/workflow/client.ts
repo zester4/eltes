@@ -191,4 +191,38 @@ export async function registerUserCrons(userId: string): Promise<void> {
     }),
   });
 }
+
+export async function pauseUserCrons(userId: string): Promise<void> {
+  const token = process.env.QSTASH_TOKEN;
+  const qstashUrl = process.env.QSTASH_URL || "https://qstash.upstash.io";
+  if (!token) return;
+
+  await Promise.allSettled([
+    fetch(`${qstashUrl}/v2/schedules/hb-${userId}/pause`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    fetch(`${qstashUrl}/v2/schedules/syn-${userId}/pause`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  ]);
+}
+
+export async function resumeUserCrons(userId: string): Promise<void> {
+  const token = process.env.QSTASH_TOKEN;
+  const qstashUrl = process.env.QSTASH_URL || "https://qstash.upstash.io";
+  if (!token) return;
+
+  await Promise.allSettled([
+    fetch(`${qstashUrl}/v2/schedules/hb-${userId}/resume`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    fetch(`${qstashUrl}/v2/schedules/syn-${userId}/resume`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  ]);
+}
  

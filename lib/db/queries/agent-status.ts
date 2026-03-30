@@ -15,7 +15,7 @@ const redis =
 
 export type AgentStatusData = {
   heartbeat: {
-    status: "active" | "inactive" | "error";
+    status: "active" | "inactive" | "error" | "pending" | "paused";
     lastRun?: string;
     nextRun?: string;
   };
@@ -50,12 +50,25 @@ export async function getAgentStatus(): Promise<AgentStatusData> {
   let lastSynthesis: { lastRun?: string; status?: string } | null = null;
   
   if (redis) {
-    const [hb, syn] = await Promise.all([
+    const [hb, syn, isPaused] = await Promise.all([
       redis.get(`agent:status:${userId}:heartbeat`),
       redis.get(`agent:status:${userId}:synthesis`),
+      redis.get(`agent:status:${userId}:paused`),
     ]);
     lastHeartbeat = typeof hb === 'string' ? JSON.parse(hb) : (hb as any);
     lastSynthesis = typeof syn === 'string' ? JSON.parse(syn) : (syn as any);
+
+    if (isPaused === true || isPaused === "true") {
+      return {
+        heartbeat: {
+          status: "paused",
+          lastRun: lastHeartbeat?.lastRun,
+        },
+        synthesis: lastSynthesis?.lastRun ? { savedAt: lastSynthesis.lastRun } : {},
+        cronJobs: [],
+        integrations: [],
+      };
+    }
   }
 
   // 1. Fetch synthesis from Vector
@@ -123,8 +136,16 @@ export async function getAgentStatus(): Promise<AgentStatusData> {
             if (body.userId !== userId) continue;
 
             if (!body.type || body.type === "heartbeat") {
+              // Determine status: 
+              // - "active" if last run was success
+              // - "error" if last run failed
+              // - "pending" if it exists but hasn't run successfully yet
+              let status: AgentStatusData["heartbeat"]["status"] = "pending";
+              if (lastHeartbeat?.status === "success") status = "active";
+              else if (lastHeartbeat?.status === "error") status = "error";
+
               heartbeatStatus = {
-                status: lastHeartbeat?.status === "success" ? "active" : "inactive",
+                status,
                 lastRun: lastHeartbeat?.lastRun,
                 nextRun: (s.nextRun && typeof s.nextRun === "number") 
                   ? new Date(s.nextRun * 1000).toISOString() 

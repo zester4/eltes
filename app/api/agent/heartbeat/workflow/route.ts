@@ -123,10 +123,28 @@ Return ONLY the JSON object, no other text.`,
     }
   });
 
+  // ── Step 4: Update Heartbeat Status (Heartbeat completed its check) ──────
+  await context.run("update-status", async () => {
+    const redis =
+      process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+        ? new (await import("@upstash/redis")).Redis({
+            url: process.env.UPSTASH_REDIS_REST_URL,
+            token: process.env.UPSTASH_REDIS_REST_TOKEN,
+          })
+        : null;
+    if (!redis) return;
+
+    await redis.set(`agent:status:${userId}:heartbeat`, JSON.stringify({
+      lastRun: new Date().toISOString(),
+      status: "success"
+    }), { ex: 86400 * 7 }); // 7 days TTL
+    console.log(`[Heartbeat] Status updated for user: ${userId}`);
+  });
+
   // No urgent items — stop here, don't bother the user
   if (!signals.hasUrgentItems) return;
 
-  // ── Step 4: Generate proactive message ────────────────────────────────────
+  // ── Step 5: Generate proactive message ────────────────────────────────────
   const proactiveMessage = await context.run("generate-message", async () => {
     const { text } = await generateText({
       model: getGoogleModel("google/gemini-2.5-flash"),
@@ -139,7 +157,7 @@ Use Telegram HTML formatting only: <b>bold</b>, <i>italic</i>.`,
     return text.trim();
   });
 
-  // ── Step 5: Save to chat + push Telegram ─────────────────────────────────
+  // ── Step 6: Save to chat + push Telegram ─────────────────────────────────
   console.log(`[Heartbeat] Delivering urgent notification to user: ${userId}`);
   await context.run("deliver", async () => {
     // Save to chat
@@ -176,23 +194,5 @@ Use Telegram HTML formatting only: <b>bold</b>, <i>italic</i>.`,
         await sendLongMessage(integration.botToken, telegramChatId, proactiveMessage);
       }
     }
-  });
-
-  // ── Step 6: Update Heartbeat Status ───────────────────────────────────────
-  await context.run("update-status", async () => {
-    const redis =
-      process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-        ? new (await import("@upstash/redis")).Redis({
-            url: process.env.UPSTASH_REDIS_REST_URL,
-            token: process.env.UPSTASH_REDIS_REST_TOKEN,
-          })
-        : null;
-    if (!redis) return;
-
-    await redis.set(`agent:status:${userId}:heartbeat`, JSON.stringify({
-      lastRun: new Date().toISOString(),
-      status: "success"
-    }), { ex: 86400 * 7 }); // 7 days TTL
-    console.log(`[Heartbeat] Workflow completed for user: ${userId}`);
   });
 });
