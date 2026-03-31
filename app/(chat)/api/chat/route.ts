@@ -443,7 +443,7 @@ export async function POST(request: Request) {
           after(async () => {
             const tail = finishedMessages
               .filter((m) => m.role === "user" || m.role === "assistant")
-              .slice(-2)
+              .slice(-5)
               .map((m) => ({
                 role: m.role as "user" | "assistant",
                 text: m.parts
