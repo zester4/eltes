@@ -11,6 +11,7 @@ import {
   inArray,
   lt,
   or,
+  sql,
   type SQL,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -319,7 +320,7 @@ export async function upsertMessages({ messages }: { messages: DBMessage[] }) {
       .onConflictDoUpdate({
         target: message.id,
         set: {
-          parts: message.parts,
+          parts: sql`excluded.parts`,
         },
       });
   } catch (_error) {
