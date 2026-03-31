@@ -302,9 +302,28 @@ export async function getChatById({ id }: { id: string }) {
 
 export async function saveMessages({ messages }: { messages: DBMessage[] }) {
   try {
-    return await db.insert(message).values(messages);
+    return await db
+      .insert(message)
+      .values(messages)
+      .onConflictDoNothing();
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to save messages");
+  }
+}
+
+export async function upsertMessages({ messages }: { messages: DBMessage[] }) {
+  try {
+    return await db
+      .insert(message)
+      .values(messages)
+      .onConflictDoUpdate({
+        target: message.id,
+        set: {
+          parts: message.parts,
+        },
+      });
+  } catch (_error) {
+    throw new ChatbotError("bad_request:database", "Failed to upsert messages");
   }
 }
 

@@ -126,17 +126,15 @@ export function Chat({
         const lastMessage = request.messages.at(-1);
         const isToolApprovalContinuation =
           lastMessage?.role !== "user" ||
-          request.messages.some((msg) =>
-            msg.parts?.some((part) => {
-              if (!part || typeof part !== "object") {
-                return false;
-              }
-              const state = (part as { state?: string }).state;
-              return (
-                state === "approval-responded" || state === "output-denied"
-              );
-            })
-          );
+          (lastMessage?.parts?.some((part) => {
+            if (!part || typeof part !== "object") {
+              return false;
+            }
+            const state = (part as { state?: string }).state;
+            return (
+              state === "approval-responded" || state === "output-denied"
+            );
+          }) ?? false);
 
         return {
           body: {

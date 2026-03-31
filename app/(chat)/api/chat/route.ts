@@ -81,6 +81,7 @@ import {
   saveMessages,
   updateChatTitleById,
   updateMessage,
+  upsertMessages,
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
@@ -210,7 +211,7 @@ export async function POST(request: Request) {
     };
 
     if (message?.role === "user") {
-      await saveMessages({
+      await upsertMessages({
         messages: [
           {
             chatId: id,
@@ -418,16 +419,24 @@ export async function POST(request: Request) {
             }
           }
         } else if (finishedMessages.length > 0) {
-          await saveMessages({
-            messages: finishedMessages.map((currentMessage) => ({
-              id: currentMessage.id,
-              role: currentMessage.role,
-              parts: currentMessage.parts,
-              createdAt: new Date(),
-              attachments: [],
-              chatId: id,
-            })),
-          });
+          // Only save messages that are not already in the DB (the new assistant response
+          // and any tool calls/results generated in this turn).
+          const newMessages = finishedMessages.filter(
+            (fm) => !uiMessages.some((um) => um.id === fm.id)
+          );
+
+          if (newMessages.length > 0) {
+            await saveMessages({
+              messages: newMessages.map((currentMessage) => ({
+                id: currentMessage.id,
+                role: currentMessage.role,
+                parts: currentMessage.parts,
+                createdAt: new Date(),
+                attachments: [],
+                chatId: id,
+              })),
+            });
+          }
         }
 
         if (session?.user?.id) {

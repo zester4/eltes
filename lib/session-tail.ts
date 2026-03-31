@@ -4,7 +4,7 @@ import { createClient } from "redis";
 // Key: session-tail:{userId}
 // TTL: 30 days — no infrastructure changes, reuses REDIS_URL.
 
-const TAIL_SIZE = 2;
+const TAIL_SIZE = 5;
 const TTL_SECONDS = 60 * 60 * 24 * 30; // 30 days
 
 export type TailMessage = {
