@@ -38,7 +38,7 @@ export function SubAgentHub({ agents }: SubAgentHubProps) {
         <div className="p-4 sm:p-5 flex flex-col gap-4 border-b bg-background/40 sticky top-0 z-10 backdrop-blur-sm">
           <div className="flex items-center gap-3">
             <SidebarToggle />
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">Command Center</h1>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">Specialist Agents</h1>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

@@ -27,6 +27,9 @@ import {
   listSchedules,
   deleteSchedule,
 } from "@/lib/ai/tools/schedule";
+import * as daytonaTools from "@/lib/ai/tools/daytona";
+import * as browserUseTools from "@/lib/ai/tools/browser-use";
+import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 import { generateUUID } from "@/lib/utils";
 import { saveSubagentChatMessages, getSubagentChatMessages } from "@/lib/subagent-redis";
 import type { ChatMessage } from "@/lib/types";
@@ -120,6 +123,55 @@ export async function POST(request: NextRequest) {
             }),
             listSchedules: listSchedules({ userId: session.user.id! }),
             deleteSchedule: deleteSchedule(),
+
+            // Daytona Sandbox Tools (Sandbox Specialist + Browser Operator for Playwright)
+            ...(agentSlug === "sandbox_specialist" || agentSlug === "browser_operator"
+              ? {
+                  createSandbox: daytonaTools.createSandbox({ userId: session.user.id! }),
+                  listSandboxes: daytonaTools.listSandboxes({ userId: session.user.id! }),
+                  deleteSandbox: daytonaTools.deleteSandbox({ userId: session.user.id! }),
+                  executeCommand: daytonaTools.executeCommand({ userId: session.user.id! }),
+                  runCode: daytonaTools.runCode({ userId: session.user.id! }),
+                  listFiles: daytonaTools.listFiles({ userId: session.user.id! }),
+                  readFile: daytonaTools.readFile({ userId: session.user.id! }),
+                  writeFile: daytonaTools.writeFile({ userId: session.user.id! }),
+                  createDirectory: daytonaTools.createDirectory({ userId: session.user.id! }),
+                  searchFiles: daytonaTools.searchFiles({ userId: session.user.id! }),
+                  replaceInFiles: daytonaTools.replaceInFiles({ userId: session.user.id! }),
+                  gitClone: daytonaTools.gitClone({ userId: session.user.id! }),
+                  gitStatus: daytonaTools.gitStatus({ userId: session.user.id! }),
+                  gitCommit: daytonaTools.gitCommit({ userId: session.user.id! }),
+                  gitPush: daytonaTools.gitPush({ userId: session.user.id! }),
+                  gitPull: daytonaTools.gitPull({ userId: session.user.id! }),
+                  gitBranch: daytonaTools.gitBranch({ userId: session.user.id! }),
+                  getPreviewLink: daytonaTools.getPreviewLink({ userId: session.user.id! }),
+                  runBackgroundProcess: daytonaTools.runBackgroundProcess({ userId: session.user.id! }),
+                  lspDiagnostics: daytonaTools.lspDiagnostics({ userId: session.user.id! }),
+                  archiveSandbox: daytonaTools.archiveSandbox({ userId: session.user.id! }),
+                }
+              : {}),
+
+            // Browser Use Cloud Tools (Browser Operator only)
+            ...(agentSlug === "browser_operator"
+              ? {
+                  browserUseRunTask: browserUseTools.browserUseRunTask(),
+                  browserUseStartTask: browserUseTools.browserUseStartTask(),
+                  browserUseGetTask: browserUseTools.browserUseGetTask(),
+                  browserUseControlTask: browserUseTools.browserUseControlTask(),
+                  browserUseCreateSession: browserUseTools.browserUseCreateSession(),
+                  browserUseGetLiveUrl: browserUseTools.browserUseGetLiveUrl(),
+                  browserUseListTasks: browserUseTools.browserUseListTasks(),
+                  browserUseCheckCredits: browserUseTools.browserUseCheckCredits(),
+                  browserSetup: daytonaBrowserTools.browserSetup({ userId: session.user.id! }),
+                  browserNavigate: daytonaBrowserTools.browserNavigate({ userId: session.user.id! }),
+                  browserInteract: daytonaBrowserTools.browserInteract({ userId: session.user.id! }),
+                  browserExtract: daytonaBrowserTools.browserExtract({ userId: session.user.id! }),
+                  browserMultiTab: daytonaBrowserTools.browserMultiTab({ userId: session.user.id! }),
+                  browserUploadFile: daytonaBrowserTools.browserUploadFile({ userId: session.user.id! }),
+                  browserScreenshot: daytonaBrowserTools.browserScreenshot({ userId: session.user.id! }),
+                  browserVisualInteract: daytonaBrowserTools.browserVisualInteract({ userId: session.user.id! }),
+                }
+              : {}),
           },
         });
 

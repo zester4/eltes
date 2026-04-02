@@ -29,6 +29,9 @@ import {
   listSchedules,
   deleteSchedule,
 } from "@/lib/ai/tools/schedule";
+import * as daytonaTools from "@/lib/ai/tools/daytona";
+import * as browserUseTools from "@/lib/ai/tools/browser-use";
+import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 
 const composio = new Composio({ provider: new VercelProvider() });
 
@@ -111,6 +114,55 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
     setCronJob: setCronJob({ userId, baseUrl }),
     listSchedules: listSchedules({ userId }),
     deleteSchedule: deleteSchedule(),
+
+    // Daytona Sandbox Tools (Sandbox Specialist + Browser Operator for Playwright sessions)
+    ...(agentType === "sandbox_specialist" || agentType === "browser_operator"
+      ? {
+          createSandbox: daytonaTools.createSandbox({ userId }),
+          listSandboxes: daytonaTools.listSandboxes({ userId }),
+          deleteSandbox: daytonaTools.deleteSandbox({ userId }),
+          executeCommand: daytonaTools.executeCommand({ userId }),
+          runCode: daytonaTools.runCode({ userId }),
+          listFiles: daytonaTools.listFiles({ userId }),
+          readFile: daytonaTools.readFile({ userId }),
+          writeFile: daytonaTools.writeFile({ userId }),
+          createDirectory: daytonaTools.createDirectory({ userId }),
+          searchFiles: daytonaTools.searchFiles({ userId }),
+          replaceInFiles: daytonaTools.replaceInFiles({ userId }),
+          gitClone: daytonaTools.gitClone({ userId }),
+          gitStatus: daytonaTools.gitStatus({ userId }),
+          gitCommit: daytonaTools.gitCommit({ userId }),
+          gitPush: daytonaTools.gitPush({ userId }),
+          gitPull: daytonaTools.gitPull({ userId }),
+          gitBranch: daytonaTools.gitBranch({ userId }),
+          getPreviewLink: daytonaTools.getPreviewLink({ userId }),
+          runBackgroundProcess: daytonaTools.runBackgroundProcess({ userId }),
+          lspDiagnostics: daytonaTools.lspDiagnostics({ userId }),
+          archiveSandbox: daytonaTools.archiveSandbox({ userId }),
+        }
+      : {}),
+
+    // Browser Use Cloud + Daytona Playwright (Browser Operator only)
+    ...(agentType === "browser_operator"
+      ? {
+          browserUseRunTask: browserUseTools.browserUseRunTask(),
+          browserUseStartTask: browserUseTools.browserUseStartTask(),
+          browserUseGetTask: browserUseTools.browserUseGetTask(),
+          browserUseControlTask: browserUseTools.browserUseControlTask(),
+          browserUseCreateSession: browserUseTools.browserUseCreateSession(),
+          browserUseGetLiveUrl: browserUseTools.browserUseGetLiveUrl(),
+          browserUseListTasks: browserUseTools.browserUseListTasks(),
+          browserUseCheckCredits: browserUseTools.browserUseCheckCredits(),
+          browserSetup: daytonaBrowserTools.browserSetup({ userId }),
+          browserNavigate: daytonaBrowserTools.browserNavigate({ userId }),
+          browserInteract: daytonaBrowserTools.browserInteract({ userId }),
+          browserExtract: daytonaBrowserTools.browserExtract({ userId }),
+          browserMultiTab: daytonaBrowserTools.browserMultiTab({ userId }),
+          browserUploadFile: daytonaBrowserTools.browserUploadFile({ userId }),
+          browserScreenshot: daytonaBrowserTools.browserScreenshot({ userId }),
+          browserVisualInteract: daytonaBrowserTools.browserVisualInteract({ userId }),
+        }
+      : {}),
   };
 
   const memoryContext = await recallRelevantMemory(userId, task);

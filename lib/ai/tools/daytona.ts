@@ -64,10 +64,29 @@ export const createSandbox = ({ userId }: { userId: string }) =>
       "that needs a real execution environment. Optionally clone a Git repository into the sandbox at creation time.",
     inputSchema: z.object({
       language: z
-        .enum(["typescript", "javascript", "python"])
+        .enum(["typescript", "javascript", "python", "go", "rust", "java", "ruby"])
         .optional()
         .default("typescript")
-        .describe("Runtime language for the sandbox. Default: typescript."),
+        .describe("Runtime language for the sandbox. Ignored if `image` is set. Default: typescript."),
+      image: z
+        .string()
+        .optional()
+        .describe(
+          "Custom Docker image to use. E.g. 'node:22-slim', 'python:3.12', 'golang:1.22'. " +
+          "Overrides `language` when set."
+        ),
+      resources: z
+        .object({
+          cpu: z.number().optional().describe("Number of CPUs."),
+          memory: z.number().optional().describe("Memory in GiB."),
+          disk: z.number().optional().describe("Disk in GiB."),
+        })
+        .optional()
+        .describe("Optional resource limits for the sandbox."),
+      envVars: z
+        .record(z.string())
+        .optional()
+        .describe("Environment variables to inject into the sandbox at creation. E.g. { NODE_ENV: 'test' }"),
       repositoryUrl: z
         .string()
         .optional()
@@ -82,16 +101,18 @@ export const createSandbox = ({ userId }: { userId: string }) =>
           "Minutes of inactivity before auto-stop. Use 0 to disable (runs indefinitely). Default: 30."
         ),
     }),
-    execute: async ({ language, repositoryUrl, autoStopMinutes }) => {
+    execute: async ({ language, image, resources, envVars, repositoryUrl, autoStopMinutes }) => {
       try {
         const daytona = getDaytona();
 
         const sandbox = await daytona.create({
-          language: language ?? "typescript",
+          ...(image ? { image } : { language: language ?? "typescript" }),
           labels: userLabels(userId),
           autoStopInterval: autoStopMinutes ?? 30,
           // Ephemeral: auto-delete after stopped for 2 hours to keep costs low
           autoDeleteInterval: 120,
+          ...(resources && { resources }),
+          ...(envVars && { envVars }),
         } as any);
 
         let cloneResult: string | undefined;
@@ -109,9 +130,9 @@ export const createSandbox = ({ userId }: { userId: string }) =>
         return {
           success: true,
           sandboxId: sandbox.id,
-          language,
+          language: image ? `custom (${image})` : language,
           message:
-            `Sandbox created (id: ${sandbox.id}, language: ${language}).` +
+            `Sandbox created (id: ${sandbox.id}, runtime: ${image ?? language}).` +
             (cloneResult ? ` ${cloneResult}` : "") +
             ` Use sandboxId "${sandbox.id}" with all other sandbox tools.`,
         };
@@ -275,7 +296,7 @@ export const runCode = ({ userId }: { userId: string }) =>
         const response = await sandbox.process.codeRun(
           code,
           undefined,
-          (timeoutSeconds ?? 30) * 1000 // SDK uses milliseconds
+          timeoutSeconds ?? 30 // SDK expects seconds
         );
 
         return {
@@ -821,3 +842,170 @@ export const gitBranch = ({ userId }: { userId: string }) =>
       }
     },
   });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADVANCED TOOLS (Preview, Background Sessions, LSP, Archive)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * getPreviewLink — Expose a running web server port via a public URL.
+ * Critical for any task that starts a web app (Flask, Vite, Next.js, FastAPI, etc.).
+ */
+export const getPreviewLink = ({ userId }: { userId: string }) =>
+  tool({
+    description:
+      "Get a public preview URL for a port running inside the sandbox. " +
+      "Use after starting a web server (e.g. 'npm run dev' on port 3000, Flask on 5000, Vite on 5173) " +
+      "so the user can open the app in their browser. Opens the port automatically if needed.",
+    inputSchema: z.object({
+      sandboxId: z.string().describe("Sandbox ID."),
+      port: z
+        .number()
+        .int()
+        .min(1)
+        .max(65535)
+        .describe("Port the server is listening on. E.g. 3000, 5000, 5173, 8080."),
+    }),
+    execute: async ({ sandboxId, port }) => {
+      try {
+        const sandbox = await findUserSandbox(userId, sandboxId);
+        if (!sandbox) return { success: false, error: `Sandbox ${sandboxId} not found.` };
+        const preview = await (sandbox as any).getPreviewLink(port);
+        return {
+          success: true,
+          url: preview.url,
+          token: preview.token ?? null,
+          message: `App running at: ${preview.url}`,
+        };
+      } catch (error: any) {
+        return { success: false, error: error?.message ?? String(error) };
+      }
+    },
+  });
+
+/**
+ * runBackgroundProcess — Start a long-running process (server, watcher) in a named session.
+ * Use for dev servers, test watchers, or any process that must stay alive.
+ * After starting, call getPreviewLink to expose any opened ports.
+ */
+export const runBackgroundProcess = ({ userId }: { userId: string }) =>
+  tool({
+    description:
+      "Start a long-running background command in the sandbox (e.g. a dev server, test watcher, database). " +
+      "Returns a sessionId you can use with future commands in the same shell session. " +
+      "After starting a server, call getPreviewLink to get its public URL.",
+    inputSchema: z.object({
+      sandboxId: z.string().describe("Sandbox ID."),
+      sessionId: z
+        .string()
+        .describe("Unique name for this session. E.g. 'dev-server', 'test-watcher'. Reuse to send commands to same session."),
+      command: z
+        .string()
+        .describe("Command to run in the background. E.g. 'npm run dev', 'python app.py', 'pytest --watch'"),
+      workingDir: z
+        .string()
+        .optional()
+        .describe("Working directory for the command. E.g. 'workspace/repo'"),
+    }),
+    execute: async ({ sandboxId, sessionId, command, workingDir }) => {
+      try {
+        const sandbox = await findUserSandbox(userId, sandboxId);
+        if (!sandbox) return { success: false, error: `Sandbox ${sandboxId} not found.` };
+
+        await sandbox.process.createSession(sessionId);
+        const res = await sandbox.process.executeSessionCommand(sessionId, {
+          command: workingDir ? `cd ${workingDir} && ${command}` : command,
+          async: true,
+        });
+
+        return {
+          success: true,
+          sessionId,
+          message: `Started '${command}' in background session '${sessionId}'. Call getPreviewLink if a port was opened.`,
+          output: (res as any)?.result ?? "",
+        };
+      } catch (error: any) {
+        return { success: false, error: error?.message ?? String(error) };
+      }
+    },
+  });
+
+/**
+ * lspDiagnostics — Check a file for type errors and lint issues using the Language Server Protocol.
+ * Use after writing TypeScript/JavaScript files to verify correctness before running.
+ */
+export const lspDiagnostics = ({ userId }: { userId: string }) =>
+  tool({
+    description:
+      "Check a file inside the sandbox for language-server diagnostics: type errors, unused variables, lint warnings. " +
+      "Use after writing or editing TypeScript/JavaScript files to verify they are correct before running the code.",
+    inputSchema: z.object({
+      sandboxId: z.string().describe("Sandbox ID."),
+      filePath: z
+        .string()
+        .describe("Absolute or relative path to the file to check. E.g. 'workspace/repo/src/index.ts'"),
+      language: z
+        .enum(["typescript", "javascript"])
+        .optional()
+        .default("typescript")
+        .describe("Language server to use."),
+      projectPath: z
+        .string()
+        .optional()
+        .default("workspace/repo")
+        .describe("Root path of the project (where tsconfig.json is). Default: 'workspace/repo'."),
+    }),
+    execute: async ({ sandboxId, filePath, language, projectPath }) => {
+      try {
+        const sandbox = await findUserSandbox(userId, sandboxId);
+        if (!sandbox) return { success: false, error: `Sandbox ${sandboxId} not found.` };
+
+        const lsp = await (sandbox as any).createLspServer(language ?? "typescript", projectPath ?? "workspace/repo");
+        await lsp.start();
+        await lsp.didOpen(filePath);
+        const diagnostics = await lsp.diagnostics(filePath);
+
+        return {
+          success: true,
+          filePath,
+          clean: !diagnostics?.length,
+          diagnostics: (diagnostics ?? []).map((d: any) => ({
+            severity: d.severity === 1 ? "error" : d.severity === 2 ? "warning" : "info",
+            message: d.message,
+            line: (d.range?.start?.line ?? 0) + 1,
+            column: (d.range?.start?.character ?? 0) + 1,
+          })),
+        };
+      } catch (error: any) {
+        return { success: false, error: error?.message ?? String(error) };
+      }
+    },
+  });
+
+/**
+ * archiveSandbox — Archive a sandbox to reduce costs without deleting it.
+ * The sandbox can be resumed later. Choose this over deleteSandbox for long-running projects.
+ */
+export const archiveSandbox = ({ userId }: { userId: string }) =>
+  tool({
+    description:
+      "Archive a Daytona sandbox to save costs. The sandbox is paused but NOT deleted — " +
+      "files and state are preserved and can be resumed later. " +
+      "Use when done with a task for now but may need to resume this exact environment later.",
+    inputSchema: z.object({
+      sandboxId: z.string().describe("Sandbox ID to archive."),
+    }),
+    execute: async ({ sandboxId }) => {
+      try {
+        const sandbox = await findUserSandbox(userId, sandboxId);
+        if (!sandbox) return { success: false, error: `Sandbox ${sandboxId} not found.` };
+        await (sandbox as any).archive();
+        return {
+          success: true,
+          message: `Sandbox ${sandboxId} archived. It can be resumed later — files and state are preserved.`,
+        };
+      } catch (error: any) {
+        return { success: false, error: error?.message ?? String(error) };
+      }
+    },
+  });
