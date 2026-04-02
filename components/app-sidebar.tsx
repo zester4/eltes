@@ -117,6 +117,29 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       className="h-8 p-1 md:h-fit md:p-2"
                       onClick={() => {
                         setOpenMobile(false);
+                        router.push("/subagents");
+                      }}
+                      type="button"
+                      variant="ghost"
+                    >
+                      <div className="hidden">
+                         <PlusIcon size={20} />
+                      </div>
+                      <div className="flex h-5 w-5 items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bot"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+                      </div>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent align="end" className="hidden md:block">
+                    Subagents
+                  </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      className="h-8 p-1 md:h-fit md:p-2"
+                      onClick={() => {
+                        setOpenMobile(false);
                         router.push("/chat");
                         router.refresh();
                       }}

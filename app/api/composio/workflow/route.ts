@@ -143,42 +143,36 @@ Today's date is ${new Date().toLocaleDateString()}. Execute your duties flawless
     // Persist tool call/result pairs from AI steps
     for (const step of aiSteps) {
       for (const tc of step.toolCalls) {
-        messagesToSave.push({
-          id: generateUUID(),
-          chatId,
-          role: "assistant",
-          parts: [
-            {
-              type: "tool-call",
-              toolCallId: tc.toolCallId,
-              toolName: tc.toolName,
-              args: tc.args,
-            },
-          ],
-          attachments: [],
-          createdAt: new Date(timestamp.getTime() + 2000),
-        });
-
         const result = step.toolResults.find(
           (r: any) => r.toolCallId === tc.toolCallId,
         );
+
+        const parts: any[] = [
+          {
+            type: "tool-call",
+            toolCallId: tc.toolCallId,
+            toolName: tc.toolName,
+            args: tc.args,
+          },
+        ];
+
         if (result) {
-          messagesToSave.push({
-            id: generateUUID(),
-            chatId,
-            role: "tool",
-            parts: [
-              {
-                type: "tool-result",
-                toolCallId: result.toolCallId,
-                toolName: result.toolName,
-                result: result.result,
-              },
-            ],
-            attachments: [],
-            createdAt: new Date(timestamp.getTime() + 3000),
+          parts.push({
+            type: "tool-result",
+            toolCallId: result.toolCallId,
+            toolName: result.toolName,
+            result: result.result,
           });
         }
+
+        messagesToSave.push({
+          id: generateUUID(),
+          chatId,
+          role: "assistant", // The AI SDK UIMessage schema expects results in assistant messages
+          parts,
+          attachments: [],
+          createdAt: new Date(timestamp.getTime() + 2000),
+        });
       }
     }
 

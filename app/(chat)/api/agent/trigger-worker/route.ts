@@ -130,44 +130,43 @@ async function persistToChat(
     });
   }
 
-  // Tool calls and results interleaved
+  // Tool calls and results — tool-call and tool-result are merged into a
+  // single assistant message per step. The AI SDK UIMessage schema has no
+  // "tool" role; results live as parts inside assistant messages.
   if (result.steps) {
     let offset = 2_000;
     for (const step of result.steps) {
       if (!step.toolCalls?.length) continue;
       for (const call of step.toolCalls) {
         const toolCallId = call.toolCallId;
+        const toolResult = step.toolResults?.find((r: any) => r.toolCallId === toolCallId);
+
+        const parts: any[] = [
+          {
+            type: "tool-call",
+            toolCallId,
+            toolName: (call as any).toolName,
+            args: (call as any).args,
+          },
+        ];
+
+        if (toolResult) {
+          parts.push({
+            type: "tool-result",
+            toolCallId,
+            toolName: (call as any).toolName,
+            result: (toolResult as any).result,
+          });
+        }
 
         messagesToSave.push({
           id: generateUUID(),
           chatId,
           role: "assistant",
-          parts: [{
-            type: "tool-call",
-            toolCallId,
-            toolName: (call as any).toolName,
-            args: (call as any).args,
-          }],
+          parts,
           attachments: [],
           createdAt: new Date(timestamp.getTime() + offset),
         });
-
-        const toolResult = step.toolResults?.find((r: any) => r.toolCallId === toolCallId);
-        if (toolResult) {
-          messagesToSave.push({
-            id: generateUUID(),
-            chatId,
-            role: "tool",
-            parts: [{
-              type: "tool-result",
-              toolCallId,
-              toolName: (call as any).toolName,
-              result: (toolResult as any).result,
-            }],
-            attachments: [],
-            createdAt: new Date(timestamp.getTime() + offset + 500),
-          });
-        }
 
         offset += 1_000;
       }

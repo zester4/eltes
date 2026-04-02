@@ -310,42 +310,38 @@ Today's date is ${new Date().toLocaleDateString()}. Execute your duties flawless
     for (const step of result.steps ?? []) {
       for (const tc of step.toolCalls ?? []) {
         const toolCallId = (tc as any).toolCallId;
+        const toolResult = step.toolResults?.find(
+          (r: any) => r.toolCallId === toolCallId
+        );
+
+        // Merge tool-call and tool-result into a single assistant message.
+        // The AI SDK UIMessage schema has no "tool" role.
+        const parts: any[] = [
+          {
+            type: "tool-call",
+            toolCallId,
+            toolName: (tc as any).toolName,
+            args: (tc as any).args,
+          },
+        ];
+
+        if (toolResult) {
+          parts.push({
+            type: "tool-result",
+            toolCallId,
+            toolName: (toolResult as any).toolName,
+            result: (toolResult as any).result,
+          });
+        }
+
         messagesToSave.push({
           id: generateUUID(),
           chatId,
           role: "assistant",
-          parts: [
-            {
-              type: "tool-call",
-              toolCallId,
-              toolName: (tc as any).toolName,
-              args: (tc as any).args,
-            },
-          ],
+          parts,
           attachments: [],
           createdAt: new Date(timestamp.getTime() + 2000),
         });
-
-        const toolResult = step.toolResults?.find(
-          (r: any) => r.toolCallId === toolCallId
-        );
-        if (toolResult) {
-          messagesToSave.push({
-            id: generateUUID(),
-            chatId,
-            role: "tool",
-            parts: [
-              {
-                type: "tool-result",
-                toolCallId,
-                toolName: (toolResult as any).toolName,
-                result: (toolResult as any).result,
-              },
-            ],
-            attachments: [],
-            createdAt: new Date(timestamp.getTime() + 3000),
-          });
-        }
       }
     }
 

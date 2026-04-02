@@ -106,46 +106,45 @@ Be direct and helpful.`;
       });
     }
 
-    // Save tool executions if any
+    // Save tool executions if any — tool-call and tool-result are merged into a
+    // single assistant message per step. The AI SDK UIMessage schema has no
+    // "tool" role; results live as parts inside assistant messages.
     if (result.steps) {
+      let offset = 2_000;
       for (const step of result.steps) {
-        if (step.toolCalls && step.toolCalls.length > 0) {
-          for (const call of step.toolCalls) {
-            const toolCallId = call.toolCallId;
-            
-            // Assistant message containing the tool call
-            messagesToSave.push({
-              id: generateUUID(),
-              chatId,
-              role: "assistant",
-              parts: [{ 
-                type: "tool-call", 
-                toolCallId, 
-                toolName: (call as any).toolName, 
-                args: (call as any).args 
-              }],
-              attachments: [],
-              createdAt: new Date(timestamp.getTime() + 2000),
-            });
+        if (!step.toolCalls?.length) continue;
+        for (const call of step.toolCalls) {
+          const toolCallId = (call as any).toolCallId;
+          const toolResult = step.toolResults?.find((r: any) => r.toolCallId === toolCallId);
 
-            // Tool result message
-            const toolResult = step.toolResults?.find((r: any) => r.toolCallId === toolCallId);
-            if (toolResult) {
-              messagesToSave.push({
-                id: generateUUID(),
-                chatId,
-                role: "tool",
-                parts: [{ 
-                  type: "tool-result", 
-                  toolCallId, 
-                  toolName: (call as any).toolName, 
-                  result: (toolResult as any).result 
-                }],
-                attachments: [],
-                createdAt: new Date(timestamp.getTime() + 3000),
-              });
-            }
+          const parts: any[] = [
+            {
+              type: "tool-call",
+              toolCallId,
+              toolName: (call as any).toolName,
+              args: (call as any).args,
+            },
+          ];
+
+          if (toolResult) {
+            parts.push({
+              type: "tool-result",
+              toolCallId,
+              toolName: (call as any).toolName,
+              result: (toolResult as any).result,
+            });
           }
+
+          messagesToSave.push({
+            id: generateUUID(),
+            chatId,
+            role: "assistant",
+            parts,
+            attachments: [],
+            createdAt: new Date(timestamp.getTime() + offset),
+          });
+
+          offset += 1_000;
         }
       }
     }

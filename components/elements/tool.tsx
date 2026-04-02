@@ -68,7 +68,8 @@ const KNOWN_APP_PREFIXES: Record<string, string> = {
   SUPABASE: "Supabase",
 };
 
-export const formatToolName = (type: string): string => {
+export const formatToolName = (type: string | undefined | null): string => {
+  if (!type) return "Tool";
   const raw = type.replace(/^tool-/, "");
 
   if (META_TOOL_NAMES[raw]) return META_TOOL_NAMES[raw];
@@ -132,8 +133,8 @@ const getStatusIndicator = (state: ToolUIPart["state"]) => {
 
 export type ToolHeaderProps = {
   title?: string;
-  type: ToolUIPart["type"];
-  state: ToolUIPart["state"];
+  type: ToolUIPart["type"] | string;
+  state: ToolUIPart["state"] | string;
   className?: string;
 };
 
@@ -156,7 +157,7 @@ export const ToolHeader = ({
       <span className="font-medium text-sm text-foreground/80 truncate">
         {title ?? formatToolName(type)}
       </span>
-      {getStatusIndicator(state)}
+      {getStatusIndicator(state as ToolUIPart["state"])}
     </div>
     <ChevronDownIcon className="size-3.5 text-muted-foreground shrink-0 transition-transform duration-200 group-data-[state=open]:rotate-180" />
   </CollapsibleTrigger>

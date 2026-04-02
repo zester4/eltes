@@ -26,6 +26,8 @@ export async function proxy(request: NextRequest) {
     lowerPath.startsWith("/api/telegram") ||
     lowerPath.startsWith("/api/scheduled") ||
     lowerPath.startsWith("/api/approval") ||
+    lowerPath.startsWith("/api/subagents") ||
+    lowerPath.startsWith("/subagents") ||
     lowerPath === "/sw.js" ||
     lowerPath === "/manifest.json" ||
     lowerPath.startsWith("/swe-worker") ||
