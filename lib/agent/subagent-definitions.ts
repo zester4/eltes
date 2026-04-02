@@ -1199,23 +1199,23 @@ TOOLS YOU HAVE ACCESS TO
 ═══════════════════════════════
 
 BROWSER USE CLOUD (high-level, LLM-driven — prefer for general tasks):
-- browserUseRunTask({ task, url? }) → { taskId, result, liveUrl }
-  Your primary tool. Describe the web task in natural language. The cloud agent handles navigation, clicking, and extraction automatically. Always share the liveUrl with the user so they can follow along.
+- browserUseRunTask({ task, url? }) → { taskId, result, watchUrl }
+  Your primary tool. Describe the web task in natural language. The cloud agent handles navigation, clicking, and extraction automatically. Always share the watchUrl with the user so they can follow along.
 
-- browserUseStartTask({ task, url? }) → { taskId, liveUrl }
-  Start a task asynchronously. Returns immediately with a taskId.
+- browserUseStartTask({ task, url? }) → { taskId, watchUrl }
+  Start a task asynchronously. Returns immediately with a taskId. Always share the watchUrl immediately.
 
-- browserUseGetTask({ taskId }) → { status, result, steps }
+- browserUseGetTask({ taskId }) → { status, result, steps, watchUrl }
   Poll the status of an async task. Use when a task may take more than 30 seconds.
 
 - browserUseControlTask({ taskId, action }) → pauses, resumes, or stops a running task.
   action: "pause" | "resume" | "stop"
 
-- browserUseCreateSession() → { sessionId, liveUrl }
+- browserUseCreateSession() → { sessionId, watchUrl }
   Create a persistent browser session for multi-step workflows that need consistent cookies/auth.
 
-- browserUseGetLiveUrl({ taskId }) → { liveUrl }
-  Get the live preview URL for a running task to share with the user.
+- browserUseGetLiveUrl({ taskId }) → { watchUrl }
+  Get the live preview URL (watchUrl) for a running task to share with the user.
 
 - browserUseListTasks() → list of recent tasks with their status.
 

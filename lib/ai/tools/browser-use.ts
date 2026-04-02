@@ -102,6 +102,15 @@ interface BUSession {
   startedAt?: string | null;
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function getWatchUrl(liveUrl?: string | null): string | null {
+  if (!liveUrl) return null;
+  // Browser Use liveUrl is previews.browser-use.com/preview/{taskId}
+  // We wrap it in our internal /browser-live route for embedding
+  return `/browser-live?liveUrl=${encodeURIComponent(liveUrl)}`;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. browserUseRunTask — submit + wait for result (blocking, for short tasks)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -276,10 +285,13 @@ COST: ~$0.01 per task + per-step LLM cost. Check credits first with browserUseCh
           status: result.status,
           output: result.output ?? null,
           liveUrl: result.liveUrl ?? null,
+          watchUrl: getWatchUrl(result.liveUrl),
           recentSteps: stepSummary,
           tip:
             result.status === "started"
-              ? `Task still running after ${waitTimeoutSeconds}s. Poll with browserUseGetTask(taskId: "${taskId}")`
+              ? `Task still running after ${waitTimeoutSeconds}s. Watch live: ${getWatchUrl(
+                  result.liveUrl
+                )} or poll with browserUseGetTask(taskId: "${taskId}")`
               : undefined,
         };
       } catch (error: any) {
@@ -346,9 +358,10 @@ export const browserUseStartTask = () =>
           sessionId: created.sessionId,
           status: "started",
           liveUrl,
+          watchUrl: getWatchUrl(liveUrl),
           message:
             `Task started. Poll with browserUseGetTask(taskId: "${created.id}"). ` +
-            (liveUrl ? `Watch live: ${liveUrl}` : ""),
+            (liveUrl ? `Watch live: ${getWatchUrl(liveUrl)}` : ""),
         };
       } catch (error: any) {
         return { success: false, error: error?.message ?? String(error) };
@@ -385,6 +398,7 @@ export const browserUseGetTask = () =>
           done: isComplete,
           output: task.output ?? null,
           liveUrl: task.liveUrl ?? null,
+          watchUrl: getWatchUrl(task.liveUrl),
           stepCount: task.steps?.length ?? 0,
           steps: includeSteps
             ? task.steps?.map((s) => ({
@@ -490,9 +504,11 @@ export const browserUseCreateSession = () =>
           sessionId: session.id,
           status: session.status,
           liveUrl: session.liveUrl ?? null,
+          watchUrl: getWatchUrl(session.liveUrl),
           message:
             `Session created (id: ${session.id}). Pass this sessionId to browserUseRunTask for authenticated browsing. ` +
-            `Cost: $0.05/hr. Stop when done.`,
+            (session.liveUrl ? `Watch live: ${getWatchUrl(session.liveUrl)}` : "") +
+            ` Cost: $0.05/hr. Stop when done.`,
         };
       } catch (error: any) {
         return { success: false, error: error?.message ?? String(error) };
@@ -523,9 +539,10 @@ export const browserUseGetLiveUrl = () =>
           success: true,
           sessionId,
           liveUrl: session.liveUrl ?? null,
+          watchUrl: getWatchUrl(session.liveUrl),
           status: session.status,
           message: session.liveUrl
-            ? `Open this to watch the agent live: ${session.liveUrl}`
+            ? `Open this to watch the agent live: ${getWatchUrl(session.liveUrl)}`
             : "Live URL not yet available — session may still be starting.",
         };
       } catch (error: any) {
