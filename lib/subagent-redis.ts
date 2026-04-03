@@ -45,3 +45,17 @@ export async function clearSubagentChatMessages(
     console.error("Failed to clear subagent chat messages from Redis", err);
   }
 }
+
+export async function appendSubagentChatMessage(
+  userId: string,
+  agentSlug: string,
+  message: ChatMessage
+): Promise<void> {
+  try {
+    const existing = await getSubagentChatMessages(userId, agentSlug);
+    existing.push(message);
+    await saveSubagentChatMessages(userId, agentSlug, existing);
+  } catch (err) {
+    console.error("Failed to append subagent chat message to Redis", err);
+  }
+}

@@ -48,6 +48,32 @@ export async function triggerAgentWorkflow(
   return { workflowRunId };
 }
  
+// ── Subagent chat workflow ────────────────────────────────────────────────────
+
+export type SubagentChatWorkflowPayload = {
+  taskId: string;
+  userId: string;
+  agentSlug: string;
+  chatId?: string;
+};
+
+export async function triggerSubagentChatWorkflow(
+  payload: SubagentChatWorkflowPayload,
+): Promise<{ workflowRunId: string } | null> {
+  const client = getWorkflowClient();
+  if (!client || !appBaseUrl) return null;
+
+  const workflowUrl = `${appBaseUrl}/api/subagents/chat/workflow`;
+  const failureUrl = `${appBaseUrl}/api/subagents/chat/workflow/failure`;
+  const { workflowRunId } = await client.trigger({
+    url: workflowUrl,
+    body: payload,
+    retries: 3,
+    failureUrl,
+  });
+  return { workflowRunId };
+}
+
 // ── Telegram workflow ─────────────────────────────────────────────────────────
  
 export type TelegramWorkflowPayload = {
