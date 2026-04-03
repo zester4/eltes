@@ -2,7 +2,7 @@
  * Fire-and-forget: asks the handoff API to append a proactive main-agent message.
  */
 export function notifySubAgentHandoffToMainAgent(payload: {
-  chatId: string;
+  chatId?: string;
   userId: string;
   taskId: string;
   agentName: string;
@@ -11,6 +11,7 @@ export function notifySubAgentHandoffToMainAgent(payload: {
   outcome: "completed" | "failed";
   summary: string;
 }): void {
+  if (!payload.chatId) return;
   const rawBase =
     process.env.BASE_URL ||
     (process.env.VERCEL_PROJECT_PRODUCTION_URL

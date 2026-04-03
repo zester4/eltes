@@ -15,7 +15,7 @@ export const launchMission = ({
   baseUrl,
 }: {
   userId: string;
-  chatId: string;
+  chatId?: string;
   baseUrl: string;
 }) =>
   tool({

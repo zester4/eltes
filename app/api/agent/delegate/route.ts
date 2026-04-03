@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     const result = await runSubAgent({
       taskId,
       userId: task.userId,
-      chatId: task.chatId,
+      chatId: task.chatId ?? undefined,
       agentType: task.agentType,
       task: task.task,
     });

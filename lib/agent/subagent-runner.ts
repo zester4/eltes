@@ -57,7 +57,7 @@ async function recallRelevantMemory(userId: string, query: string): Promise<stri
 export interface RunSubAgentParams {
   taskId: string;
   userId: string;
-  chatId: string;
+  chatId?: string;
   agentType: string;
   task: string;
 }
@@ -200,44 +200,46 @@ Execute the task now. Summarize what you did in your final response.`;
       result: resultPayload,
     });
 
-    const timestamp = new Date();
-    const messagesToSave: DBMessage[] = [];
+    if (chatId) {
+      const timestamp = new Date();
+      const messagesToSave: DBMessage[] = [];
 
-    const agentPayload = {
-      agentType: definition.name,
-      slug: agentType,
-      task,
-      taskId,
-      result: result.text,
-      timestamp: timestamp.toISOString(),
-    };
+      const agentPayload = {
+        agentType: definition.name,
+        slug: agentType,
+        task,
+        taskId,
+        result: result.text,
+        timestamp: timestamp.toISOString(),
+      };
 
-    messagesToSave.push({
-      id: generateUUID(),
-      chatId,
-      role: "assistant",
-      parts: [
-        {
-          type: "text",
-          text: `###AGENT_RESULT###${JSON.stringify(agentPayload)}`,
-        },
-      ],
-      attachments: [],
-      createdAt: new Date(timestamp.getTime() + 1000),
-    });
+      messagesToSave.push({
+        id: generateUUID(),
+        chatId,
+        role: "assistant",
+        parts: [
+          {
+            type: "text",
+            text: `###AGENT_RESULT###${JSON.stringify(agentPayload)}`,
+          },
+        ],
+        attachments: [],
+        createdAt: new Date(timestamp.getTime() + 1000),
+      });
 
-    await saveMessages({ messages: messagesToSave });
+      await saveMessages({ messages: messagesToSave });
 
-    notifySubAgentHandoffToMainAgent({
-      chatId,
-      userId,
-      taskId,
-      agentName: definition.name,
-      slug: agentType,
-      task,
-      outcome: "completed",
-      summary: result.text || JSON.stringify(resultPayload),
-    });
+      notifySubAgentHandoffToMainAgent({
+        chatId,
+        userId,
+        taskId,
+        agentName: definition.name,
+        slug: agentType,
+        task,
+        outcome: "completed",
+        summary: result.text || JSON.stringify(resultPayload),
+      });
+    }
 
     return { success: true, text: result.text };
   } catch (error: unknown) {
@@ -249,41 +251,43 @@ Execute the task now. Summarize what you did in your final response.`;
       result: { error: errMsg },
     });
 
-    const failPayload = {
-      agentType: definition.name,
-      slug: agentType,
-      task,
-      taskId,
-      error: errMsg,
-      timestamp: new Date().toISOString(),
-    };
-    const messagesToSave: DBMessage[] = [
-      {
-        id: generateUUID(),
-        chatId,
-        role: "assistant",
-        parts: [
-          {
-            type: "text",
-            text: `###AGENT_RESULT###${JSON.stringify(failPayload)}`,
-          },
-        ],
-        attachments: [],
-        createdAt: new Date(),
-      },
-    ];
-    await saveMessages({ messages: messagesToSave });
+    if (chatId) {
+      const failPayload = {
+        agentType: definition.name,
+        slug: agentType,
+        task,
+        taskId,
+        error: errMsg,
+        timestamp: new Date().toISOString(),
+      };
+      const messagesToSave: DBMessage[] = [
+        {
+          id: generateUUID(),
+          chatId,
+          role: "assistant",
+          parts: [
+            {
+              type: "text",
+              text: `###AGENT_RESULT###${JSON.stringify(failPayload)}`,
+            },
+          ],
+          attachments: [],
+          createdAt: new Date(),
+        },
+      ];
+      await saveMessages({ messages: messagesToSave });
 
-    notifySubAgentHandoffToMainAgent({
-      chatId,
-      userId,
-      taskId,
-      agentName: definition.name,
-      slug: agentType,
-      task,
-      outcome: "failed",
-      summary: errMsg,
-    });
+      notifySubAgentHandoffToMainAgent({
+        chatId,
+        userId,
+        taskId,
+        agentName: definition.name,
+        slug: agentType,
+        task,
+        outcome: "failed",
+        summary: errMsg,
+      });
+    }
 
     return { success: false, error: errMsg };
   }
