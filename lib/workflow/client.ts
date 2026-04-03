@@ -188,16 +188,17 @@ export async function registerUserCrons(userId: string): Promise<void> {
   const heartbeatUrl = `${appBaseUrl}/api/agent/heartbeat`;
 
   // Hourly heartbeat: every hour at minute 0
+  // scheduleId must be passed as the Upstash-Schedule-Id header (not a body field)
   await fetch(`${qstashUrl}/v2/schedules`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      "Upstash-Schedule-Id": `hb-${userId}`,
     },
     body: JSON.stringify({
-      destination: heartbeatUrl,
+      url: heartbeatUrl,
       cron: "0 * * * *",
-      scheduleId: `hb-${userId}`,
       body: JSON.stringify({ userId, type: "heartbeat" }),
     }),
   });
@@ -208,11 +209,11 @@ export async function registerUserCrons(userId: string): Promise<void> {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      "Upstash-Schedule-Id": `syn-${userId}`,
     },
     body: JSON.stringify({
-      destination: heartbeatUrl,
+      url: heartbeatUrl,
       cron: "0 8 * * 1",
-      scheduleId: `syn-${userId}`,
       body: JSON.stringify({ userId, type: "weekly_synthesis" }),
     }),
   });

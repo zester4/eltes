@@ -93,7 +93,7 @@ export const { POST } = serve<HeartbeatPayload>(async (context) => {
     } catch { /* Composio optional */ }
 
     const result = await generateText({
-      model: getGoogleModel("google/gemini-2.5-flash"),
+      model: getGoogleModel("gemini-2.5-flash"),
       system: `You are Etles's background intelligence scanner. Your ONLY job is to check the user's calendar, email, and tasks for anything urgent or time-sensitive in the next 24 hours.
 
 Return a JSON object with this exact shape:
@@ -147,7 +147,7 @@ Return ONLY the JSON object, no other text.`,
   // ── Step 5: Generate proactive message ────────────────────────────────────
   const proactiveMessage = await context.run("generate-message", async () => {
     const { text } = await generateText({
-      model: getGoogleModel("google/gemini-2.5-flash"),
+      model: getGoogleModel("gemini-2.5-flash"),
       system: `You are Etles, the user's proactive AI chief of staff. You're reaching out because something important needs their attention.
 
 Write a SHORT, direct Telegram message (max 4 sentences). No fluff. No "I noticed". Just the facts and what they should do.

@@ -5,13 +5,6 @@ import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
 import { getRecentAgentTasksByUserId, getUserBotIntegrations } from "../queries";
 
-const redis =
-  process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-    ? new Redis({
-        url: process.env.UPSTASH_REDIS_REST_URL,
-        token: process.env.UPSTASH_REDIS_REST_TOKEN,
-      })
-    : null;
 
 export type AgentStatusData = {
   heartbeat: {
@@ -44,6 +37,16 @@ export async function getAgentStatus(): Promise<AgentStatusData> {
   }
 
   const userId = session.user.id;
+
+  // Instantiate Redis per-request to avoid build-time null (module-level init
+  // can run when env vars are unavailable on Vercel's build phase).
+  const redis =
+    process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+      ? new Redis({
+          url: process.env.UPSTASH_REDIS_REST_URL,
+          token: process.env.UPSTASH_REDIS_REST_TOKEN,
+        })
+      : null;
 
   // 0. Fetch last runs from Redis
   let lastHeartbeat: { lastRun?: string; status?: string } | null = null;
