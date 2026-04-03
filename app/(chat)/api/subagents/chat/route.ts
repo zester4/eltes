@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     await createAgentTask({
       id: taskId,
       userId: session.user.id,
-      chatId: chatId || `subagent-${agentSlug}`,
+      chatId: chatId, // Pass undefined if not present, now allowed by DB
       agentType: agentSlug,
       task: extractLastUserText(messages),
     });

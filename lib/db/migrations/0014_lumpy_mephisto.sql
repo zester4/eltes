@@ -1,0 +1,1 @@
+ALTER TABLE "AgentTask" ALTER COLUMN "chatId" DROP NOT NULL;

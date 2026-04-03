@@ -99,6 +99,13 @@
       "when": 1774131523167,
       "tag": "0013_hesitant_rogue",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1775215153338,
+      "tag": "0014_lumpy_mephisto",
+      "breakpoints": true
     }
   ]
 }

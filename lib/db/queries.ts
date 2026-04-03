@@ -846,7 +846,7 @@ export async function createAgentTask({
 }: {
   id: string;
   userId: string;
-  chatId: string;
+  chatId?: string;
   agentType: string;
   task: string;
 }) {
