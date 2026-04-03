@@ -5,13 +5,25 @@ import {
   WebPreviewUrl, 
   WebPreviewBody 
 } from "@/components/ai-elements/web-preview";
+import { Suspense } from 'react';
 
 export const metadata: Metadata = {
   title: 'Browser Live View | Etles',
   description: 'Real-time browser automation preview',
 };
 
-export default async function BrowserLivePage({
+
+export default function BrowserLivePage(props: {
+  searchParams: Promise<{ liveUrl?: string }>;
+}) {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-muted-foreground">Loading preview...</div>}>
+      <BrowserLiveContent {...props} />
+    </Suspense>
+  );
+}
+
+async function BrowserLiveContent({
   searchParams,
 }: {
   searchParams: Promise<{ liveUrl?: string }>;
@@ -31,3 +43,4 @@ export default async function BrowserLivePage({
     </div>
   );
 }
+
