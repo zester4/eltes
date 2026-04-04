@@ -7,7 +7,7 @@ import { put } from "@vercel/blob";
 import { generateUUID } from "@/lib/utils";
 
 export const generateImageTool = (
-  dataStream: UIMessageStreamWriter<ChatMessage>
+  dataStream?: UIMessageStreamWriter<ChatMessage>
 ) =>
   tool({
     description: "Generate an image or edit an existing image based on a prompt.",

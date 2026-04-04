@@ -171,8 +171,18 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
                   {agent.error ? (
                     <span className="text-red-400 font-mono text-[12px] whitespace-pre-wrap">{agent.error}</span>
                   ) : (
-                    <div className="prose prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-white/5 prose-pre:border border-white/10">
-                      <Response>{agent.result!}</Response>
+                    <div className="flex flex-col gap-4">
+                      {(() => {
+                        const { text, imageUrl } = extractImageAndText(agent.result!);
+                        return (
+                          <>
+                            {imageUrl && <FeaturedImage url={imageUrl} />}
+                            <div className="prose prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-white/5 prose-pre:border border-white/10">
+                              <Response>{text}</Response>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
@@ -190,7 +200,7 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
 
 export const AgentMessageBubble = ({ agent }: { agent: AgentResultData }) => {
   return (
-    <div className="not-prose my-2 w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-[#0a0a0a] p-4 shadow-sm transition-all">
+    <div className="not-prose my-2 w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-[#0a0a0a] p-4 shadow-sm transition-all focus-within:ring-1 focus-within:ring-primary/20">
       <div className="flex items-center gap-3 mb-3">
         <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/60 shadow-inner">
           <Bot size={16} className="text-primary" />
@@ -212,8 +222,18 @@ export const AgentMessageBubble = ({ agent }: { agent: AgentResultData }) => {
             {agent.error}
           </div>
         ) : (
-          <div className="prose prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-white/5 prose-pre:border border-white/10">
-            <Response>{agent.result!}</Response>
+          <div className="flex flex-col gap-4">
+            {(() => {
+              const { text, imageUrl } = extractImageAndText(agent.result!);
+              return (
+                <>
+                  {imageUrl && <FeaturedImage url={imageUrl} />}
+                  <div className="prose prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-white/5 prose-pre:border border-white/10">
+                    <Response>{text}</Response>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
       </div>
@@ -222,6 +242,37 @@ export const AgentMessageBubble = ({ agent }: { agent: AgentResultData }) => {
           {new Date(agent.timestamp).toLocaleString()}
         </div>
       )}
+    </div>
+  );
+};
+
+// --- Utilities ---
+
+const IMAGE_REGEX = /!\[.*?\]\((https?:\/\/.*?)\)/;
+
+function extractImageAndText(rawText: string) {
+  const match = rawText.match(IMAGE_REGEX);
+  if (!match) return { text: rawText, imageUrl: null };
+  const imageUrl = match[1];
+  const text = rawText.replace(IMAGE_REGEX, "").trim();
+  return { text, imageUrl };
+}
+
+const FeaturedImage = ({ url }: { url: string }) => {
+  return (
+    <div className="group relative overflow-hidden rounded-xl border border-white/10 bg-black/40 ring-1 ring-white/5 shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:ring-white/20">
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+      <img
+        src={url}
+        alt="Agent Generated Visual"
+        className="block h-auto w-full max-w-full object-cover transition-transform duration-700 group-hover:scale-110"
+        loading="lazy"
+      />
+      <div className="absolute bottom-3 left-3 flex items-center gap-2 opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100 translate-y-2">
+        <div className="rounded-full bg-black/60 backdrop-blur-md px-3 py-1 text-[10px] font-medium text-white/80 ring-1 ring-white/10 shadow-lg">
+          Nano Banana Generated
+        </div>
+      </div>
     </div>
   );
 };

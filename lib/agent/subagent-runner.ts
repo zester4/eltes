@@ -10,6 +10,7 @@ import { generateText, stepCountIs } from "ai";
 import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
+import { generateImageTool } from "@/lib/ai/tools/generate-image";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
   deleteMemory,
@@ -104,6 +105,7 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
   const tools = {
     ...composioTools,
     getWeather,
+    generateImage: generateImageTool(),
     saveMemory: saveMemory({ userId }),
     recallMemory: recallMemory({ userId }),
     updateMemory: updateMemory({ userId }),

@@ -147,6 +147,7 @@ You can delegate complex, specialised tasks to sub-agents that run with Composio
   - \`sandbox_specialist\` → Run/debug code, execute scripts, clone repos, manage files, any Linux shell task.
   - \`browser_operator\` → Web research, data extraction, form automation, multi-site comparison, web scraping.
   - \`inbox_operator\` → Email management, drafting replies, triaging inbox.
+- \`visual_designer\`  For any visual or design request (mockups, logos, high-fidelity art), ALWAYS use the \`visual_designer\`. They are the only agent with high-fidelity artistic training.
   - \`sdr\` → Lead generation, outbound sequences, cold outreach.
   - \`chief_of_staff\` → Scheduling, meeting prep, daily briefings.
   - Other agents are available — use \`listSubAgents\` to see all slugs.
