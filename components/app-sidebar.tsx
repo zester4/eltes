@@ -13,13 +13,18 @@ import {
   SidebarHistory,
 } from "@/components/sidebar-history";
 import { SidebarUserNav } from "@/components/sidebar-user-nav";
+import { PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarGroup,
+  SidebarGroupContent,
   SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
@@ -32,7 +37,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 export function AppSidebar({ user }: { user: User | undefined }) {
   const router = useRouter();
@@ -62,102 +66,88 @@ export function AppSidebar({ user }: { user: User | undefined }) {
     <>
       <Sidebar className="group-data-[side=left]:border-r-0">
         <SidebarHeader>
-          <SidebarMenu>
-            <div className="flex flex-row items-center justify-between">
-              <Link
-                className="flex flex-row items-center gap-3"
-                href="/"
-                onClick={() => {
+          <div className="flex flex-row items-center justify-between px-2 pt-2 pb-1">
+            <Link
+              className="flex flex-row items-center gap-2"
+              href="/"
+              onClick={() => {
+                setOpenMobile(false);
+              }}
+            >
+              <span className="cursor-pointer font-semibold text-lg hover:text-foreground/80 transition-colors">
+                Etles
+              </span>
+            </Link>
+            <Button
+              className="h-7 w-7 text-muted-foreground"
+              onClick={() => {
+                const isMobile = window.innerWidth < 768;
+                if (isMobile) {
                   setOpenMobile(false);
-                }}
-              >
-                <span className="cursor-pointer rounded-md px-2 font-semibold text-lg hover:bg-muted">
-                  Etles
-                </span>
-              </Link>
-              <div className="flex flex-row gap-1">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      className="h-8 p-1 md:h-fit md:p-2"
-                      onClick={() => {
-                        setOpenMobile(false);
-                        router.push("/agent-status");
-                      }}
-                      type="button"
-                      variant="ghost"
-                    >
-                      <ActivityIcon />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent align="end" className="hidden md:block">
-                    Agent Status
-                  </TooltipContent>
-                </Tooltip>
-                {user && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        className="h-8 p-1 md:h-fit md:p-2"
-                        onClick={() => setShowDeleteAllDialog(true)}
-                        type="button"
-                        variant="ghost"
-                      >
-                        <TrashIcon />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent align="end" className="hidden md:block">
-                      Delete All Chats
-                    </TooltipContent>
-                  </Tooltip>
-                )}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      className="h-8 p-1 md:h-fit md:p-2"
-                      onClick={() => {
-                        setOpenMobile(false);
-                        router.push("/subagents");
-                      }}
-                      type="button"
-                      variant="ghost"
-                    >
-                      <div className="hidden">
-                         <PlusIcon size={20} />
-                      </div>
-                      <div className="flex h-5 w-5 items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bot"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
-                      </div>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent align="end" className="hidden md:block">
-                    Subagents
-                  </TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      className="h-8 p-1 md:h-fit md:p-2"
-                      onClick={() => {
-                        setOpenMobile(false);
-                        router.push("/chat");
-                        router.refresh();
-                      }}
-                      type="button"
-                      variant="ghost"
-                    >
-                      <PlusIcon />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent align="end" className="hidden md:block">
-                    New Chat
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
-          </SidebarMenu>
+                } else {
+                  document.querySelector<HTMLButtonElement>('[data-sidebar="trigger"]')?.click();
+                }
+              }}
+              type="button"
+              variant="ghost"
+              size="icon"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </Button>
+          </div>
         </SidebarHeader>
         <SidebarContent>
+          <SidebarGroup className="pb-0">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    onClick={() => {
+                      setOpenMobile(false);
+                      router.push("/chat");
+                      router.refresh();
+                    }}
+                  >
+                    <PlusIcon />
+                    <span>New chat</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    onClick={() => {
+                      setOpenMobile(false);
+                      router.push("/subagents");
+                    }}
+                  >
+                    <div className="flex h-4 w-4 items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-bot"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+                    </div>
+                    <span>Subagents</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                     onClick={() => {
+                       setOpenMobile(false);
+                       router.push("/agent-status");
+                     }}
+                  >
+                    <ActivityIcon />
+                    <span>Agent Status</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {user && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={() => setShowDeleteAllDialog(true)}>
+                      <TrashIcon />
+                      <span>Clear History</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
           <SidebarHistory user={user} />
         </SidebarContent>
         <SidebarFooter>{user && <SidebarUserNav user={user} />}</SidebarFooter>

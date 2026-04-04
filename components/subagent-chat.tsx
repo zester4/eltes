@@ -118,7 +118,7 @@ export function SubAgentChat({
   );
 
   // ── Send message ───────────────────────────────────────────────────────────
-  const handleInputSubmit = async (e: React.FormEvent) => {
+  const handleInputSubmit = async (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     if (!input.trim() || isWorking) return;
 
@@ -246,7 +246,7 @@ export function SubAgentChat({
       </div>
 
       {/* Chat Area */}
-      <ScrollArea className="flex-1 p-3 sm:p-4 md:p-6 w-full">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 w-full">
         {isFetchingInitial ? (
           <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-3 sm:space-y-4">
             <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin opacity-50" />
@@ -298,9 +298,9 @@ export function SubAgentChat({
                           <div
                             key={key}
                             className={cn(
-                              "text-[13px] sm:text-sm leading-relaxed",
+                              "text-xs sm:text-[13px] leading-relaxed",
                               message.role === "user"
-                                ? "bg-primary text-primary-foreground px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl rounded-tr-sm shadow-sm"
+                                ? "bg-primary text-primary-foreground px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl rounded-tr-sm shadow-sm"
                                 : "bg-transparent w-full",
                             )}
                           >
@@ -414,26 +414,33 @@ export function SubAgentChat({
             <div ref={messagesEndRef} className="h-4 sm:h-8" />
           </div>
         )}
-      </ScrollArea>
+      </div>
 
       {/* Input Area */}
       <div className="flex-none p-3 sm:p-4 bg-background/80 border-t w-full">
         <form
           onSubmit={handleInputSubmit}
-          className="flex relative items-center w-full"
+          className="flex relative items-end w-full"
         >
-          <input
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleInputSubmit(e);
+              }
+            }}
             placeholder={`Message ${agent.name}...`}
-            className="w-full h-10 sm:h-12 bg-muted/50 border border-muted rounded-full px-4 sm:px-5 pr-12 focus:outline-none focus:ring-1 focus:ring-primary shadow-sm text-[13px] sm:text-sm transition-all"
+            className="w-full min-h-[60px] max-h-[200px] resize-none overflow-y-auto bg-muted/50 border border-muted rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 pr-12 focus:outline-none focus:ring-1 focus:ring-primary shadow-sm text-xs sm:text-[13px] transition-all"
             disabled={isWorking || isFetchingInitial}
+            rows={2}
           />
           <Button
             type="submit"
             size="icon"
             disabled={!input.trim() || isWorking || isFetchingInitial}
-            className="absolute right-1 sm:right-1.5 h-8 w-8 sm:h-9 sm:w-9 rounded-full shrink-0"
+            className="absolute right-1 sm:right-1.5 bottom-1.5 sm:bottom-2 h-8 w-8 sm:h-9 sm:w-9 rounded-full shrink-0"
           >
             {isWorking ? (
               <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
