@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Terminal, Loader2, RefreshCw, X } from "lucide-react";
+import { useState, useRef, useEffect, useCallback, ChangeEvent } from "react";
+import { ArrowUp, Terminal, Loader2, RefreshCw, X, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
@@ -14,7 +14,8 @@ import {
 import type { SubAgentDefinition } from "@/lib/agent/subagent-definitions";
 import { toast } from "sonner";
 import { SparklesIcon } from "@/components/icons";
-import type { ChatMessage } from "@/lib/types";
+import type { ChatMessage, Attachment } from "@/lib/types";
+import { PreviewAttachment } from "./preview-attachment";
 
 interface SubAgentChatProps {
   agent: SubAgentDefinition;
@@ -38,6 +39,9 @@ export function SubAgentChat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollStartTimeRef = useRef<number>(0);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [uploadQueue, setUploadQueue] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Load initial chat history ──────────────────────────────────────────────
   useEffect(() => {
@@ -117,20 +121,78 @@ export function SubAgentChat({
     [agent.slug],
   );
 
+  // ── Set up file uploads ────────────────────────────────────────────────────
+  const uploadFile = useCallback(async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/files/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const { url, pathname, contentType } = data;
+        return { url, name: pathname, contentType };
+      }
+      const { error } = await response.json();
+      toast.error(error);
+    } catch (_error) {
+      toast.error("Failed to upload file, please try again!");
+    }
+  }, []);
+
+  const handleFileChange = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(event.target.files || []);
+      setUploadQueue(files.map((file) => file.name));
+
+      try {
+        const uploadPromises = files.map((file) => uploadFile(file));
+        const uploadedAttachments = await Promise.all(uploadPromises);
+        const successfullyUploadedAttachments = uploadedAttachments.filter(
+          (attachment) => attachment !== undefined
+        );
+
+        setAttachments((current) => [
+          ...current,
+          ...(successfullyUploadedAttachments as Attachment[]),
+        ]);
+      } catch (error) {
+        console.error("Error uploading files!", error);
+      } finally {
+        setUploadQueue([]);
+      }
+    },
+    [uploadFile]
+  );
+
   // ── Send message ───────────────────────────────────────────────────────────
   const handleInputSubmit = async (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
-    if (!input.trim() || isWorking) return;
+    if ((!input.trim() && attachments.length === 0) || isWorking || uploadQueue.length > 0) return;
 
     const userMessage: ChatMessage = {
       id: generateUUID(),
       role: "user",
-      parts: [{ type: "text", text: input }],
+      parts: [
+        ...attachments.map((attachment) => ({
+          type: "file" as const,
+          url: attachment.url,
+          name: attachment.name,
+          mediaType: attachment.contentType,
+        })),
+        { type: "text", text: input }
+      ].filter((part) => part.type === "file" || (part.type === "text" && part.text)),
     } as any;
 
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setInput("");
+    setAttachments([]);
+    if (fileInputRef.current) fileInputRef.current.value = "";
     setIsWorking(true);
 
     try {
@@ -268,7 +330,10 @@ export function SubAgentChat({
           </div>
         ) : (
           <div className="space-y-6 sm:space-y-8 w-full">
-            {messages.map((message) => (
+            {messages.map((message) => {
+              const attachmentsFromMessage = message.parts?.filter((part) => part.type === "file") || [];
+
+              return (
               <div
                 key={message.id}
                 className={cn(
@@ -280,13 +345,28 @@ export function SubAgentChat({
                   className={cn(
                     "flex flex-col gap-2 sm:gap-3 w-full",
                     message.role === "user"
-                      ? "max-w-[85%] sm:max-w-xl"
+                      ? "max-w-[85%] sm:max-w-xl items-end mt-2"
                       : "max-w-full lg:max-w-3xl",
                   )}
                 >
                   <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground ml-1 flex items-center gap-2 uppercase tracking-wide">
                     {message.role === "user" ? "You" : agent.name}
                   </div>
+
+                  {attachmentsFromMessage.length > 0 && (
+                    <div className="flex flex-row flex-wrap justify-end gap-2 mb-1">
+                      {attachmentsFromMessage.map((part: any, index) => (
+                        <PreviewAttachment
+                          key={part.url || index}
+                          attachment={{
+                            name: part.name || part.filename || "file",
+                            url: part.url,
+                            contentType: part.mediaType || part.contentType,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
 
                   {/* Render parts: Text and Tool Invocations */}
                   {message.parts &&
@@ -392,7 +472,8 @@ export function SubAgentChat({
                     })}
                 </div>
               </div>
-            ))}
+              );
+            })}
 
             {/* Working indicator */}
             {isWorking && (
@@ -420,34 +501,87 @@ export function SubAgentChat({
       <div className="flex-none p-3 sm:p-4 bg-background/80 border-t w-full">
         <form
           onSubmit={handleInputSubmit}
-          className="flex relative items-end w-full"
+          className="flex flex-col relative w-full bg-muted/50 border border-muted rounded-2xl focus-within:ring-1 focus-within:ring-primary shadow-sm transition-all overflow-hidden"
         >
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleInputSubmit(e);
-              }
-            }}
-            placeholder={`Message ${agent.name}...`}
-            className="w-full min-h-[60px] max-h-[200px] resize-none overflow-y-auto bg-muted/50 border border-muted rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 pr-12 focus:outline-none focus:ring-1 focus:ring-primary shadow-sm text-xs sm:text-[13px] transition-all"
-            disabled={isWorking || isFetchingInitial}
-            rows={2}
+          <input
+            className="pointer-events-none fixed -top-4 -left-4 size-0.5 opacity-0"
+            multiple
+            onChange={handleFileChange}
+            ref={fileInputRef}
+            tabIndex={-1}
+            type="file"
           />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={!input.trim() || isWorking || isFetchingInitial}
-            className="absolute right-1 sm:right-1.5 bottom-1.5 sm:bottom-2 h-8 w-8 sm:h-9 sm:w-9 rounded-full shrink-0"
-          >
-            {isWorking ? (
-              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
-            ) : (
-              <Send className="w-3 h-3 sm:w-4 sm:h-4" />
-            )}
-          </Button>
+
+          {(attachments.length > 0 || uploadQueue.length > 0) && (
+            <div className="flex flex-row items-end gap-2 overflow-x-auto p-3 pb-0">
+              {attachments.map((attachment) => (
+                <PreviewAttachment
+                  attachment={attachment}
+                  key={attachment.url}
+                  onRemove={() => {
+                    setAttachments((current) =>
+                      current.filter((a) => a.url !== attachment.url)
+                    );
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = "";
+                    }
+                  }}
+                />
+              ))}
+
+              {uploadQueue.map((filename) => (
+                <PreviewAttachment
+                  attachment={{ url: "", name: filename, contentType: "" }}
+                  isUploading={true}
+                  key={filename}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-end w-full p-1 relative">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              disabled={isWorking || isFetchingInitial}
+              onClick={(e) => {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }}
+              className="absolute left-1 sm:left-2 bottom-1.5 sm:bottom-2 h-8 w-8 text-muted-foreground hover:bg-muted/80 rounded-full"
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleInputSubmit(e);
+                }
+              }}
+              placeholder={`Message ${agent.name}...`}
+              className="w-full min-h-[50px] max-h-[200px] resize-none overflow-y-auto bg-transparent border-0 px-4 py-3 pl-11 pr-12 focus:outline-none focus:ring-0 text-xs sm:text-[13px] leading-relaxed"
+              disabled={isWorking || isFetchingInitial}
+              rows={1}
+            />
+
+            <Button
+              type="submit"
+              size="icon"
+              disabled={(!input.trim() && attachments.length === 0) || isWorking || uploadQueue.length > 0 || isFetchingInitial}
+              className="absolute right-1.5 bottom-1.5 sm:right-2 sm:bottom-2 h-8 w-8 sm:h-9 sm:w-9 rounded-full shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              {isWorking ? (
+                <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
+              ) : (
+                <ArrowUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              )}
+            </Button>
+          </div>
         </form>
       </div>
     </div>

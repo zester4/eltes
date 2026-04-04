@@ -83,8 +83,12 @@ export const delegateToSubAgent = ({
         .describe(
           "The task to perform. Be specific, e.g. 'Find 20 SaaS founders who raised seed in the last 90 days' or 'Summarize my overnight emails and today's calendar'."
         ),
+      attachments: z
+        .array(z.string().url())
+        .optional()
+        .describe("Array of any file or image URLs the user provided that are necessary for the sub-agent to process"),
     }),
-    execute: async ({ agentType, task }) => {
+    execute: async ({ agentType, task, attachments }) => {
       const definition = getSubAgentBySlug(agentType);
       if (!definition) {
         return {
@@ -93,19 +97,23 @@ export const delegateToSubAgent = ({
         };
       }
 
+      const finalTask = attachments && attachments.length > 0 
+        ? `${task}\n###ATTACHMENTS###\n${JSON.stringify(attachments)}` 
+        : task;
+
       const taskId = generateUUID();
       await createAgentTask({
         id: taskId,
         userId,
         chatId,
         agentType,
-        task,
+        task: finalTask,
       });
 
       const delegationPayload = {
         agentType: definition.name,
         slug: agentType,
-        task,
+        task: task,
         taskId,
         status: "running",
         timestamp: new Date().toISOString(),
@@ -139,7 +147,7 @@ export const delegateToSubAgent = ({
             userId,
             chatId,
             agentType,
-            task,
+            task: finalTask,
           });
           if (workflowResult?.workflowRunId) {
             try {
@@ -194,7 +202,7 @@ export const delegateToSubAgent = ({
             userId,
             chatId,
             agentType,
-            task,
+            task: finalTask,
           });
           return {
             success: runResult.success,
@@ -215,7 +223,7 @@ export const delegateToSubAgent = ({
           userId,
           chatId,
           agentType,
-          task,
+          task: finalTask,
         });
         return {
           success: runResult.success,

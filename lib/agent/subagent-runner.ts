@@ -167,6 +167,19 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
 
   const memoryContext = await recallRelevantMemory(userId, task);
 
+  const ATTACHMENT_DELIMITER = "###ATTACHMENTS###";
+  let promptTask = task;
+  const parsedAttachments: string[] = [];
+
+  if (task.includes(ATTACHMENT_DELIMITER)) {
+    const parts = task.split(ATTACHMENT_DELIMITER);
+    promptTask = parts[0].trim();
+    try {
+      const urls = JSON.parse(parts[1].trim());
+      if (Array.isArray(urls)) parsedAttachments.push(...urls);
+    } catch (e) {}
+  }
+
   const systemPrompt = `${definition.systemPrompt}${memoryContext}
 
 Today's date is ${new Date().toLocaleDateString()}.
@@ -180,10 +193,21 @@ Execute the task now. Summarize what you did in your final response.`;
     : getLanguageModel(subagentModel);
 
   try {
+    const userContent: any[] = [{ type: "text", text: `Task: ${promptTask}` }];
+    for (const url of parsedAttachments) {
+      if (typeof url === "string") {
+        if (url.match(/\.(png|jpe?g|gif|webp|bmp)$/i)) {
+          userContent.push({ type: "image", image: new URL(url) });
+        } else {
+          userContent.push({ type: "file", data: new URL(url), mimeType: "application/octet-stream" });
+        }
+      }
+    }
+
     const result = await generateText({
       model,
       system: systemPrompt,
-      prompt: `Task: ${task}`,
+      messages: [{ role: "user", content: userContent }],
       tools,
       stopWhen: stepCountIs(25),
     });
@@ -207,7 +231,7 @@ Execute the task now. Summarize what you did in your final response.`;
       const agentPayload = {
         agentType: definition.name,
         slug: agentType,
-        task,
+        task: promptTask,
         taskId,
         result: result.text,
         timestamp: timestamp.toISOString(),
@@ -235,7 +259,7 @@ Execute the task now. Summarize what you did in your final response.`;
         taskId,
         agentName: definition.name,
         slug: agentType,
-        task,
+        task: promptTask,
         outcome: "completed",
         summary: result.text || JSON.stringify(resultPayload),
       });
@@ -255,7 +279,7 @@ Execute the task now. Summarize what you did in your final response.`;
       const failPayload = {
         agentType: definition.name,
         slug: agentType,
-        task,
+        task: promptTask,
         taskId,
         error: errMsg,
         timestamp: new Date().toISOString(),
@@ -283,7 +307,7 @@ Execute the task now. Summarize what you did in your final response.`;
         taskId,
         agentName: definition.name,
         slug: agentType,
-        task,
+        task: promptTask,
         outcome: "failed",
         summary: errMsg,
       });
