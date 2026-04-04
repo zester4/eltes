@@ -10,9 +10,9 @@ export const generateImageTool = (
   dataStream: UIMessageStreamWriter<ChatMessage>
 ) =>
   tool({
-    description: "Generate an image based on a prompt.",
+    description: "Generate an image or edit an existing image based on a prompt.",
     inputSchema: z.object({
-      prompt: z.string().describe("The prompt to generate the image from."),
+      prompt: z.string().describe("The prompt to generate the image from. If editing, describe how to edit the image."),
       aspectRatio: z
         .enum([
           "1:1",
@@ -29,26 +29,68 @@ export const generateImageTool = (
         .optional()
         .default("1:1")
         .describe("The aspect ratio of the generated image."),
+      resolution: z
+        .enum(["1K", "2K", "4K"])
+        .optional()
+        .default("1K")
+        .describe("Resolution size of the generated image. Use 2K or 4K only if specified."),
+      editReferenceImageUrl: z
+        .string()
+        .url()
+        .optional()
+        .describe("ONLY use this if the user wants to EDIT an existing image. Do NOT use this for generating a new image. Provide the exact URL the user specified."),
     }),
-    execute: async ({ prompt, aspectRatio }) => {
-      // Stream an empty initial state so UI knows image is coming
-      dataStream.write({
-        type: "data-imageDelta",
-        data: "",
-        transient: true,
-      });
-
+    execute: async ({ prompt, aspectRatio, resolution, editReferenceImageUrl }) => {
       try {
         const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY });
 
+        let contentsPayload: any = prompt;
+
+        if (editReferenceImageUrl) {
+          try {
+            console.log("Attempting to fetch source image URL:", editReferenceImageUrl);
+            const res = await fetch(editReferenceImageUrl, {
+               headers: {
+                 "User-Agent": "Mozilla/5.0 (compatible; EtlesAgent/1.0)",
+               }
+            });
+            
+            if (!res.ok) {
+              if (res.status === 403 || res.status === 401) {
+                throw new Error("HTTP_UNAUTHORIZED");
+              }
+              throw new Error(`HTTP ${res.status} ${res.statusText}`);
+            }
+            
+            const arrayBuffer = await res.arrayBuffer();
+            const base64Image = Buffer.from(arrayBuffer).toString("base64");
+            const mimeType = res.headers.get("content-type") || "image/png";
+
+            contentsPayload = [
+              { text: prompt },
+              {
+                inlineData: {
+                  mimeType,
+                  data: base64Image,
+                },
+              },
+            ];
+          } catch (e: any) {
+            console.error("Failed to load editReferenceImageUrl. Falling back to plain text-to-image:", e);
+            // Gracefully fallback to simple text generation if the URL was hallucinated or expired
+            contentsPayload = prompt;
+          }
+        }
+
         const response = await ai.models.generateContent({
           model: "gemini-3.1-flash-image-preview",
-          contents: prompt,
+          contents: contentsPayload,
           config: {
             responseModalities: ["IMAGE"],
-            // Note: Currently typing for imageConfig might differ slightly in newer versions, 
-            // passing it generally via any if needed, but it usually accepts aspectRatio natively.
-            imageConfig: { aspectRatio },
+            imageConfig: { 
+              aspectRatio,
+              imageSize: resolution,
+            },
           } as any,
         });
 
@@ -65,14 +107,7 @@ export const generateImageTool = (
           throw new Error("No image data found in response");
         }
 
-        // Send the raw base64 data to our UI client stream 
-        dataStream.write({
-          type: "data-imageDelta",
-          data: `data:image/png;base64,${base64Image}`,
-          transient: true,
-        });
-
-        // Upload to Vercel string
+        // Upload directly to Vercel blob using generic UUID
         const buffer = Buffer.from(base64Image, "base64");
         const filename = `gemini-images/${generateUUID()}.png`;
         const blobData = await put(filename, buffer, {
@@ -87,6 +122,8 @@ export const generateImageTool = (
           url: blobData.url,
           originalPrompt: prompt,
           aspectRatioGenerated: aspectRatio,
+          resolution,
+          edited: !!editReferenceImageUrl && contentsPayload !== prompt, // true only if we successfully attached an image part
         };
 
       } catch (error) {
