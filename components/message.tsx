@@ -500,6 +500,68 @@ const PurePreviewMessage = ({
               );
             }
 
+            if ((type as string) === "tool-generateImage") {
+              const partAny = part as any;
+              const { toolCallId, state } = partAny;
+              const widthClass = "w-full max-w-full min-w-0 sm:max-w-[min(100%,720px)]";
+
+              if (state === "output-available") {
+                const out = partAny.output;
+                if (
+                  out &&
+                  typeof out === "object" &&
+                  "error" in out &&
+                  out.error != null
+                ) {
+                  return (
+                    <div
+                      className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-600 text-sm dark:bg-red-950/40 dark:text-red-400"
+                      key={toolCallId}
+                    >
+                      {String((out as { error: unknown }).error)}
+                    </div>
+                  );
+                }
+                
+                if (out && typeof out === "object" && "url" in out && typeof out.url === "string") {
+                  return (
+                    <div className={widthClass} key={toolCallId}>
+                      <img 
+                        src={out.url} 
+                        alt={(out as any).originalPrompt || "Generated Image"} 
+                        className="rounded-lg border border-border bg-muted/50 max-h-[500px] object-contain shadow-sm"
+                        loading="lazy"
+                      />
+                    </div>
+                  );
+                }
+
+                // If no URL but no error, either it's incomplete or failing silently
+                return null;
+              }
+
+              return (
+                <div className={widthClass} key={toolCallId}>
+                  <Tool
+                    className="w-full"
+                    defaultOpen={state !== "input-streaming"}
+                  >
+                    <ToolHeader state={state} type={type} />
+                    <ToolContent>
+                      {state === "input-available" && (
+                        <ToolInput input={partAny.input} />
+                      )}
+                      {state === "output-error" && (
+                        <div className="px-4 py-3 text-destructive text-sm">
+                          Could not generate the image.
+                        </div>
+                      )}
+                    </ToolContent>
+                  </Tool>
+                </div>
+              );
+            }
+
             if (type === "tool-createDocument") {
               const { toolCallId } = part;
 

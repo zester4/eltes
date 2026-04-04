@@ -40,6 +40,7 @@
     "@composio/core": "^0.6.8",
     "@composio/vercel": "^0.6.8",
     "@daytonaio/sdk": "^0.155.0",
+    "@google/genai": "^1.48.0",
     "@icons-pack/react-simple-icons": "^13.13.0",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/api-logs": "^0.200.0",
