@@ -18,6 +18,7 @@ import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { generateImageTool } from "@/lib/ai/tools/generate-image";
+import { generateVideoTool } from "@/lib/ai/tools/generate-video";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { renderChart } from "@/lib/ai/tools/render-chart";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
@@ -28,6 +29,7 @@ import {
   updateMemory,
   deleteMemory,
 } from "@/lib/ai/tools/memory";
+import { searchPastConversations } from "@/lib/ai/tools/search-history";
 import {
   setReminder,
   setCronJob,
@@ -292,12 +294,14 @@ export async function POST(request: Request) {
               : [
                   "getWeather",
                   "generateImage",
+                  "generateVideo",
                   "renderChart",
                   "createDocument",
                 "updateDocument",
                 "requestSuggestions",
                 "saveMemory",
                 "recallMemory",
+                "searchPastConversations",
                 "updateMemory",
                 "deleteMemory",
                 "setReminder",
@@ -327,6 +331,7 @@ export async function POST(request: Request) {
             ...composioTools,
             getWeather,
             generateImage: generateImageTool(dataStream),
+            generateVideo: generateVideoTool(),
             renderChart,
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
@@ -334,6 +339,7 @@ export async function POST(request: Request) {
             // Memory tools (per-user Upstash Vector)
             saveMemory: saveMemory({ userId: session.user.id! }),
             recallMemory: recallMemory({ userId: session.user.id! }),
+            searchPastConversations: searchPastConversations({ userId: session.user.id! }),
             updateMemory: updateMemory({ userId: session.user.id! }),
             deleteMemory: deleteMemory({ userId: session.user.id! }),
             // Scheduling tools (QStash)

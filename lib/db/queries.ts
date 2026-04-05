@@ -10,6 +10,7 @@ import {
   gte,
   inArray,
   lt,
+  lte,
   or,
   sql,
   type SQL,
@@ -1003,5 +1004,96 @@ export async function getRecentAgentTasksByUserId(
       return [];
     }
     throw new ChatbotError("bad_request:database", "Failed to get agent tasks");
+  }
+}
+
+export async function searchUserMessages({
+  userId,
+  query,
+  limit = 5,
+  startDate,
+  endDate,
+}: {
+  userId: string;
+  query: string;
+  limit?: number;
+  startDate?: Date;
+  endDate?: Date;
+}) {
+  try {
+    const whereConditions: SQL[] = [eq(chat.userId, userId)];
+
+    if (startDate) {
+      whereConditions.push(gte(message.createdAt, startDate));
+    }
+    if (endDate) {
+      whereConditions.push(lte(message.createdAt, endDate));
+    }
+
+    // JSONB path search for any text-like content within 'parts'
+    // This matches:
+    // 1. Text parts: { type: 'text', text: '...' }
+    // 2. Tool invocation arguments (cast to string)
+    // 3. Tool results (cast to string)
+    // We use @? with a jsonpath that scans all elements and values.
+    // The regex '(?i)' prefix makes it case-insensitive in Postgres jsonpath.
+    const searchFilter = sql`${message.parts} @@ ${`$.** ? (@.type == "text" && @.text like_regex ${JSON.stringify("(?i)" + query)}) || (exists(@.result) && @.result.toString() like_regex ${JSON.stringify("(?i)" + query)}) || (exists(@.args) && @.args.toString() like_regex ${JSON.stringify("(?i)" + query)})`}`;
+    
+    // Simpler fallback for Neon if the above is too complex: 
+    // We'll use a string-based ILIKE on the whole JSONB for maximum "catch-all"
+    const fallbackSearch = sql`${message.parts}::text ILIKE ${`%${query}%`}`;
+
+    const results = await db
+      .select({
+        message: message,
+        chatTitle: chat.title,
+      })
+      .from(message)
+      .innerJoin(chat, eq(message.chatId, chat.id))
+      .where(and(...whereConditions, fallbackSearch))
+      .orderBy(desc(message.createdAt))
+      .limit(limit);
+
+    // For each result, fetch 1 message before and 1 after for context
+    const enrichedResults = await Promise.all(
+      results.map(async (res) => {
+        const prevMessage = await db
+          .select()
+          .from(message)
+          .where(
+            and(
+              eq(message.chatId, res.message.chatId),
+              lt(message.createdAt, res.message.createdAt)
+            )
+          )
+          .orderBy(desc(message.createdAt))
+          .limit(1);
+
+        const nextMessage = await db
+          .select()
+          .from(message)
+          .where(
+            and(
+              eq(message.chatId, res.message.chatId),
+              gt(message.createdAt, res.message.createdAt)
+            )
+          )
+          .orderBy(asc(message.createdAt))
+          .limit(1);
+
+        return {
+          ...res,
+          context: {
+            previous: prevMessage[0] || null,
+            next: nextMessage[0] || null,
+          },
+        };
+      })
+    );
+
+    return enrichedResults;
+  } catch (error) {
+    console.error("Search failed:", error);
+    throw new ChatbotError("bad_request:database", "Failed to search messages");
   }
 }

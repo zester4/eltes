@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Bot, ChevronDown, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Bot, ChevronDown, Loader2, CheckCircle, XCircle, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +27,7 @@ export type AgentResultData = {
   timestamp?: string;
 };
 
-export type AgentActionData = AgentDelegatedData | (AgentResultData & { result?: string; error?: string });
+export type AgentActionData = AgentDelegatedData | AgentResultData;
 
 function isDelegated(data: AgentActionData): data is AgentDelegatedData {
   return "status" in data && !("result" in data) && !("error" in data);
@@ -81,13 +81,10 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
   const delegated = isDelegated(agent);
   const hasError = isResult(agent) && (agent as AgentResultData).error;
 
-  // If the task is no longer running, it should reflect its state even if this is the delegated message.
   const status = useMemo(() => {
     if (!delegated) return hasError ? "failed" : "completed";
-    
     const activeTask = tasks.find((t) => t.id === taskId);
-    if (!activeTask) return "completed"; // Default to completed if no longer active
-    
+    if (!activeTask) return "completed";
     return activeTask.status;
   }, [delegated, hasError, tasks, taskId]);
 
@@ -173,10 +170,11 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
                   ) : (
                     <div className="flex flex-col gap-4">
                       {(() => {
-                        const { text, imageUrl } = extractImageAndText(agent.result!);
+                        const { text, imageUrl, videoUrl } = extractMediaAndText(agent.result!);
                         return (
                           <>
                             {imageUrl && <FeaturedImage url={imageUrl} />}
+                            {videoUrl && <FeaturedVideo url={videoUrl} />}
                             <div className="prose prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-white/5 prose-pre:border border-white/10">
                               <Response>{text}</Response>
                             </div>
@@ -224,10 +222,11 @@ export const AgentMessageBubble = ({ agent }: { agent: AgentResultData }) => {
         ) : (
           <div className="flex flex-col gap-4">
             {(() => {
-              const { text, imageUrl } = extractImageAndText(agent.result!);
+              const { text, imageUrl, videoUrl } = extractMediaAndText(agent.result!);
               return (
                 <>
                   {imageUrl && <FeaturedImage url={imageUrl} />}
+                  {videoUrl && <FeaturedVideo url={videoUrl} />}
                   <div className="prose prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-white/5 prose-pre:border border-white/10">
                     <Response>{text}</Response>
                   </div>
@@ -248,17 +247,47 @@ export const AgentMessageBubble = ({ agent }: { agent: AgentResultData }) => {
 
 // --- Utilities ---
 
-const IMAGE_REGEX = /!\[.*?\]\((https?:\/\/.*?)\)/;
+const IMAGE_REGEX = /!\[.*?\]\((https?:\/\/.*?)\.(png|jpg|jpeg|webp)(?:\?.*)?\)/i;
+const VIDEO_REGEX = /!\[.*?\]\((https?:\/\/.*?)\.(mp4|webm|quicktime|ogg)(?:\?.*)?\)/i;
 
-function extractImageAndText(rawText: string) {
-  const match = rawText.match(IMAGE_REGEX);
-  if (!match) return { text: rawText, imageUrl: null };
-  const imageUrl = match[1];
-  const text = rawText.replace(IMAGE_REGEX, "").trim();
-  return { text, imageUrl };
+function extractMediaAndText(rawText: string) {
+  let text = rawText;
+  let imageUrl: string | null = null;
+  let videoUrl: string | null = null;
+
+  const imageMatch = text.match(IMAGE_REGEX);
+  if (imageMatch) {
+    imageUrl = imageMatch[1] + "." + imageMatch[2];
+    text = text.replace(imageMatch[0], "").trim();
+  }
+
+  const videoMatch = text.match(VIDEO_REGEX);
+  if (videoMatch) {
+    videoUrl = videoMatch[1] + "." + videoMatch[2];
+    text = text.replace(videoMatch[0], "").trim();
+  }
+
+  return { text, imageUrl, videoUrl };
 }
 
 const FeaturedImage = ({ url }: { url: string }) => {
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `etles-asset-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
+
   return (
     <div className="group relative overflow-hidden rounded-xl border border-white/10 bg-black/40 ring-1 ring-white/5 shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:ring-white/20">
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
@@ -273,6 +302,58 @@ const FeaturedImage = ({ url }: { url: string }) => {
           Nano Banana Generated
         </div>
       </div>
+      
+      <button
+        onClick={handleDownload}
+        className="absolute bottom-3 right-3 flex size-8 items-center justify-center rounded-full bg-black/60 backdrop-blur-md text-white/80 opacity-0 transition-all duration-500 hover:bg-primary/20 hover:text-white group-hover:translate-y-0 group-hover:opacity-100 translate-y-2 ring-1 ring-white/10 shadow-lg"
+        title="Download Image"
+      >
+        <Download size={14} />
+      </button>
+    </div>
+  );
+};
+
+const FeaturedVideo = ({ url }: { url: string }) => {
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `etles-video-${Date.now()}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+    }
+  };
+
+  return (
+    <div className="group relative overflow-hidden rounded-xl border border-white/10 bg-black/40 ring-1 ring-white/5 shadow-2xl transition-all duration-500 hover:scale-[1.01] hover:ring-white/20">
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 z-10 pointer-events-none" />
+      <video
+        src={url}
+        controls
+        className="block w-full aspect-video object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+        poster={url + "#t=0.1"}
+      />
+      <div className="absolute top-3 left-3 flex items-center gap-2 z-20">
+        <div className="rounded-full bg-indigo-500/80 backdrop-blur-md px-3 py-1 text-[10px] font-bold text-white shadow-lg ring-1 ring-white/20">
+          Veo 3.1 Synthesis
+        </div>
+      </div>
+      
+      <button
+        onClick={handleDownload}
+        className="absolute bottom-3 right-3 z-30 flex size-9 items-center justify-center rounded-full bg-black/60 backdrop-blur-md text-white/80 opacity-0 transition-all duration-500 hover:bg-indigo-500/20 hover:text-white group-hover:translate-y-0 group-hover:opacity-100 translate-y-2 ring-1 ring-white/10 shadow-lg"
+        title="Download Video"
+      >
+        <Download size={16} />
+      </button>
     </div>
   );
 };
