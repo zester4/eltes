@@ -45,6 +45,7 @@ import {
 } from "./ai-elements/confirmation";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, Pencil } from "lucide-react";
+import { Video } from "./ai-elements/video";
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -554,6 +555,65 @@ const PurePreviewMessage = ({
                       {state === "output-error" && (
                         <div className="px-4 py-3 text-destructive text-sm">
                           Could not generate the image.
+                        </div>
+                      )}
+                    </ToolContent>
+                  </Tool>
+                </div>
+              );
+            }
+
+            if ((type as string) === "tool-generateVideo") {
+              const partAny = part as any;
+              const { toolCallId, state } = partAny;
+              const widthClass = "w-full max-w-full min-w-0 sm:max-w-[min(100%,720px)]";
+
+              if (state === "output-available") {
+                const out = partAny.output;
+                if (
+                  out &&
+                  typeof out === "object" &&
+                  "error" in out &&
+                  out.error != null
+                ) {
+                  return (
+                    <div
+                      className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-600 text-sm dark:bg-red-950/40 dark:text-red-400"
+                      key={toolCallId}
+                    >
+                      {String((out as { error: unknown }).error)}
+                    </div>
+                  );
+                }
+                
+                if (out && typeof out === "object" && "url" in out && typeof out.url === "string") {
+                  return (
+                    <div className={widthClass} key={toolCallId}>
+                      <Video 
+                        url={out.url} 
+                        aspectRatio={out.aspectRatio === "9:16" ? "portrait" : "video"}
+                      />
+                    </div>
+                  );
+                }
+
+                return null;
+              }
+
+              return (
+                <div className={widthClass} key={toolCallId}>
+                  <Tool
+                    className="w-full"
+                    defaultOpen={state !== "input-streaming"}
+                  >
+                    <ToolHeader state={state} type={type} />
+                    <ToolContent>
+                      {state === "input-available" && (
+                        <ToolInput input={partAny.input} />
+                      )}
+                      {state === "output-error" && (
+                        <div className="px-4 py-3 text-destructive text-sm">
+                          Could not generate the video.
                         </div>
                       )}
                     </ToolContent>

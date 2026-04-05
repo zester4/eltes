@@ -230,27 +230,48 @@ Resolution note: 4k is not available for Veo 3.1 Lite. Video extension is limite
         // Upload each video to Vercel Blob for persistence
         const videoUris: string[] = [];
         
-        for (let i = 0; i < rawVideoUris.length; i++) {
-          const rawUri = rawVideoUris[i];
-          
-          const videoRes = await fetch(rawUri);
-          if (!videoRes.ok) continue;
+        for (const rawUri of rawVideoUris) {
+          try {
+            console.log(`Fetching video from Veo URI: ${rawUri}`);
+            const videoRes = await fetch(rawUri, {
+              headers: {
+                "x-goog-api-key": process.env.GOOGLE_GENERATIVE_AI_API_KEY!,
+                "User-Agent": "Mozilla/5.0 (compatible; EtlesAgent/1.0)",
+              },
+            });
 
-          const videoBuffer = await videoRes.arrayBuffer();
-          const contentType = videoRes.headers.get("content-type") || "video/mp4";
-          const extension = contentType.split("/")[1] || "mp4";
-          
-          const filename = `gemini-videos/${generateUUID()}.${extension}`;
-          const blobData = await put(filename, Buffer.from(videoBuffer), {
-            access: "public",
-            contentType,
-          });
+            if (!videoRes.ok) {
+              console.error(
+                `Failed to fetch video from Veo URI: ${rawUri} | Status: ${videoRes.status} ${videoRes.statusText}`
+              );
+              continue;
+            }
 
-          videoUris.push(blobData.url);
+            const videoBuffer = await videoRes.arrayBuffer();
+            if (videoBuffer.byteLength === 0) {
+              console.error(`Fetched video buffer is empty for URI: ${rawUri}`);
+              continue;
+            }
+
+            const contentType = videoRes.headers.get("content-type") || "video/mp4";
+            const extension = contentType.split("/")[1] || "mp4";
+            
+            const filename = `gemini-videos/${generateUUID()}.${extension}`;
+            const blobData = await put(filename, Buffer.from(videoBuffer), {
+              access: "public",
+              contentType,
+            });
+
+            if (blobData?.url) {
+              videoUris.push(blobData.url);
+            }
+          } catch (err) {
+            console.error(`Error persisting video ${rawUri} to Blob:`, err);
+          }
         }
 
         if (videoUris.length === 0) {
-          throw new Error("Failed to persist any generated videos to Blob storage.");
+          throw new Error("Failed to persist any generated videos to Blob storage. Check logs for fetch/put errors.");
         }
 
         // ── Return persistent metadata to the model ──────────────────────────────
