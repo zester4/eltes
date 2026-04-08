@@ -22,9 +22,13 @@ import {
   saveMessages,
   getActiveAgentTasksByChatId,
 } from "@/lib/db/queries";
-import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
+import { getGoogleModel } from "@/lib/ai/providers";
 import { generateUUID } from "@/lib/utils";
 import { sendLongMessage } from "@/lib/telegram/api";
+import {
+  shouldSendSilenceCheckIn,
+  markSilenceCheckInSent,
+} from "@/lib/user-activity";
 
 export const maxDuration = 300;
 
@@ -75,14 +79,12 @@ export const { POST } = serve<HeartbeatPayload>(async (context) => {
       endingBefore: null,
     });
     const activeChat = chats[0];
-    if (!activeChat) return { chatId: null, openTasks: [] };
+    if (!activeChat) return { chatId: null as string | null, openTasks: [] as string[] };
 
     const tasks = await getActiveAgentTasksByChatId(activeChat.id, userId);
     const openTasks = tasks.map((t) => `[${t.agentType}] ${t.task}`);
     return { chatId: activeChat.id, openTasks };
   });
-
-  if (!contextData.chatId) return; // no active chat, nothing to do
 
   // ── Step 3: Load Composio signals (calendar, email) ───────────────────────
   const signals = await context.run("check-signals", async () => {
@@ -123,7 +125,7 @@ Return ONLY the JSON object, no other text.`,
     }
   });
 
-  // ── Step 4: Update Heartbeat Status (Heartbeat completed its check) ──────
+  // ── Step 4: Update Heartbeat Status (always — dashboard reads this even without a chat)
   await context.run("update-status", async () => {
     const redis =
       process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
@@ -134,17 +136,71 @@ Return ONLY the JSON object, no other text.`,
         : null;
     if (!redis) return;
 
-    await redis.set(`agent:status:${userId}:heartbeat`, JSON.stringify({
-      lastRun: new Date().toISOString(),
-      status: "success"
-    }), { ex: 86400 * 7 }); // 7 days TTL
-    console.log(`[Heartbeat] Status updated for user: ${userId}`);
+    await redis.set(
+      `agent:status:${userId}:heartbeat`,
+      JSON.stringify({
+        lastRun: new Date().toISOString(),
+        status: "success",
+      }),
+      { ex: 86400 * 7 },
+    );
   });
 
-  // No urgent items — stop here, don't bother the user
+  // ── Step 5: Gentle check-in if we have not heard from the user in a while ─
+  await context.run("silence-check-in", async () => {
+    const { should } = await shouldSendSilenceCheckIn(userId);
+    if (!should) return;
+
+    const integration = await getBotIntegration({ userId, platform: "telegram" });
+    if (!integration) return;
+
+    const redis =
+      process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+        ? new (await import("@upstash/redis")).Redis({
+            url: process.env.UPSTASH_REDIS_REST_URL,
+            token: process.env.UPSTASH_REDIS_REST_TOKEN,
+          })
+        : null;
+    if (!redis) return;
+
+    const keys = await redis.keys(`tg:chat:${userId}:*`);
+    if (keys.length === 0) return;
+
+    const checkIn =
+      "<b>Quick check-in</b>\n\n" +
+      "I have not heard from you in a bit. If anything is blocking you or you want me to pick something up, reply here and I will jump on it.";
+
+    for (const key of keys) {
+      const telegramChatId = Number(key.split(":").at(-1));
+      if (!Number.isNaN(telegramChatId)) {
+        await sendLongMessage(integration.botToken, telegramChatId, checkIn);
+      }
+    }
+
+    await markSilenceCheckInSent(userId);
+
+    if (contextData.chatId) {
+      await saveMessages({
+        messages: [
+          {
+            id: generateUUID(),
+            chatId: contextData.chatId,
+            role: "assistant",
+            parts: [{ type: "text", text: checkIn.replace(/<\/?b>/g, "") }],
+            attachments: [],
+            createdAt: new Date(),
+          },
+        ] as any,
+      });
+    }
+  });
+
+  if (!contextData.chatId) return;
+
+  // No urgent items — stop here, don't bother the user further
   if (!signals.hasUrgentItems) return;
 
-  // ── Step 5: Generate proactive message ────────────────────────────────────
+  // ── Step 6: Generate proactive message ────────────────────────────────────
   const proactiveMessage = await context.run("generate-message", async () => {
     const { text } = await generateText({
       model: getGoogleModel("gemini-2.5-flash"),
@@ -157,7 +213,7 @@ Use Telegram HTML formatting only: <b>bold</b>, <i>italic</i>.`,
     return text.trim();
   });
 
-  // ── Step 6: Save to chat + push Telegram ─────────────────────────────────
+  // ── Step 7: Save to chat + push Telegram ─────────────────────────────────
   console.log(`[Heartbeat] Delivering urgent notification to user: ${userId}`);
   await context.run("deliver", async () => {
     // Save to chat

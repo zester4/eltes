@@ -9,8 +9,9 @@
 
 import { serve } from "@upstash/workflow/nextjs";
 import { generateText } from "ai";
+import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
-import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
+import { getGoogleModel } from "@/lib/ai/providers";
 import {
   getChatsByUserId,
   getBotIntegration,
@@ -56,7 +57,33 @@ export const { POST } = serve<SynthesisPayload>(async (context) => {
     }
   });
 
-  if (!allMemories) return; // No memory to synthesise
+  const persistSynthesisStatus = async (status: string) => {
+    if (
+      !process.env.UPSTASH_REDIS_REST_URL ||
+      !process.env.UPSTASH_REDIS_REST_TOKEN
+    ) {
+      return;
+    }
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+    await redis.set(
+      `agent:status:${userId}:synthesis`,
+      JSON.stringify({
+        lastRun: new Date().toISOString(),
+        status,
+      }),
+      { ex: 86400 * 14 },
+    );
+  };
+
+  if (!allMemories) {
+    await context.run("update-status-skipped", async () => {
+      await persistSynthesisStatus("skipped_no_memory");
+    });
+    return;
+  }
 
   // ── Step 2: Generate weekly brief ────────────────────────────────────────
   const weeklyBrief = await context.run("generate-brief", async () => {
@@ -153,19 +180,6 @@ Write in first person as Etles addressing the user.`,
 
   // ── Step 5: Update Synthesis Status ───────────────────────────────────────
   await context.run("update-status", async () => {
-    const redis =
-      process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
-        ? new (await import("@upstash/redis")).Redis({
-            url: process.env.UPSTASH_REDIS_REST_URL,
-            token: process.env.UPSTASH_REDIS_REST_TOKEN,
-          })
-        : null;
-    if (!redis) return;
-
-    await redis.set(`agent:status:${userId}:synthesis`, JSON.stringify({
-      lastRun: new Date().toISOString(),
-      status: "success"
-    }));
-    console.log(`[Synthesis] Weekly brief completed and saved for user: ${userId}`);
+    await persistSynthesisStatus("success");
   });
 });

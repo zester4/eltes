@@ -69,7 +69,10 @@ import {
   gitPull,
   gitBranch,
 } from "@/lib/ai/tools/daytona";
+import * as browserUseTools from "@/lib/ai/tools/browser-use";
+import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
+import { touchUserActivity } from "@/lib/user-activity";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { isProductionEnvironment } from "@/lib/constants";
@@ -225,6 +228,9 @@ export async function POST(request: Request) {
           },
         ],
       });
+      after(async () => {
+        await touchUserActivity(session.user.id);
+      });
     }
 
     const isReasoningModel =
@@ -317,6 +323,22 @@ export async function POST(request: Request) {
                 "launchMission",
                 "getMissionStatus",
                 "queueApproval",
+                "browserUseRunTask",
+                "browserUseStartTask",
+                "browserUseGetTask",
+                "browserUseControlTask",
+                "browserUseCreateSession",
+                "browserUseGetLiveUrl",
+                "browserUseListTasks",
+                "browserUseCheckCredits",
+                "browserSetup",
+                "browserNavigate",
+                "browserInteract",
+                "browserExtract",
+                "browserMultiTab",
+                "browserUploadFile",
+                "browserScreenshot",
+                "browserVisualInteract",
                 ...Object.keys(sandboxTools),
                 ...Object.keys(composioTools),
               ]) as any,
@@ -382,6 +404,44 @@ export async function POST(request: Request) {
                 }),
             // Daytona sandbox tools (authenticated users only)
             ...(sandboxTools as any),
+            // Browser Use Cloud + sandbox Playwright (same surface as Telegram)
+            ...(isGuest
+              ? {}
+              : {
+                  browserUseRunTask: browserUseTools.browserUseRunTask(),
+                  browserUseStartTask: browserUseTools.browserUseStartTask(),
+                  browserUseGetTask: browserUseTools.browserUseGetTask(),
+                  browserUseControlTask: browserUseTools.browserUseControlTask(),
+                  browserUseCreateSession: browserUseTools.browserUseCreateSession(),
+                  browserUseGetLiveUrl: browserUseTools.browserUseGetLiveUrl(),
+                  browserUseListTasks: browserUseTools.browserUseListTasks(),
+                  browserUseCheckCredits: browserUseTools.browserUseCheckCredits(),
+                  browserSetup: daytonaBrowserTools.browserSetup({
+                    userId: session.user.id!,
+                  }),
+                  browserNavigate: daytonaBrowserTools.browserNavigate({
+                    userId: session.user.id!,
+                  }),
+                  browserInteract: daytonaBrowserTools.browserInteract({
+                    userId: session.user.id!,
+                  }),
+                  browserExtract: daytonaBrowserTools.browserExtract({
+                    userId: session.user.id!,
+                  }),
+                  browserMultiTab: daytonaBrowserTools.browserMultiTab({
+                    userId: session.user.id!,
+                  }),
+                  browserUploadFile: daytonaBrowserTools.browserUploadFile({
+                    userId: session.user.id!,
+                  }),
+                  browserScreenshot: daytonaBrowserTools.browserScreenshot({
+                    userId: session.user.id!,
+                  }),
+                  browserVisualInteract:
+                    daytonaBrowserTools.browserVisualInteract({
+                      userId: session.user.id!,
+                    }),
+                }),
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,

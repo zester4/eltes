@@ -160,8 +160,14 @@ export async function getAgentStatus(): Promise<AgentStatusData> {
                  synthesisData.savedAt = lastSynthesis?.lastRun;
               }
             } else if (body.type === "cron") {
+              const scheduleId =
+                typeof s.scheduleId === "string"
+                  ? s.scheduleId
+                  : typeof s.id === "string"
+                    ? s.id
+                    : String(s.scheduleId ?? s.id ?? "");
               activeCronJobs.push({
-                id: s.scheduleId,
+                id: scheduleId,
                 task: body.name || "Unnamed Job",
                 status: "active",
                 createdAt: (s.createdAt && typeof s.createdAt === "number") 
@@ -182,6 +188,19 @@ export async function getAgentStatus(): Promise<AgentStatusData> {
       console.error("Failed to fetch QStash schedules:", e);
       heartbeatStatus.status = "error";
     }
+  }
+
+  // If QStash listing failed to match this user but Redis shows a successful run, trust Redis.
+  if (
+    lastHeartbeat?.status === "success" &&
+    lastHeartbeat.lastRun &&
+    (heartbeatStatus.status === "inactive" || heartbeatStatus.status === "error")
+  ) {
+    heartbeatStatus = {
+      status: "active",
+      lastRun: lastHeartbeat.lastRun,
+      nextRun: heartbeatStatus.nextRun,
+    };
   }
 
   // 5. Merge Strategy:

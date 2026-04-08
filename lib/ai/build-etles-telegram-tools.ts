@@ -1,0 +1,129 @@
+/**
+ * Tool set for Telegram AI paths (workflow + inline fallback).
+ * Mirrors the web chat agent's core tools (memory, search, schedule, sandbox, etc.)
+ * so behaviour stays consistent across surfaces.
+ * lib/ai/build-etles-telegram-tools.ts
+ */
+
+import type { ToolSet } from "ai";
+import { getWeather } from "@/lib/ai/tools/get-weather";
+import {
+  saveMemory,
+  recallMemory,
+  updateMemory,
+  deleteMemory,
+} from "@/lib/ai/tools/memory";
+import { searchPastConversations } from "@/lib/ai/tools/search-history";
+import {
+  setReminder,
+  setCronJob,
+  listSchedules,
+  deleteSchedule,
+} from "@/lib/ai/tools/schedule";
+import {
+  setupTrigger,
+  listActiveTriggers,
+  removeTrigger,
+} from "@/lib/ai/tools/triggers";
+import {
+  delegateToSubAgent,
+  getSubAgentResult,
+  listSubAgents,
+} from "@/lib/ai/tools/subagents";
+import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
+import { queueApproval } from "@/lib/ai/tools/queue-approval";
+import {
+  createSandbox,
+  listSandboxes,
+  deleteSandbox,
+  executeCommand,
+  runCode,
+  listFiles,
+  readFile,
+  writeFile,
+  createDirectory,
+  searchFiles,
+  replaceInFiles,
+  gitClone,
+  gitStatus,
+  gitCommit,
+  gitPush,
+  gitPull,
+  gitBranch,
+} from "@/lib/ai/tools/daytona";
+import * as browserUseTools from "@/lib/ai/tools/browser-use";
+import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
+
+export type TelegramEtlesToolsParams = {
+  userId: string;
+  chatId: string;
+  baseUrl: string;
+  composioTools: Record<string, unknown>;
+};
+
+export function buildEtlesTelegramTools({
+  userId,
+  chatId,
+  baseUrl,
+  composioTools,
+}: TelegramEtlesToolsParams): ToolSet {
+  return {
+    ...composioTools,
+    getWeather,
+    saveMemory: saveMemory({ userId }),
+    recallMemory: recallMemory({ userId }),
+    searchPastConversations: searchPastConversations({ userId }),
+    updateMemory: updateMemory({ userId }),
+    deleteMemory: deleteMemory({ userId }),
+    setReminder: setReminder({ userId, baseUrl }),
+    setCronJob: setCronJob({ userId, baseUrl }),
+    listSchedules: listSchedules({ userId }),
+    deleteSchedule: deleteSchedule(),
+    setupTrigger: setupTrigger({ userId }),
+    listActiveTriggers: listActiveTriggers({ userId }),
+    removeTrigger: removeTrigger(),
+    delegateToSubAgent: delegateToSubAgent({
+      userId,
+      chatId,
+      baseUrl,
+    }),
+    getSubAgentResult: getSubAgentResult({ userId }),
+    listSubAgents: listSubAgents(),
+    launchMission: launchMission({ userId, chatId, baseUrl }),
+    getMissionStatus: getMissionStatus({ userId }),
+    queueApproval: queueApproval({ userId, chatId, skipTelegram: false }),
+    createSandbox: createSandbox({ userId }),
+    listSandboxes: listSandboxes({ userId }),
+    deleteSandbox: deleteSandbox({ userId }),
+    executeCommand: executeCommand({ userId }),
+    runCode: runCode({ userId }),
+    listFiles: listFiles({ userId }),
+    readFile: readFile({ userId }),
+    writeFile: writeFile({ userId }),
+    createDirectory: createDirectory({ userId }),
+    searchFiles: searchFiles({ userId }),
+    replaceInFiles: replaceInFiles({ userId }),
+    gitClone: gitClone({ userId }),
+    gitStatus: gitStatus({ userId }),
+    gitCommit: gitCommit({ userId }),
+    gitPush: gitPush({ userId }),
+    gitPull: gitPull({ userId }),
+    gitBranch: gitBranch({ userId }),
+    browserUseRunTask: browserUseTools.browserUseRunTask(),
+    browserUseStartTask: browserUseTools.browserUseStartTask(),
+    browserUseGetTask: browserUseTools.browserUseGetTask(),
+    browserUseControlTask: browserUseTools.browserUseControlTask(),
+    browserUseCreateSession: browserUseTools.browserUseCreateSession(),
+    browserUseGetLiveUrl: browserUseTools.browserUseGetLiveUrl(),
+    browserUseListTasks: browserUseTools.browserUseListTasks(),
+    browserUseCheckCredits: browserUseTools.browserUseCheckCredits(),
+    browserSetup: daytonaBrowserTools.browserSetup({ userId }),
+    browserNavigate: daytonaBrowserTools.browserNavigate({ userId }),
+    browserInteract: daytonaBrowserTools.browserInteract({ userId }),
+    browserExtract: daytonaBrowserTools.browserExtract({ userId }),
+    browserMultiTab: daytonaBrowserTools.browserMultiTab({ userId }),
+    browserUploadFile: daytonaBrowserTools.browserUploadFile({ userId }),
+    browserScreenshot: daytonaBrowserTools.browserScreenshot({ userId }),
+    browserVisualInteract: daytonaBrowserTools.browserVisualInteract({ userId }),
+  } as ToolSet;
+}

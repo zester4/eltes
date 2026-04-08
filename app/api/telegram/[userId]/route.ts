@@ -23,31 +23,11 @@ import {
   saveChat,
   saveMessages,
 } from "@/lib/db/queries";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { getGoogleModel } from "@/lib/ai/providers";
 import { systemPrompt } from "@/lib/ai/prompts";
-import { getWeather } from "@/lib/ai/tools/get-weather";
-import {
-  saveMemory,
-  recallMemory,
-  updateMemory,
-  deleteMemory,
-} from "@/lib/ai/tools/memory";
-import {
-  setReminder,
-  setCronJob,
-  listSchedules,
-  deleteSchedule,
-} from "@/lib/ai/tools/schedule";
-import {
-  setupTrigger,
-  listActiveTriggers,
-  removeTrigger,
-} from "@/lib/ai/tools/triggers";
-import {
-  delegateToSubAgent,
-  getSubAgentResult,
-  listSubAgents,
-} from "@/lib/ai/tools/subagents";
+import { buildEtlesTelegramTools } from "@/lib/ai/build-etles-telegram-tools";
+import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
+import { touchUserActivity } from "@/lib/user-activity";
 import { generateUUID } from "@/lib/utils";
 import { sendLongMessage, sendTypingAction } from "@/lib/telegram/api";
 import {
@@ -270,6 +250,8 @@ async function routeMessage({
     ] as any,
   });
 
+  await touchUserActivity(ownerUserId);
+
   await sendTypingAction(botToken, telegramChatId);
 
   const dbMessages: DBMessage[] = await getMessagesByChatId({ id: chatId });
@@ -291,8 +273,16 @@ async function routeMessage({
     console.error("[Telegram] Failed to load Composio tools:", e);
   }
 
+  const sessionTail = await getSessionTail(ownerUserId);
+  const tools = buildEtlesTelegramTools({
+    userId: ownerUserId,
+    chatId,
+    baseUrl,
+    composioTools,
+  });
+
   const { text: aiText, toolCalls } = await generateText({
-    model: getLanguageModel("google/gemini-2.5-flash"),
+    model: getGoogleModel("gemini-2.5-flash"),
     system: systemPrompt({
       selectedChatModel: "google/gemini-2.5-flash",
       requestHints: {
@@ -301,32 +291,12 @@ async function routeMessage({
         city: undefined,
         country: undefined,
       },
+      sessionTail,
       skipArtifacts: true,
     }),
     messages: allMessages,
-    stopWhen: stepCountIs(15),
-    tools: {
-      ...composioTools,
-      getWeather,
-      saveMemory: saveMemory({ userId: ownerUserId }),
-      recallMemory: recallMemory({ userId: ownerUserId }),
-      updateMemory: updateMemory({ userId: ownerUserId }),
-      deleteMemory: deleteMemory({ userId: ownerUserId }),
-      setReminder: setReminder({ userId: ownerUserId, baseUrl }),
-      setCronJob: setCronJob({ userId: ownerUserId, baseUrl }),
-      listSchedules: listSchedules({ userId: ownerUserId }),
-      deleteSchedule: deleteSchedule(),
-      setupTrigger: setupTrigger({ userId: ownerUserId }),
-      listActiveTriggers: listActiveTriggers({ userId: ownerUserId }),
-      removeTrigger: removeTrigger(),
-      delegateToSubAgent: delegateToSubAgent({
-        userId: ownerUserId,
-        chatId,
-        baseUrl,
-      }),
-      getSubAgentResult: getSubAgentResult({ userId: ownerUserId }),
-      listSubAgents: listSubAgents(),
-    },
+    stopWhen: stepCountIs(25),
+    tools,
   });
 
   await saveMessages({
@@ -353,6 +323,21 @@ async function routeMessage({
   if (aiText.trim()) {
     await sendLongMessage(botToken, telegramChatId, aiText);
   }
+
+  const tail = (await getMessagesByChatId({ id: chatId }))
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .slice(-5)
+    .map((m) => {
+      const textPart = (m.parts as { type: string; text?: string }[]).find(
+        (p) => p.type === "text",
+      );
+      return {
+        role: m.role as "user" | "assistant",
+        text: textPart?.text ?? "",
+      };
+    })
+    .filter((m) => m.text.length > 0);
+  await saveSessionTail(ownerUserId, tail);
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
