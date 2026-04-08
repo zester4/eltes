@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Artifact } from "@/components/create-artifact";
 import {
   CopyIcon,
+  DownloadIcon,
   LineChartIcon,
   RedoIcon,
   SparklesIcon,
@@ -11,6 +12,16 @@ import {
 import { SpreadsheetEditor } from "@/components/sheet-editor";
 
 type Metadata = any;
+
+function downloadFile(filename: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export const sheetArtifact = new Artifact<"sheet", Metadata>({
   kind: "sheet",
@@ -80,6 +91,24 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
 
         navigator.clipboard.writeText(cleanedCsv);
         toast.success("Copied csv to clipboard!");
+      },
+    },
+    {
+      icon: <DownloadIcon />,
+      description: "Download clean CSV",
+      onClick: ({ content, currentVersionIndex }) => {
+        const parsed = parse<string[]>(content, { skipEmptyLines: true });
+        const nonEmptyRows = parsed.data.filter((row) =>
+          row.some((cell) => cell.trim() !== "")
+        );
+        const cleanedCsv = unparse(nonEmptyRows);
+
+        downloadFile(
+          `sheet-v${currentVersionIndex + 1}.csv`,
+          cleanedCsv,
+          "text/csv;charset=utf-8"
+        );
+        toast.success("CSV downloaded");
       },
     },
   ],

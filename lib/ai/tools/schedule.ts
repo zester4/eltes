@@ -3,7 +3,6 @@ import { tool } from "ai";
 import { Client } from "@upstash/qstash";
 import { z } from "zod";
 import { createAgentTask } from "@/lib/db/queries";
-import { generateUUID } from "@/lib/utils";
 
 // Etles scheduling tools powered by QStash.
 //
@@ -69,14 +68,21 @@ export const setReminder = ({ userId, baseUrl }: { userId: string; baseUrl: stri
           label: label ?? "reminder",
         });
         
-        // Log to AgentTask for dashboard visibility
-        await createAgentTask({
-          id: result.messageId, // Use QStash messageId as reference
-          userId,
-          chatId: "", // Reminders aren't bound to a chat until they fire
-          agentType: "reminder",
-          task: message,
-        });
+        // Log to AgentTask for dashboard visibility, but do not fail scheduling if this write fails.
+        try {
+          await createAgentTask({
+            id: result.messageId, // Use QStash messageId as reference
+            userId,
+            chatId: "", // Reminders aren't bound to a chat until they fire
+            agentType: "reminder",
+            task: message,
+          });
+        } catch (taskError) {
+          console.warn(
+            "[schedule.setReminder] Reminder scheduled but AgentTask log failed:",
+            taskError
+          );
+        }
 
         const fireAt = new Date(Date.now() + delaySeconds * 1000);
         return {
@@ -135,14 +141,21 @@ export const setCronJob = ({ userId, baseUrl }: { userId: string; baseUrl: strin
           deduplicationId: `${userId}-${name}`,
         } as any);
 
-        // Log to AgentTask for dashboard visibility
-        await createAgentTask({
-          id: schedule.scheduleId,
-          userId,
-          chatId: "",
-          agentType: "cron",
-          task: `${name}: ${message}`,
-        });
+        // Log to AgentTask for dashboard visibility, but do not fail cron creation if this write fails.
+        try {
+          await createAgentTask({
+            id: schedule.scheduleId,
+            userId,
+            chatId: "",
+            agentType: "cron",
+            task: `${name}: ${message}`,
+          });
+        } catch (taskError) {
+          console.warn(
+            "[schedule.setCronJob] Cron scheduled but AgentTask log failed:",
+            taskError
+          );
+        }
 
         return {
           success: true,

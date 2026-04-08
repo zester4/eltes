@@ -127,12 +127,12 @@ const PurePreviewMessage = ({
 
   return (
     <div
-      className="group/message fade-in w-full animate-in duration-200"
+      className="group/message fade-in w-full animate-in duration-150"
       data-role={message.role}
       data-testid={`message-${message.role}`}
     >
       <div
-        className={cn("flex w-full items-start gap-2 md:gap-3", {
+        className={cn("flex w-full items-start gap-1.5 md:gap-2", {
           "justify-end": role === "user" && mode !== "edit",
           "justify-start": role === "assistant" || role === "tool",
         })}
@@ -146,7 +146,7 @@ const PurePreviewMessage = ({
         <div
           className={cn("flex flex-col", {
             "ml-11": message.role === "assistant" && hasAgentResult,
-            "gap-2 md:gap-4": message.parts?.some(
+            "gap-1.5 md:gap-3": message.parts?.some(
               (p) =>
                 p.type === "text" &&
                 p.text?.trim() &&
@@ -250,7 +250,7 @@ const PurePreviewMessage = ({
                   {conversationalText.trim() && (
                     <MessageContent
                       className={cn({
-                        "wrap-break-word w-fit max-w-[90%] rounded-2xl px-4 py-2.5 text-left bg-zinc-800 text-zinc-100 text-[14px] leading-relaxed border border-white/[0.05] shadow-sm ml-auto":
+                        "wrap-break-word w-fit max-w-[90%] rounded-xl px-3 py-2 text-left bg-zinc-800 text-zinc-100 text-[13px] leading-relaxed border border-white/[0.05] shadow-sm ml-auto":
                           message.role === "user",
                         "bg-transparent px-0 py-0 text-left w-full text-sm":
                           message.role === "assistant",
@@ -269,7 +269,7 @@ const PurePreviewMessage = ({
 
                   {(partEvent || partAgent) && (
                     <MessageContent
-                      className="bg-transparent px-0 py-0 text-left w-full text-sm"
+                      className="bg-transparent px-0 py-0 text-left w-full text-[13px]"
                       data-testid="message-content-cards"
                     >
                       {partEvent ? (
@@ -906,7 +906,7 @@ const PurePreviewMessage = ({
           })}
 
           {!isReadonly && (
-            <div className="opacity-100 md:opacity-0 md:group-hover/message:opacity-100 group-focus-within/message:opacity-100 transition-opacity duration-200 mt-1 md:mt-2">
+            <div className="opacity-100 md:opacity-0 md:group-hover/message:opacity-100 group-focus-within/message:opacity-100 transition-opacity duration-150 mt-1 md:mt-1.5">
               <MessageActions
                 chatId={chatId}
                 isLoading={isLoading}

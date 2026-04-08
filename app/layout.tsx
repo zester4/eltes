@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Source_Serif_4, JetBrains_Mono, Instrument_Serif, Barlow } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -19,8 +19,11 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport = {
-  maximumScale: 1, // Disable auto-zoom on mobile Safari
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 const fontSans = Inter({

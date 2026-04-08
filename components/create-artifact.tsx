@@ -21,6 +21,11 @@ type ArtifactAction<M = any> = {
   description: string;
   onClick: (context: ArtifactActionContext<M>) => Promise<void> | void;
   isDisabled?: (context: ArtifactActionContext<M>) => boolean;
+  isActive?: (context: ArtifactActionContext<M>) => boolean;
+  menuItems?: Array<{
+    label: string;
+    onClick: (context: ArtifactActionContext<M>) => Promise<void> | void;
+  }>;
 };
 
 export type ArtifactToolbarContext = {

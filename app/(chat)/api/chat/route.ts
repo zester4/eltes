@@ -64,28 +64,12 @@ import {
   listGoals,
   deleteGoal,
 } from "@/lib/ai/tools/goals";
-// Daytona sandbox tools
 import {
-  createSandbox,
-  listSandboxes,
-  deleteSandbox,
-  executeCommand,
-  runCode,
-  listFiles,
-  readFile,
-  writeFile,
-  createDirectory,
-  searchFiles,
-  replaceInFiles,
-  gitClone,
-  gitStatus,
-  gitCommit,
-  gitPush,
-  gitPull,
-  gitBranch,
-} from "@/lib/ai/tools/daytona";
-import * as browserUseTools from "@/lib/ai/tools/browser-use";
-import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
+  tavilySearch,
+  tavilyExtract,
+  tavilyCrawl,
+  tavilyMap,
+} from "@/lib/ai/tools/tavily-search";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import { touchUserActivity } from "@/lib/user-activity";
 import { getCachedSystemPrompt, setCachedSystemPrompt } from "@/lib/prompt-cache";
@@ -268,29 +252,6 @@ export async function POST(request: Request) {
       }
     }
 
-    // Daytona sandbox tools — authenticated users only (sandbox compute has real cost)
-    const sandboxTools = isGuest
-      ? {}
-      : {
-          createSandbox: createSandbox({ userId: session.user.id! }),
-          listSandboxes: listSandboxes({ userId: session.user.id! }),
-          deleteSandbox: deleteSandbox({ userId: session.user.id! }),
-          executeCommand: executeCommand({ userId: session.user.id! }),
-          runCode: runCode({ userId: session.user.id! }),
-          listFiles: listFiles({ userId: session.user.id! }),
-          readFile: readFile({ userId: session.user.id! }),
-          writeFile: writeFile({ userId: session.user.id! }),
-          createDirectory: createDirectory({ userId: session.user.id! }),
-          searchFiles: searchFiles({ userId: session.user.id! }),
-          replaceInFiles: replaceInFiles({ userId: session.user.id! }),
-          gitClone: gitClone({ userId: session.user.id! }),
-          gitStatus: gitStatus({ userId: session.user.id! }),
-          gitCommit: gitCommit({ userId: session.user.id! }),
-          gitPush: gitPush({ userId: session.user.id! }),
-          gitPull: gitPull({ userId: session.user.id! }),
-          gitBranch: gitBranch({ userId: session.user.id! }),
-        };
-
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
@@ -371,23 +332,10 @@ export async function POST(request: Request) {
                 "logGoalProgress",
                 "listGoals",
                 "deleteGoal",
-                "browserUseRunTask",
-                "browserUseStartTask",
-                "browserUseGetTask",
-                "browserUseControlTask",
-                "browserUseCreateSession",
-                "browserUseGetLiveUrl",
-                "browserUseListTasks",
-                "browserUseCheckCredits",
-                "browserSetup",
-                "browserNavigate",
-                "browserInteract",
-                "browserExtract",
-                "browserMultiTab",
-                "browserUploadFile",
-                "browserScreenshot",
-                "browserVisualInteract",
-                ...Object.keys(sandboxTools),
+                "tavilySearch",
+                "tavilyExtract",
+                "tavilyCrawl",
+                "tavilyMap",
                 ...Object.keys(composioTools),
               ]) as any,
           providerOptions: isReasoningModel
@@ -472,46 +420,10 @@ export async function POST(request: Request) {
                   logGoalProgress: logGoalProgress({ userId: session.user.id! }),
                   listGoals: listGoals({ userId: session.user.id! }),
                   deleteGoal: deleteGoal({ userId: session.user.id! }),
-                }),
-            // Daytona sandbox tools (authenticated users only)
-            ...(sandboxTools as any),
-            // Browser Use Cloud + sandbox Playwright (same surface as Telegram)
-            ...(isGuest
-              ? {}
-              : {
-                  browserUseRunTask: browserUseTools.browserUseRunTask(),
-                  browserUseStartTask: browserUseTools.browserUseStartTask(),
-                  browserUseGetTask: browserUseTools.browserUseGetTask(),
-                  browserUseControlTask: browserUseTools.browserUseControlTask(),
-                  browserUseCreateSession: browserUseTools.browserUseCreateSession(),
-                  browserUseGetLiveUrl: browserUseTools.browserUseGetLiveUrl(),
-                  browserUseListTasks: browserUseTools.browserUseListTasks(),
-                  browserUseCheckCredits: browserUseTools.browserUseCheckCredits(),
-                  browserSetup: daytonaBrowserTools.browserSetup({
-                    userId: session.user.id!,
-                  }),
-                  browserNavigate: daytonaBrowserTools.browserNavigate({
-                    userId: session.user.id!,
-                  }),
-                  browserInteract: daytonaBrowserTools.browserInteract({
-                    userId: session.user.id!,
-                  }),
-                  browserExtract: daytonaBrowserTools.browserExtract({
-                    userId: session.user.id!,
-                  }),
-                  browserMultiTab: daytonaBrowserTools.browserMultiTab({
-                    userId: session.user.id!,
-                  }),
-                  browserUploadFile: daytonaBrowserTools.browserUploadFile({
-                    userId: session.user.id!,
-                  }),
-                  browserScreenshot: daytonaBrowserTools.browserScreenshot({
-                    userId: session.user.id!,
-                  }),
-                  browserVisualInteract:
-                    daytonaBrowserTools.browserVisualInteract({
-                      userId: session.user.id!,
-                    }),
+                  tavilySearch,
+                  tavilyExtract,
+                  tavilyCrawl,
+                  tavilyMap,
                 }),
           },
           experimental_telemetry: {

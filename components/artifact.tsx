@@ -390,7 +390,7 @@ function PureArtifact({
                     },
                   }
             }
-            className="fixed flex h-dvh flex-col overflow-y-scroll border-zinc-200 bg-background md:border-l dark:border-zinc-700 dark:bg-muted"
+            className="fixed flex h-dvh flex-col overflow-hidden border-zinc-200 bg-background md:border-l dark:border-zinc-700 dark:bg-muted"
             exit={{
               opacity: 0,
               scale: 0.5,
@@ -421,12 +421,12 @@ function PureArtifact({
                   }
             }
           >
-            <div className="flex flex-row items-start justify-between p-2">
-              <div className="flex flex-row items-start gap-4">
+            <div className="flex flex-wrap items-start justify-between gap-2 border-b p-2 md:flex-nowrap">
+              <div className="flex min-w-0 flex-1 flex-row items-start gap-3">
                 <ArtifactCloseButton />
 
-                <div className="flex flex-col">
-                  <div className="font-medium">{artifact.title}</div>
+                <div className="flex min-w-0 flex-col">
+                  <div className="truncate font-medium">{artifact.title}</div>
 
                   {isContentDirty ? (
                     <div className="text-muted-foreground text-sm">
@@ -448,18 +448,20 @@ function PureArtifact({
                 </div>
               </div>
 
-              <ArtifactActions
-                artifact={artifact}
-                currentVersionIndex={currentVersionIndex}
-                handleVersionChange={handleVersionChange}
-                isCurrentVersion={isCurrentVersion}
-                metadata={metadata}
-                mode={mode}
-                setMetadata={setMetadata}
-              />
+              <div className="w-full md:w-auto">
+                <ArtifactActions
+                  artifact={artifact}
+                  currentVersionIndex={currentVersionIndex}
+                  handleVersionChange={handleVersionChange}
+                  isCurrentVersion={isCurrentVersion}
+                  metadata={metadata}
+                  mode={mode}
+                  setMetadata={setMetadata}
+                />
+              </div>
             </div>
 
-            <div className="h-full max-w-full! items-center overflow-y-scroll bg-background dark:bg-muted">
+            <div className="min-h-0 flex-1 overflow-y-auto bg-background dark:bg-muted">
               <artifactDefinition.content
                 content={
                   isCurrentVersion

@@ -8,11 +8,13 @@ import {
 import { Artifact } from "@/components/create-artifact";
 import {
   CopyIcon,
+  EyeIcon,
   LogsIcon,
   MessageIcon,
   PlayIcon,
   RedoIcon,
   UndoIcon,
+  CodeIcon,
 } from "@/components/icons";
 import { generateUUID } from "@/lib/utils";
 
@@ -64,6 +66,7 @@ function detectRequiredHandlers(code: string): string[] {
 
 type Metadata = {
   outputs: ConsoleOutput[];
+  activeView: "code" | "preview";
 };
 
 export const codeArtifact = new Artifact<"code", Metadata>({
@@ -73,6 +76,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
   initialize: ({ setMetadata }) => {
     setMetadata({
       outputs: [],
+      activeView: "code",
     });
   },
   onStreamPart: ({ streamPart, setArtifact }) => {
@@ -91,13 +95,28 @@ export const codeArtifact = new Artifact<"code", Metadata>({
     }
   },
   content: ({ metadata, setMetadata, ...props }) => {
+    const isHtml =
+      props.content.trim().toLowerCase().startsWith("<!doctype html") ||
+      props.content.trim().toLowerCase().startsWith("<html");
+    const showPreview = isHtml && metadata?.activeView === "preview";
     return (
       <>
-        <div className="px-1">
-          <CodeEditor {...props} />
-        </div>
+        {showPreview ? (
+          <div className="h-full overflow-hidden rounded-md border border-border bg-background">
+            <iframe
+              className="h-full min-h-[70dvh] w-full"
+              sandbox="allow-scripts allow-forms allow-modals"
+              srcDoc={props.content}
+              title="HTML Preview"
+            />
+          </div>
+        ) : (
+          <div className="h-full px-1">
+            <CodeEditor {...props} />
+          </div>
+        )}
 
-        {metadata?.outputs && (
+        {!showPreview && metadata?.outputs && (
           <Console
             consoleOutputs={metadata.outputs}
             setConsoleOutputs={() => {
@@ -112,6 +131,36 @@ export const codeArtifact = new Artifact<"code", Metadata>({
     );
   },
   actions: [
+    {
+      icon: <CodeIcon size={18} />,
+      description: "Show code",
+      isActive: ({ metadata }) => metadata?.activeView !== "preview",
+      isDisabled: ({ metadata }) => metadata?.activeView === "code",
+      onClick: ({ metadata, setMetadata }) => {
+        setMetadata({
+          ...metadata,
+          activeView: "code",
+        });
+      },
+    },
+    {
+      icon: <EyeIcon size={18} />,
+      description: "Show preview",
+      isActive: ({ metadata }) => metadata?.activeView === "preview",
+      onClick: async ({ content, metadata, setMetadata }) => {
+        const isHtml =
+          content.trim().toLowerCase().startsWith("<!doctype html") ||
+          content.trim().toLowerCase().startsWith("<html");
+        if (!isHtml) {
+          toast.info("HTML preview is only available for HTML documents.");
+          return;
+        }
+        setMetadata({
+          ...metadata,
+          activeView: "preview",
+        });
+      },
+    },
     {
       icon: <PlayIcon size={18} />,
       label: "Run",

@@ -48,6 +48,12 @@ import {
   deleteGoal,
 } from "@/lib/ai/tools/goals";
 import {
+  tavilySearch,
+  tavilyExtract,
+  tavilyCrawl,
+  tavilyMap,
+} from "@/lib/ai/tools/tavily-search";
+import {
   createSandbox,
   listSandboxes,
   deleteSandbox,
@@ -118,6 +124,10 @@ export function buildEtlesTelegramTools({
     logGoalProgress: logGoalProgress({ userId }),
     listGoals: listGoals({ userId }),
     deleteGoal: deleteGoal({ userId }),
+    tavilySearch,
+    tavilyExtract,
+    tavilyCrawl,
+    tavilyMap,
     createSandbox: createSandbox({ userId }),
     listSandboxes: listSandboxes({ userId }),
     deleteSandbox: deleteSandbox({ userId }),

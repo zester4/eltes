@@ -3,6 +3,12 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { artifactDefinitions, type UIArtifact } from "./artifact";
 import type { ArtifactActionContext } from "./create-artifact";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
@@ -46,42 +52,92 @@ function PureArtifactActions({
   };
 
   return (
-    <div className="flex flex-row gap-1">
-      {artifactDefinition.actions.map((action) => (
-        <Tooltip key={action.description}>
-          <TooltipTrigger asChild>
-            <Button
-              className={cn("h-fit dark:hover:bg-zinc-700", {
-                "p-2": !action.label,
-                "px-2 py-1.5": action.label,
-              })}
-              disabled={
-                isLoading || artifact.status === "streaming"
-                  ? true
-                  : action.isDisabled
-                    ? action.isDisabled(actionContext)
-                    : false
-              }
-              onClick={async () => {
-                setIsLoading(true);
+    <div className="flex flex-wrap justify-end gap-1">
+      {artifactDefinition.actions.map((action) => {
+        const isDisabled =
+          isLoading || artifact.status === "streaming"
+            ? true
+            : action.isDisabled
+              ? action.isDisabled(actionContext)
+              : false;
+        const isActive = action.isActive ? action.isActive(actionContext) : false;
 
-                try {
-                  await Promise.resolve(action.onClick(actionContext));
-                } catch (_error) {
-                  toast.error("Failed to execute action");
-                } finally {
-                  setIsLoading(false);
-                }
-              }}
-              variant="outline"
-            >
-              {action.icon}
-              {action.label}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{action.description}</TooltipContent>
-        </Tooltip>
-      ))}
+        if (action.menuItems?.length) {
+          return (
+            <DropdownMenu key={action.description}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className={cn("h-fit dark:hover:bg-zinc-700", {
+                        "p-2": !action.label,
+                        "px-2 py-1.5": action.label,
+                        "bg-accent text-accent-foreground": isActive,
+                      })}
+                      disabled={isDisabled}
+                      variant="outline"
+                    >
+                      {action.icon}
+                      {action.label}
+                    </Button>
+                  </DropdownMenuTrigger>
+                </TooltipTrigger>
+                <TooltipContent>{action.description}</TooltipContent>
+              </Tooltip>
+              <DropdownMenuContent align="end">
+                {action.menuItems.map((item) => (
+                  <DropdownMenuItem
+                    key={item.label}
+                    onSelect={async () => {
+                      setIsLoading(true);
+                      try {
+                        await Promise.resolve(item.onClick(actionContext));
+                      } catch (_error) {
+                        toast.error("Failed to execute action");
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }}
+                  >
+                    {item.label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        }
+
+        return (
+          <Tooltip key={action.description}>
+            <TooltipTrigger asChild>
+              <Button
+                className={cn("h-fit dark:hover:bg-zinc-700", {
+                  "p-2": !action.label,
+                  "px-2 py-1.5": action.label,
+                  "bg-accent text-accent-foreground": isActive,
+                })}
+                disabled={isDisabled}
+                onClick={async () => {
+                  setIsLoading(true);
+
+                  try {
+                    await Promise.resolve(action.onClick(actionContext));
+                  } catch (_error) {
+                    toast.error("Failed to execute action");
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+                variant="outline"
+              >
+                {action.icon}
+                {action.label}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{action.description}</TooltipContent>
+          </Tooltip>
+        );
+      })}
     </div>
   );
 }

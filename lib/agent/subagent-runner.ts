@@ -45,6 +45,12 @@ import {
   listGoals,
   deleteGoal,
 } from "@/lib/ai/tools/goals";
+import {
+  tavilySearch,
+  tavilyExtract,
+  tavilyCrawl,
+  tavilyMap,
+} from "@/lib/ai/tools/tavily-search";
 import * as daytonaTools from "@/lib/ai/tools/daytona";
 import * as browserUseTools from "@/lib/ai/tools/browser-use";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
@@ -143,6 +149,10 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
     logGoalProgress: logGoalProgress({ userId }),
     listGoals: listGoals({ userId }),
     deleteGoal: deleteGoal({ userId }),
+    tavilySearch,
+    tavilyExtract,
+    tavilyCrawl,
+    tavilyMap,
 
     // Daytona Sandbox Tools (Sandbox Specialist + Browser Operator for Playwright sessions)
     ...(agentType === "sandbox_specialist" || agentType === "browser_operator"

@@ -519,7 +519,7 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
   return (
     <div
       className={cn(
-        "not-prose w-full overflow-hidden rounded-[2rem] border border-white/5 bg-white/[0.02] p-4 shadow-2xl backdrop-blur-3xl sm:p-6",
+        "not-prose w-full overflow-hidden rounded-xl bg-transparent p-1 sm:p-2",
         className
       )}
     >

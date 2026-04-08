@@ -3,8 +3,10 @@ import { Artifact } from "@/components/create-artifact";
 import { DiffView } from "@/components/diffview";
 import { DocumentSkeleton } from "@/components/document-skeleton";
 import {
+  ChevronDownIcon,
   ClockRewind,
   CopyIcon,
+  DownloadIcon,
   MessageIcon,
   PenIcon,
   RedoIcon,
@@ -13,6 +15,28 @@ import {
 import { Editor } from "@/components/text-editor";
 import type { Suggestion } from "@/lib/db/schema";
 import { getSuggestions } from "../actions";
+
+function downloadFile(filename: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function markdownToPlainText(markdown: string): string {
+  return markdown
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`([^`]+)`/g, "$1")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/[*_~>-]/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
 type TextArtifactMetadata = {
   suggestions: Suggestion[];
@@ -142,6 +166,61 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
         navigator.clipboard.writeText(content);
         toast.success("Copied to clipboard!");
       },
+    },
+    {
+      icon: (
+        <div className="flex items-center gap-1">
+          <DownloadIcon size={18} />
+          <ChevronDownIcon size={14} />
+        </div>
+      ),
+      description: "Download",
+      onClick: () => {},
+      menuItems: [
+        {
+          label: "Markdown (.md)",
+          onClick: ({ content, currentVersionIndex }) => {
+            downloadFile(
+              `artifact-v${currentVersionIndex + 1}.md`,
+              content,
+              "text/markdown;charset=utf-8"
+            );
+            toast.success("Markdown downloaded");
+          },
+        },
+        {
+          label: "Plain text (.txt)",
+          onClick: ({ content, currentVersionIndex }) => {
+            downloadFile(
+              `artifact-v${currentVersionIndex + 1}.txt`,
+              markdownToPlainText(content),
+              "text/plain;charset=utf-8"
+            );
+            toast.success("Text downloaded");
+          },
+        },
+        {
+          label: "PDF (print)",
+          onClick: ({ content }) => {
+            const clean = markdownToPlainText(content)
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;");
+            const popup = window.open("", "_blank", "noopener,noreferrer");
+            if (!popup) {
+              toast.error("Could not open print window.");
+              return;
+            }
+            popup.document.write(
+              `<html><head><title>Artifact PDF</title><style>body{font-family:Inter,Arial,sans-serif;padding:28px;line-height:1.45;white-space:pre-wrap;color:#111}</style></head><body>${clean}</body></html>`
+            );
+            popup.document.close();
+            popup.focus();
+            popup.print();
+            toast.success("Print dialog opened for PDF export");
+          },
+        },
+      ],
     },
   ],
   toolbar: [

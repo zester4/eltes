@@ -123,7 +123,7 @@ function PureMessages({
         className="absolute inset-0 touch-pan-y overflow-y-auto bg-background"
         ref={messagesContainerRef}
       >
-        <div className="mx-auto flex min-w-0 max-w-4xl flex-col gap-4 px-2 py-4 md:gap-6 md:px-4">
+        <div className="mx-auto flex min-w-0 max-w-4xl flex-col gap-3 px-2 py-3 md:gap-4 md:px-3">
           {messages.length === 0 && <Greeting />}
 
           {messages.map((message, index) => (
@@ -165,7 +165,7 @@ function PureMessages({
 
       <button
         aria-label="Scroll to bottom"
-        className={`absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full border bg-background p-2 shadow-lg transition-all hover:bg-muted ${
+        className={`absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full border bg-background p-1.5 shadow transition-all hover:bg-muted ${
           isAtBottom
             ? "pointer-events-none scale-0 opacity-0"
             : "pointer-events-auto scale-100 opacity-100"
@@ -173,7 +173,7 @@ function PureMessages({
         onClick={() => scrollToBottom("smooth")}
         type="button"
       >
-        <ArrowDownIcon className="size-4" />
+        <ArrowDownIcon className="size-3.5" />
       </button>
     </div>
   );
