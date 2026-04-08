@@ -88,6 +88,7 @@ import * as browserUseTools from "@/lib/ai/tools/browser-use";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import { touchUserActivity } from "@/lib/user-activity";
+import { getCachedSystemPrompt, setCachedSystemPrompt } from "@/lib/prompt-cache";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { isProductionEnvironment } from "@/lib/constants";
@@ -293,17 +294,38 @@ export async function POST(request: Request) {
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
-        const corePrompt = isOnboarding
-      ? getSubAgentBySlug("onboarding_specialist")?.systemPrompt ?? systemPrompt({
+        const promptScope = isOnboarding ? "onboarding" : "main";
+        const promptSignature = JSON.stringify({
           selectedChatModel,
-          requestHints: requestHints as RequestHints,
-          sessionTail: sessionTail as any,
-        })
-      : systemPrompt({
-          selectedChatModel,
-          requestHints: requestHints as RequestHints,
-          sessionTail: sessionTail as any,
+          requestHints,
+          sessionTail: sessionTail ?? [],
+          promptScope,
         });
+        let corePrompt = await getCachedSystemPrompt({
+          userId: session.user.id!,
+          scope: promptScope,
+          signature: promptSignature,
+        });
+        if (!corePrompt) {
+          corePrompt = isOnboarding
+            ? getSubAgentBySlug("onboarding_specialist")?.systemPrompt ??
+              systemPrompt({
+                selectedChatModel,
+                requestHints: requestHints as RequestHints,
+                sessionTail: sessionTail as any,
+              })
+            : systemPrompt({
+                selectedChatModel,
+                requestHints: requestHints as RequestHints,
+                sessionTail: sessionTail as any,
+              });
+          await setCachedSystemPrompt({
+            userId: session.user.id!,
+            scope: promptScope,
+            signature: promptSignature,
+            prompt: corePrompt,
+          });
+        }
 
     const result = streamText({
       model: getLanguageModel(isOnboarding ? DEFAULT_CHAT_MODEL : selectedChatModel),

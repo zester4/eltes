@@ -21,6 +21,8 @@ import {
   ChevronRight,
   Database,
   Activity,
+  Target,
+  Network,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SidebarToggle } from "@/components/sidebar-toggle";
@@ -53,6 +55,25 @@ type MemoryRow = {
   content: string;
   savedAt: string;
   tags?: string[];
+};
+
+type GoalRow = {
+  id: string;
+  title: string;
+  description: string;
+  status: "active" | "paused" | "completed" | "archived";
+  priority: number;
+  progress: number;
+  targetDate?: string;
+  nextAction?: string;
+};
+
+type GraphEntityRow = {
+  id: string;
+  name: string;
+  entityType: string;
+  summary: string;
+  updatedAt: string;
 };
 
 function statusBadge(status: AgentTaskRow["status"]) {
@@ -93,8 +114,8 @@ function statusBadge(status: AgentTaskRow["status"]) {
 export default function AgentsSettingsPage() {
   const router = useRouter();
   
-  // Tabs: "activity" | "memory"
-  const [activeTab, setActiveTab] = useState<"activity" | "memory">("activity");
+  // Tabs: "activity" | "memory" | "goals" | "graph"
+  const [activeTab, setActiveTab] = useState<"activity" | "memory" | "goals" | "graph">("activity");
 
   // Activity State
   const [tasks, setTasks] = useState<AgentTaskRow[]>([]);
@@ -103,6 +124,10 @@ export default function AgentsSettingsPage() {
   // Memory State
   const [memories, setMemories] = useState<MemoryRow[]>([]);
   const [loadingMemories, setLoadingMemories] = useState(false);
+  const [goals, setGoals] = useState<GoalRow[]>([]);
+  const [loadingGoals, setLoadingGoals] = useState(false);
+  const [graphEntities, setGraphEntities] = useState<GraphEntityRow[]>([]);
+  const [loadingGraph, setLoadingGraph] = useState(false);
   
   const [refreshing, setRefreshing] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState<string | null>(null);
@@ -128,22 +153,56 @@ export default function AgentsSettingsPage() {
     }
   }, []);
 
+  const loadGoals = useCallback(async () => {
+    setLoadingGoals(true);
+    try {
+      const res = await fetch("/api/agent/goals");
+      if (!res.ok) throw new Error("Failed to load goals");
+      const data = await res.json();
+      setGoals(data.goals ?? []);
+    } catch {
+      toast.error("Could not fetch goals");
+    } finally {
+      setLoadingGoals(false);
+    }
+  }, []);
+
+  const loadGraph = useCallback(async () => {
+    setLoadingGraph(true);
+    try {
+      const res = await fetch("/api/agent/knowledge-graph");
+      if (!res.ok) throw new Error("Failed to load graph");
+      const data = await res.json();
+      setGraphEntities(data.entities ?? []);
+    } catch {
+      toast.error("Could not fetch knowledge graph");
+    } finally {
+      setLoadingGraph(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeTab === "activity") {
       setLoadingTasks(true);
       loadTasks()
         .catch((e) => toast.error(e.message))
         .finally(() => setLoadingTasks(false));
-    } else {
+    } else if (activeTab === "memory") {
       loadMemories();
+    } else if (activeTab === "goals") {
+      loadGoals();
+    } else {
+      loadGraph();
     }
-  }, [activeTab, loadTasks, loadMemories]);
+  }, [activeTab, loadTasks, loadMemories, loadGoals, loadGraph]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
       if (activeTab === "activity") await loadTasks();
-      else await loadMemories();
+      else if (activeTab === "memory") await loadMemories();
+      else if (activeTab === "goals") await loadGoals();
+      else await loadGraph();
       toast.success("Sync complete");
     } catch (e) {
       toast.error("Refresh failed");
@@ -163,6 +222,43 @@ export default function AgentsSettingsPage() {
       toast.success(`Forgotten: ${key}`);
     } catch (e) {
       toast.error("Could not forget memory");
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
+  const markGoalCompleted = async (goalId: string) => {
+    setIsActionLoading(goalId);
+    try {
+      const res = await fetch("/api/agent/goals", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ goalId, status: "completed", progress: 100 }),
+      });
+      if (!res.ok) throw new Error("Failed to mark goal complete");
+      const data = await res.json();
+      setGoals((prev) =>
+        prev.map((g) => (g.id === goalId ? (data.goal as GoalRow) : g)),
+      );
+      toast.success("Goal marked as completed");
+    } catch {
+      toast.error("Could not update goal");
+    } finally {
+      setIsActionLoading(null);
+    }
+  };
+
+  const deleteGoalItem = async (goalId: string) => {
+    setIsActionLoading(goalId);
+    try {
+      const res = await fetch(`/api/agent/goals?goalId=${encodeURIComponent(goalId)}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) throw new Error("Failed to delete goal");
+      setGoals((prev) => prev.filter((g) => g.id !== goalId));
+      toast.success("Goal deleted");
+    } catch {
+      toast.error("Could not delete goal");
     } finally {
       setIsActionLoading(null);
     }
@@ -239,6 +335,26 @@ export default function AgentsSettingsPage() {
           >
             <Brain size={14} className={cn(activeTab === "memory" ? "text-primary" : "text-muted-foreground")} />
             Memory
+          </button>
+          <button
+            onClick={() => setActiveTab("goals")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+              activeTab === "goals" ? "bg-card text-foreground shadow-sm border border-border/40" : "text-muted-foreground hover:bg-accent/50"
+            )}
+          >
+            <Target size={14} className={cn(activeTab === "goals" ? "text-primary" : "text-muted-foreground")} />
+            Goals
+          </button>
+          <button
+            onClick={() => setActiveTab("graph")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+              activeTab === "graph" ? "bg-card text-foreground shadow-sm border border-border/40" : "text-muted-foreground hover:bg-accent/50"
+            )}
+          >
+            <Network size={14} className={cn(activeTab === "graph" ? "text-primary" : "text-muted-foreground")} />
+            Graph
           </button>
         </div>
 
@@ -360,7 +476,7 @@ export default function AgentsSettingsPage() {
                   )}
                 </div>
               </motion.div>
-            ) : (
+            ) : activeTab === "memory" ? (
               <motion.div
                 key="memory"
                 initial={{ opacity: 0, x: 10 }}
@@ -444,6 +560,89 @@ export default function AgentsSettingsPage() {
                      </div>
                    )}
                 </div>
+              </motion.div>
+            ) : activeTab === "goals" ? (
+              <motion.div
+                key="goals"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="space-y-4"
+              >
+                {loadingGoals ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="size-8 animate-spin text-primary" />
+                  </div>
+                ) : goals.length === 0 ? (
+                  <Card className="p-8 text-center text-muted-foreground">No goals yet.</Card>
+                ) : (
+                  goals.map((goal) => (
+                    <Card key={goal.id} className="p-4 space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <div className="text-sm font-bold">{goal.title}</div>
+                          <div className="text-xs text-muted-foreground">{goal.description || "No description"}</div>
+                        </div>
+                        <Badge variant="outline" className="capitalize">{goal.status}</Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Priority {goal.priority} • Progress {goal.progress}%
+                        {goal.targetDate ? ` • Target ${new Date(goal.targetDate).toLocaleDateString()}` : ""}
+                      </div>
+                      {goal.nextAction ? (
+                        <div className="text-xs text-muted-foreground">Next: {goal.nextAction}</div>
+                      ) : null}
+                      <div className="flex gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          disabled={isActionLoading === goal.id || goal.status === "completed"}
+                          onClick={() => markGoalCompleted(goal.id)}
+                        >
+                          <CheckCircle2 className="mr-1 size-3" />
+                          Mark Complete
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={isActionLoading === goal.id}
+                          onClick={() => deleteGoalItem(goal.id)}
+                        >
+                          <Trash2 className="mr-1 size-3" />
+                          Delete
+                        </Button>
+                      </div>
+                    </Card>
+                  ))
+                )}
+              </motion.div>
+            ) : (
+              <motion.div
+                key="graph"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="space-y-4"
+              >
+                {loadingGraph ? (
+                  <div className="flex items-center justify-center py-20">
+                    <Loader2 className="size-8 animate-spin text-primary" />
+                  </div>
+                ) : graphEntities.length === 0 ? (
+                  <Card className="p-8 text-center text-muted-foreground">Knowledge graph is empty.</Card>
+                ) : (
+                  graphEntities.map((entity) => (
+                    <Card key={entity.id} className="p-4 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="font-bold text-sm">{entity.name}</div>
+                        <Badge variant="outline" className="capitalize">{entity.entityType}</Badge>
+                      </div>
+                      <div className="text-xs text-muted-foreground">{entity.summary || "No summary"}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        Updated {new Date(entity.updatedAt).toLocaleDateString()}
+                      </div>
+                    </Card>
+                  ))
+                )}
               </motion.div>
             )}
           </AnimatePresence>

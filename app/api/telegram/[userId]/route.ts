@@ -28,6 +28,7 @@ import { systemPrompt } from "@/lib/ai/prompts";
 import { buildEtlesTelegramTools } from "@/lib/ai/build-etles-telegram-tools";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import { touchUserActivity } from "@/lib/user-activity";
+import { getCachedSystemPrompt, setCachedSystemPrompt } from "@/lib/prompt-cache";
 import { generateUUID } from "@/lib/utils";
 import {
   sendLongMessage,
@@ -294,6 +295,42 @@ async function routeMessage({
   }
 
   const sessionTail = await getSessionTail(ownerUserId);
+  const promptSignature = JSON.stringify({
+    selectedChatModel: "google/gemini-2.5-flash",
+    requestHints: {
+      latitude: undefined,
+      longitude: undefined,
+      city: undefined,
+      country: undefined,
+    },
+    sessionTail,
+    skipArtifacts: true,
+    surface: "telegram-inline",
+  });
+  let cachedPrompt = await getCachedSystemPrompt({
+    userId: ownerUserId,
+    scope: "telegram",
+    signature: promptSignature,
+  });
+  if (!cachedPrompt) {
+    cachedPrompt = systemPrompt({
+      selectedChatModel: "google/gemini-2.5-flash",
+      requestHints: {
+        latitude: undefined,
+        longitude: undefined,
+        city: undefined,
+        country: undefined,
+      },
+      sessionTail,
+      skipArtifacts: true,
+    });
+    await setCachedSystemPrompt({
+      userId: ownerUserId,
+      scope: "telegram",
+      signature: promptSignature,
+      prompt: cachedPrompt,
+    });
+  }
   const tools = buildEtlesTelegramTools({
     userId: ownerUserId,
     chatId,
@@ -312,17 +349,7 @@ async function routeMessage({
 
   const { text: aiText, toolCalls } = await generateText({
     model: getGoogleModel("gemini-2.5-flash"),
-    system: systemPrompt({
-      selectedChatModel: "google/gemini-2.5-flash",
-      requestHints: {
-        latitude: undefined,
-        longitude: undefined,
-        city: undefined,
-        country: undefined,
-      },
-      sessionTail,
-      skipArtifacts: true,
-    }),
+    system: cachedPrompt,
     messages: allMessages,
     stopWhen: stepCountIs(25),
     tools,

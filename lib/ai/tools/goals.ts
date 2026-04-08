@@ -46,6 +46,16 @@ function clampProgress(value: number) {
   return Math.max(0, Math.min(100, value));
 }
 
+function normalizePriority(value: number): GoalItem["priority"] {
+  if (value <= 1) return 1;
+  if (value >= 5) return 5;
+  if (value < 2) return 1;
+  if (value < 3) return 2;
+  if (value < 4) return 3;
+  if (value < 5) return 4;
+  return 5;
+}
+
 async function readGoal(redis: Redis, userId: string, goalId: string) {
   const raw = await redis.get<string>(goalItemKey(userId, goalId));
   if (!raw) return null;
@@ -82,13 +92,7 @@ export const addGoal = ({ userId }: { userId: string }) =>
     inputSchema: z.object({
       title: z.string(),
       description: z.string().optional().default(""),
-      priority: z.union([
-        z.literal(1),
-        z.literal(2),
-        z.literal(3),
-        z.literal(4),
-        z.literal(5),
-      ]).optional().default(3),
+      priority: z.number().int().min(1).max(5).optional().default(3),
       targetDate: z.string().optional(),
       successCriteria: z.array(z.string()).optional().default([]),
       nextAction: z.string().optional(),
@@ -112,7 +116,7 @@ export const addGoal = ({ userId }: { userId: string }) =>
         title,
         description,
         status: "active",
-        priority,
+        priority: normalizePriority(priority),
         progress: 0,
         targetDate,
         successCriteria,
@@ -142,9 +146,7 @@ export const updateGoal = ({ userId }: { userId: string }) =>
       status: z
         .enum(["active", "paused", "completed", "archived"])
         .optional(),
-      priority: z
-        .union([z.literal(1), z.literal(2), z.literal(3), z.literal(4), z.literal(5)])
-        .optional(),
+      priority: z.number().int().min(1).max(5).optional(),
       progress: z.number().optional(),
       targetDate: z.string().optional(),
       successCriteria: z.array(z.string()).optional(),
@@ -163,7 +165,9 @@ export const updateGoal = ({ userId }: { userId: string }) =>
         ...(input.title !== undefined ? { title: input.title } : {}),
         ...(input.description !== undefined ? { description: input.description } : {}),
         ...(input.status !== undefined ? { status: input.status } : {}),
-        ...(input.priority !== undefined ? { priority: input.priority } : {}),
+        ...(input.priority !== undefined
+          ? { priority: normalizePriority(input.priority) }
+          : {}),
         ...(input.progress !== undefined
           ? { progress: clampProgress(input.progress) }
           : {}),

@@ -8,8 +8,7 @@ import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { generateText, stepCountIs } from "ai";
 import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
-import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
-import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
+import { getGoogleModel } from "@/lib/ai/providers";
 import { generateImageTool } from "@/lib/ai/tools/generate-image";
 import { generateVideoTool } from "@/lib/ai/tools/generate-video";
 import { getWeather } from "@/lib/ai/tools/get-weather";
@@ -31,6 +30,21 @@ import {
   listSchedules,
   deleteSchedule,
 } from "@/lib/ai/tools/schedule";
+import {
+  upsertKnowledgeEntity,
+  addKnowledgeRelation,
+  getKnowledgeEntity,
+  searchKnowledgeGraph,
+  deleteKnowledgeEntity,
+  deleteKnowledgeRelation,
+} from "@/lib/ai/tools/knowledge-graph";
+import {
+  addGoal,
+  updateGoal,
+  logGoalProgress,
+  listGoals,
+  deleteGoal,
+} from "@/lib/ai/tools/goals";
 import * as daytonaTools from "@/lib/ai/tools/daytona";
 import * as browserUseTools from "@/lib/ai/tools/browser-use";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
@@ -118,6 +132,17 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
     setCronJob: setCronJob({ userId, baseUrl }),
     listSchedules: listSchedules({ userId }),
     deleteSchedule: deleteSchedule(),
+    upsertKnowledgeEntity: upsertKnowledgeEntity({ userId }),
+    addKnowledgeRelation: addKnowledgeRelation({ userId }),
+    getKnowledgeEntity: getKnowledgeEntity({ userId }),
+    searchKnowledgeGraph: searchKnowledgeGraph({ userId }),
+    deleteKnowledgeEntity: deleteKnowledgeEntity({ userId }),
+    deleteKnowledgeRelation: deleteKnowledgeRelation({ userId }),
+    addGoal: addGoal({ userId }),
+    updateGoal: updateGoal({ userId }),
+    logGoalProgress: logGoalProgress({ userId }),
+    listGoals: listGoals({ userId }),
+    deleteGoal: deleteGoal({ userId }),
 
     // Daytona Sandbox Tools (Sandbox Specialist + Browser Operator for Playwright sessions)
     ...(agentType === "sandbox_specialist" || agentType === "browser_operator"
@@ -189,12 +214,11 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
 Today's date is ${new Date().toLocaleDateString()}.
 Execute the task now. Summarize what you did in your final response.`;
 
-  const subagentModel =
-    process.env.SUBAGENT_MODEL?.trim() || DEFAULT_CHAT_MODEL;
-
-  const model = subagentModel.startsWith("google/")
-    ? getGoogleModel(subagentModel)
-    : getLanguageModel(subagentModel);
+  const subagentModel = process.env.SUBAGENT_MODEL?.trim();
+  const model =
+    subagentModel && subagentModel.startsWith("google/")
+      ? getGoogleModel(subagentModel)
+      : getGoogleModel("google/gemini-2.5-flash");
 
   try {
     const userContent: any[] = [{ type: "text", text: `Task: ${promptTask}` }];
