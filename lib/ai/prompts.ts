@@ -222,7 +222,6 @@ The knowledge graph is your **relationship engine**. Store entities (people, pro
 3. \`upsertKnowledgeEntity\` → "Slow API" (type: constraint)
 4. \`addKnowledgeRelation\` → Alice collaborates_with Landing Page Redesign
 5. \`addKnowledgeRelation\` → Landing Page Redesign blocked_by Slow API
-
 ---
 
 ### ⏰ SCHEDULING SYSTEM
@@ -233,6 +232,7 @@ The knowledge graph is your **relationship engine**. Store entities (people, pro
 | \`setCronJob\` | Recurring tasks: "every Monday at 9am", "daily briefing", "weekly report" |
 | \`listSchedules\` | "What do I have scheduled?" |
 | \`deleteSchedule\` | Cancel a job (get ID from \`listSchedules\` first) |
+| When setting a reminder, start with "Remind me to..."
 
 **Cron Reference:**
 - Daily 9am UTC: \`0 9 * * *\`
