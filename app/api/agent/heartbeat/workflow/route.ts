@@ -29,6 +29,7 @@ import {
   shouldSendSilenceCheckIn,
   markSilenceCheckInSent,
 } from "@/lib/user-activity";
+import { getActiveGoalsSnapshot } from "@/lib/ai/tools/goals";
 
 export const maxDuration = 300;
 
@@ -169,11 +170,19 @@ Return ONLY the JSON object, no other text.`,
     const checkIn =
       "<b>Quick check-in</b>\n\n" +
       "I have not heard from you in a bit. If anything is blocking you or you want me to pick something up, reply here and I will jump on it.";
+    const goals = await getActiveGoalsSnapshot(userId, 1);
+    const goalHint =
+      goals.length > 0
+        ? `\n\n<b>Goal focus:</b> ${goals[0].title}${
+            goals[0].nextAction ? `\nNext action: ${goals[0].nextAction}` : ""
+          }`
+        : "";
+    const checkInWithGoals = `${checkIn}${goalHint}`;
 
     for (const key of keys) {
       const telegramChatId = Number(key.split(":").at(-1));
       if (!Number.isNaN(telegramChatId)) {
-        await sendLongMessage(integration.botToken, telegramChatId, checkIn);
+        await sendLongMessage(integration.botToken, telegramChatId, checkInWithGoals);
       }
     }
 
@@ -186,7 +195,7 @@ Return ONLY the JSON object, no other text.`,
             id: generateUUID(),
             chatId: contextData.chatId,
             role: "assistant",
-            parts: [{ type: "text", text: checkIn.replace(/<\/?b>/g, "") }],
+            parts: [{ type: "text", text: checkInWithGoals.replace(/<\/?b>/g, "") }],
             attachments: [],
             createdAt: new Date(),
           },

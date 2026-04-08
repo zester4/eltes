@@ -49,6 +49,21 @@ import {
 import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
 import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
 import { queueApproval } from "@/lib/ai/tools/queue-approval";
+import {
+  upsertKnowledgeEntity,
+  addKnowledgeRelation,
+  getKnowledgeEntity,
+  searchKnowledgeGraph,
+  deleteKnowledgeEntity,
+  deleteKnowledgeRelation,
+} from "@/lib/ai/tools/knowledge-graph";
+import {
+  addGoal,
+  updateGoal,
+  logGoalProgress,
+  listGoals,
+  deleteGoal,
+} from "@/lib/ai/tools/goals";
 // Daytona sandbox tools
 import {
   createSandbox,
@@ -323,6 +338,17 @@ export async function POST(request: Request) {
                 "launchMission",
                 "getMissionStatus",
                 "queueApproval",
+                "upsertKnowledgeEntity",
+                "addKnowledgeRelation",
+                "getKnowledgeEntity",
+                "searchKnowledgeGraph",
+                "deleteKnowledgeEntity",
+                "deleteKnowledgeRelation",
+                "addGoal",
+                "updateGoal",
+                "logGoalProgress",
+                "listGoals",
+                "deleteGoal",
                 "browserUseRunTask",
                 "browserUseStartTask",
                 "browserUseGetTask",
@@ -401,6 +427,29 @@ export async function POST(request: Request) {
                     chatId: id,
                     skipTelegram: true,
                   }),
+                  upsertKnowledgeEntity: upsertKnowledgeEntity({
+                    userId: session.user.id!,
+                  }),
+                  addKnowledgeRelation: addKnowledgeRelation({
+                    userId: session.user.id!,
+                  }),
+                  getKnowledgeEntity: getKnowledgeEntity({
+                    userId: session.user.id!,
+                  }),
+                  searchKnowledgeGraph: searchKnowledgeGraph({
+                    userId: session.user.id!,
+                  }),
+                  deleteKnowledgeEntity: deleteKnowledgeEntity({
+                    userId: session.user.id!,
+                  }),
+                  deleteKnowledgeRelation: deleteKnowledgeRelation({
+                    userId: session.user.id!,
+                  }),
+                  addGoal: addGoal({ userId: session.user.id! }),
+                  updateGoal: updateGoal({ userId: session.user.id! }),
+                  logGoalProgress: logGoalProgress({ userId: session.user.id! }),
+                  listGoals: listGoals({ userId: session.user.id! }),
+                  deleteGoal: deleteGoal({ userId: session.user.id! }),
                 }),
             // Daytona sandbox tools (authenticated users only)
             ...(sandboxTools as any),

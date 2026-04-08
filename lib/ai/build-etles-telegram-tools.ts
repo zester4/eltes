@@ -33,6 +33,21 @@ import {
 import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
 import { queueApproval } from "@/lib/ai/tools/queue-approval";
 import {
+  upsertKnowledgeEntity,
+  addKnowledgeRelation,
+  getKnowledgeEntity,
+  searchKnowledgeGraph,
+  deleteKnowledgeEntity,
+  deleteKnowledgeRelation,
+} from "@/lib/ai/tools/knowledge-graph";
+import {
+  addGoal,
+  updateGoal,
+  logGoalProgress,
+  listGoals,
+  deleteGoal,
+} from "@/lib/ai/tools/goals";
+import {
   createSandbox,
   listSandboxes,
   deleteSandbox,
@@ -92,6 +107,17 @@ export function buildEtlesTelegramTools({
     launchMission: launchMission({ userId, chatId, baseUrl }),
     getMissionStatus: getMissionStatus({ userId }),
     queueApproval: queueApproval({ userId, chatId, skipTelegram: false }),
+    upsertKnowledgeEntity: upsertKnowledgeEntity({ userId }),
+    addKnowledgeRelation: addKnowledgeRelation({ userId }),
+    getKnowledgeEntity: getKnowledgeEntity({ userId }),
+    searchKnowledgeGraph: searchKnowledgeGraph({ userId }),
+    deleteKnowledgeEntity: deleteKnowledgeEntity({ userId }),
+    deleteKnowledgeRelation: deleteKnowledgeRelation({ userId }),
+    addGoal: addGoal({ userId }),
+    updateGoal: updateGoal({ userId }),
+    logGoalProgress: logGoalProgress({ userId }),
+    listGoals: listGoals({ userId }),
+    deleteGoal: deleteGoal({ userId }),
     createSandbox: createSandbox({ userId }),
     listSandboxes: listSandboxes({ userId }),
     deleteSandbox: deleteSandbox({ userId }),

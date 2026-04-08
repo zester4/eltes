@@ -27,7 +27,13 @@ import { buildEtlesTelegramTools } from "@/lib/ai/build-etles-telegram-tools";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import { touchUserActivity } from "@/lib/user-activity";
 import { generateUUID } from "@/lib/utils";
-import { sendLongMessage } from "@/lib/telegram/api";
+import {
+  sendLongMessage,
+  sendStatusMessage,
+  editMessageText,
+  deleteMessage,
+  startTypingHeartbeat,
+} from "@/lib/telegram/api";
 import type { TelegramWorkflowPayload } from "@/lib/workflow/client";
 
 export const maxDuration = 300;
@@ -86,6 +92,13 @@ async function getOrCreateChat(
 export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
   const { ownerUserId, botToken, telegramChatId, senderName, userText, baseUrl } =
     context.requestPayload;
+  const statusMessageId = await context.run("status-start", async () => {
+    return sendStatusMessage(
+      botToken,
+      telegramChatId,
+      "🤖 <b>Etles is on it</b>\n\nAnalyzing your request...",
+    );
+  });
 
   // ── Step 1: Get / create DB chat, persist user message ──────────────────────
   const chatId = await context.run("setup-chat", async () => {
@@ -112,6 +125,14 @@ export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
   // ── Step 2: Load conversation history ───────────────────────────────────────
   // Returned as plain JSON so Workflow can cache and replay the step.
   const history = await context.run("load-history", async () => {
+    if (statusMessageId) {
+      await editMessageText(
+        botToken,
+        telegramChatId,
+        statusMessageId,
+        "🧠 <b>Etles is thinking</b>\n\nGathering conversation context...",
+      );
+    }
     const dbMessages = await getMessagesByChatId({ id: chatId });
     return dbMessages
       .filter((m) => m.role === "user" || m.role === "assistant")
@@ -127,6 +148,15 @@ export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
 
   // ── Step 3: Run AI (the expensive step — gets its own 300 s window) ──────────
   const { aiText, toolCallParts } = await context.run("run-ai", async () => {
+    if (statusMessageId) {
+      await editMessageText(
+        botToken,
+        telegramChatId,
+        statusMessageId,
+        "🛠 <b>Working with tools</b>\n\nCalling apps and planning the best answer...",
+      );
+    }
+    const stopTyping = startTypingHeartbeat(botToken, telegramChatId);
     let composioTools: Record<string, unknown> = {};
     try {
       const session = await composio.create(ownerUserId, {
@@ -167,6 +197,8 @@ export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
       messages: allMessages,
       stopWhen: stepCountIs(25),
       tools,
+    }).finally(() => {
+      stopTyping();
     });
 
     // Serialise tool calls for Workflow state caching
@@ -183,6 +215,14 @@ export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
 
   // ── Step 4: Persist assistant message + deliver to Telegram ─────────────────
   await context.run("save-and-send", async () => {
+    if (statusMessageId) {
+      await editMessageText(
+        botToken,
+        telegramChatId,
+        statusMessageId,
+        "✅ <b>Done</b>\n\nSending your response...",
+      );
+    }
     await saveMessages({
       messages: [
         {
@@ -218,5 +258,8 @@ export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
       })
       .filter((m) => m.text.length > 0);
     await saveSessionTail(ownerUserId, tail);
+    if (statusMessageId) {
+      await deleteMessage(botToken, telegramChatId, statusMessageId);
+    }
   });
 });

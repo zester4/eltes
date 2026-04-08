@@ -29,7 +29,14 @@ import { buildEtlesTelegramTools } from "@/lib/ai/build-etles-telegram-tools";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import { touchUserActivity } from "@/lib/user-activity";
 import { generateUUID } from "@/lib/utils";
-import { sendLongMessage, sendTypingAction } from "@/lib/telegram/api";
+import {
+  sendLongMessage,
+  sendTypingAction,
+  sendStatusMessage,
+  editMessageText,
+  deleteMessage,
+  startTypingHeartbeat,
+} from "@/lib/telegram/api";
 import {
   isWorkflowEnabled,
   triggerTelegramWorkflow,
@@ -235,6 +242,11 @@ async function routeMessage({
   userText: string;
   baseUrl: string;
 }) {
+  const statusMessageId = await sendStatusMessage(
+    botToken,
+    telegramChatId,
+    "🤖 <b>Etles is on it</b>\n\nUnderstanding your request...",
+  );
   const chatId = await getOrCreateChat(ownerUserId, telegramChatId, senderName);
 
   await saveMessages({
@@ -253,6 +265,14 @@ async function routeMessage({
   await touchUserActivity(ownerUserId);
 
   await sendTypingAction(botToken, telegramChatId);
+  if (statusMessageId) {
+    await editMessageText(
+      botToken,
+      telegramChatId,
+      statusMessageId,
+      "🧠 <b>Thinking</b>\n\nLoading context and memory...",
+    );
+  }
 
   const dbMessages: DBMessage[] = await getMessagesByChatId({ id: chatId });
   const history = dbMessages
@@ -280,6 +300,15 @@ async function routeMessage({
     baseUrl,
     composioTools,
   });
+  if (statusMessageId) {
+    await editMessageText(
+      botToken,
+      telegramChatId,
+      statusMessageId,
+      "🛠 <b>Working with tools</b>\n\nRunning actions and composing your answer...",
+    );
+  }
+  const stopTyping = startTypingHeartbeat(botToken, telegramChatId);
 
   const { text: aiText, toolCalls } = await generateText({
     model: getGoogleModel("gemini-2.5-flash"),
@@ -297,6 +326,8 @@ async function routeMessage({
     messages: allMessages,
     stopWhen: stepCountIs(25),
     tools,
+  }).finally(() => {
+    stopTyping();
   });
 
   await saveMessages({
@@ -321,6 +352,14 @@ async function routeMessage({
   });
 
   if (aiText.trim()) {
+    if (statusMessageId) {
+      await editMessageText(
+        botToken,
+        telegramChatId,
+        statusMessageId,
+        "✅ <b>Done</b>\n\nSending your response...",
+      );
+    }
     await sendLongMessage(botToken, telegramChatId, aiText);
   }
 
@@ -338,6 +377,9 @@ async function routeMessage({
     })
     .filter((m) => m.text.length > 0);
   await saveSessionTail(ownerUserId, tail);
+  if (statusMessageId) {
+    await deleteMessage(botToken, telegramChatId, statusMessageId);
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

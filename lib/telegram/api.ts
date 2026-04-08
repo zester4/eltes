@@ -14,6 +14,14 @@ export async function sendTypingAction(token: string, chatId: number) {
   });
 }
 
+export function startTypingHeartbeat(token: string, chatId: number) {
+  void sendTypingAction(token, chatId);
+  const interval = setInterval(() => {
+    void sendTypingAction(token, chatId);
+  }, 4000);
+  return () => clearInterval(interval);
+}
+
 export interface InlineKeyboardButton {
   text: string;
   callback_data: string;
@@ -82,6 +90,21 @@ export async function editMessageText(
   });
 }
 
+export async function deleteMessage(
+  token: string,
+  chatId: number,
+  messageId: number,
+) {
+  await fetch(`${TELEGRAM_API}/bot${token}/deleteMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      message_id: messageId,
+    }),
+  });
+}
+
 export async function sendMessage(
   token: string,
   chatId: number,
@@ -119,6 +142,26 @@ export async function sendMessage(
       });
     }
   }
+}
+
+export async function sendStatusMessage(
+  token: string,
+  chatId: number,
+  text: string,
+): Promise<number | null> {
+  const res = await fetch(`${TELEGRAM_API}/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: "HTML",
+      disable_notification: true,
+    }),
+  });
+  if (!res.ok) return null;
+  const data = (await res.json()) as { result?: { message_id?: number } };
+  return data.result?.message_id ?? null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
