@@ -3,6 +3,7 @@ import { tool } from "ai";
 import { Client } from "@upstash/qstash";
 import { z } from "zod";
 import { createAgentTask } from "@/lib/db/queries";
+import { generateUUID } from "@/lib/utils";
 
 // Etles scheduling tools powered by QStash.
 //
@@ -53,6 +54,7 @@ export const setReminder = ({ userId, baseUrl }: { userId: string; baseUrl: stri
     execute: async ({ message, delaySeconds, label }) => {
       try {
         const client = getQStashClient();
+        const taskId = generateUUID();
 
         const result = await client.publishJSON({
           url: `${baseUrl}/api/scheduled`,
@@ -60,6 +62,7 @@ export const setReminder = ({ userId, baseUrl }: { userId: string; baseUrl: stri
             type: "reminder",
             userId,
             message,
+            taskId,
             label: label ?? "reminder",
             scheduledAt: new Date().toISOString(),
           },
@@ -71,7 +74,7 @@ export const setReminder = ({ userId, baseUrl }: { userId: string; baseUrl: stri
         // Log to AgentTask for dashboard visibility, but do not fail scheduling if this write fails.
         try {
           await createAgentTask({
-            id: result.messageId, // Use QStash messageId as reference
+            id: taskId,
             userId,
             chatId: "", // Reminders aren't bound to a chat until they fire
             agentType: "reminder",
@@ -126,6 +129,7 @@ export const setCronJob = ({ userId, baseUrl }: { userId: string; baseUrl: strin
     execute: async ({ name, cron, message }) => {
       try {
         const client = getQStashClient();
+        const taskId = generateUUID();
 
         const schedule = await client.schedules.create({
           destination: `${baseUrl}/api/scheduled`,
@@ -135,6 +139,7 @@ export const setCronJob = ({ userId, baseUrl }: { userId: string; baseUrl: strin
             userId,
             name,
             message,
+            taskId,
           }),
           headers: { "Content-Type": "application/json" },
           retries: 3,
@@ -144,7 +149,7 @@ export const setCronJob = ({ userId, baseUrl }: { userId: string; baseUrl: strin
         // Log to AgentTask for dashboard visibility, but do not fail cron creation if this write fails.
         try {
           await createAgentTask({
-            id: schedule.scheduleId,
+            id: taskId,
             userId,
             chatId: "",
             agentType: "cron",

@@ -24,7 +24,7 @@ const composioStatus = new Composio({ provider: new VercelProvider() });
 async function handler(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userId, message } = body;
+    const { userId, message, taskId } = body;
 
     console.log(`[QStash] Proactive trigger: "${message}" for user ${userId}`);
 
@@ -152,17 +152,16 @@ Be direct and helpful.`;
     await saveMessages({ messages: messagesToSave });
 
     // 5. Update AgentTask status if it exists
-    const qstashMessageId = req.headers.get("upstash-message-id");
-    if (qstashMessageId) {
+    if (taskId) {
       try {
         await updateAgentTask({
-          id: qstashMessageId,
+          id: taskId,
           userId,
           status: "completed",
           result: { text: result.text, toolCalls: result.toolCalls },
         });
       } catch (err) {
-        console.warn(`[QStash] Could not update AgentTask ${qstashMessageId}:`, err);
+        console.warn(`[QStash] Could not update AgentTask ${taskId}:`, err);
       }
     }
 
