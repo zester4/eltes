@@ -76,7 +76,6 @@ export const setReminder = ({ userId, baseUrl }: { userId: string; baseUrl: stri
           await createAgentTask({
             id: taskId,
             userId,
-            chatId: "", // Reminders aren't bound to a chat until they fire
             agentType: "reminder",
             task: message,
           });
@@ -151,7 +150,6 @@ export const setCronJob = ({ userId, baseUrl }: { userId: string; baseUrl: strin
           await createAgentTask({
             id: taskId,
             userId,
-            chatId: "",
             agentType: "cron",
             task: `${name}: ${message}`,
           });
