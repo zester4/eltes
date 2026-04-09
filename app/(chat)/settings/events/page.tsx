@@ -263,97 +263,97 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 md:space-y-8 bg-background">
-      <div className="flex flex-col gap-4 sm:gap-6 max-w-7xl mx-auto w-full">
+    <div className="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 bg-background">
+      <div className="flex flex-col gap-3 sm:gap-4 max-w-7xl mx-auto w-full">
         {/* Header Section */}
         <div className="flex flex-row items-center justify-between gap-2">
-          <div className="flex flex-col space-y-1">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col space-y-0.5">
+            <div className="flex items-center gap-1.5">
               <SidebarToggle />
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={() => router.back()} 
-                className="size-7 sm:size-8 md:size-10 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                className="size-7 sm:size-8 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
               >
-                <ArrowLeft className="size-3.5 sm:size-4 md:size-5" />
+                <ArrowLeft className="size-3.5 sm:size-4" />
               </Button>
-              <h1 className="text-lg sm:text-xl md:text-3xl font-bold tracking-tight truncate">
+              <h1 className="text-[15px] sm:text-[18px] md:text-[22px] font-semibold tracking-tight truncate">
                 Events
               </h1>
             </div>
-            <p className="text-muted-foreground text-[10px] sm:text-xs md:text-sm line-clamp-1 ml-9 sm:ml-10 md:ml-14">
+            <p className="text-muted-foreground text-[11px] sm:text-[13px] line-clamp-1 ml-9 sm:ml-10">
               Real-time event streams monitoring.
             </p>
           </div>
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-1.5 rounded-lg h-8 sm:h-10 md:h-12 px-3 sm:px-4 md:px-8 text-[10px] sm:text-xs md:text-base transition-all active:scale-[0.98]">
-                <Plus className="size-3 sm:size-3.5 md:size-4" />
+              <Button className="gap-1.5 rounded-[12px] h-7 sm:h-8 md:h-9 px-2.5 sm:px-3 md:px-4 text-[11px] sm:text-[12px] md:text-[13px] font-medium transition-all active:scale-[1]">
+                <Plus className="size-3 sm:size-3.5" />
                 <span className="hidden xs:inline">Subscribe</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] rounded-xl bg-card border-border shadow-lg">
+            <DialogContent className="sm:max-w-[500px] rounded-2xl bg-card border-border shadow-lg">
               <DialogHeader>
-                <DialogTitle className="text-xl sm:text-2xl font-bold">Subscribe to Event</DialogTitle>
-                <DialogDescription className="text-xs sm:text-sm text-muted-foreground">
+                <DialogTitle className="text-[16px] sm:text-[18px] font-semibold">Subscribe to Event</DialogTitle>
+                <DialogDescription className="text-[12px] sm:text-[13px] text-muted-foreground">
                   Choose a real-time event to watch and configure its parameters.
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="grid gap-4 sm:gap-6 py-4">
+              <div className="grid gap-3 sm:gap-4 py-2">
                 {!selectedTrigger ? (
-                  <div className="grid grid-cols-1 gap-2 sm:gap-3 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                  <div className="grid grid-cols-1 gap-2 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                     {availableTriggers.map((t) => (
                       <button
                         key={t.slug}
                         onClick={() => setSelectedTrigger(t)}
-                        className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 rounded-xl border border-border/50 bg-muted/30 hover:bg-accent/10 transition-all text-left group"
+                        className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl border border-border/50 bg-muted/30 hover:bg-accent/10 transition-all text-left group"
                       >
-                        <div className="size-10 sm:size-12 rounded-lg sm:rounded-xl bg-background flex items-center justify-center border border-border shadow-inner shrink-0">
+                        <div className="size-8 sm:size-10 rounded-[10px] sm:rounded-[12px] bg-background flex items-center justify-center border border-border shadow-inner shrink-0">
                           {getAppIcon(t.app, 20)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-bold text-xs sm:text-sm text-foreground truncate">{t.name}</h4>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1">{t.description}</p>
+                          <h4 className="font-medium text-[12px] sm:text-[13px] text-foreground truncate">{t.name}</h4>
+                          <p className="text-[11px] sm:text-[12px] text-muted-foreground line-clamp-1">{t.description}</p>
                         </div>
                         <ChevronRight className="size-3.5 sm:size-4 text-muted-foreground" />
                       </button>
                     ))}
                   </div>
                 ) : (
-                  <div className="space-y-4 sm:space-y-6">
-                    <div className="flex items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl bg-muted/30 border border-border/50">
-                      <div className="size-8 sm:size-10 rounded-lg bg-background flex items-center justify-center border border-border">
-                        {getAppIcon(selectedTrigger.app, 18)}
+                  <div className="space-y-4 sm:space-y-5">
+                    <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl bg-muted/30 border border-border/50">
+                      <div className="size-8 rounded-[10px] bg-background flex items-center justify-center border border-border">
+                        {getAppIcon(selectedTrigger.app, 16)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-xs sm:text-sm text-foreground truncate">{selectedTrigger.name}</h4>
-                        <p className="text-[9px] sm:text-[10px] uppercase tracking-wider text-primary/80 font-bold">{selectedTrigger.app}</p>
+                        <h4 className="font-medium text-[12px] sm:text-[13px] text-foreground truncate">{selectedTrigger.name}</h4>
+                        <p className="text-[10px] uppercase tracking-wider text-primary/80 font-semibold">{selectedTrigger.app}</p>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedTrigger(null)} className="text-[10px] sm:text-xs h-7 sm:h-8 px-2">Change</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setSelectedTrigger(null)} className="text-[11px] sm:text-[12px] h-7 sm:h-8 px-2 font-medium">Change</Button>
                     </div>
 
-                    <div className="space-y-4 px-1">
+                    <div className="space-y-3 px-1">
                       {selectedTrigger.configFields.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center gap-2 py-6 bg-muted/10 rounded-xl border border-border/50">
+                        <div className="flex flex-col items-center justify-center gap-2 py-5 bg-muted/10 rounded-2xl border border-border/50">
                           <CheckCircle2 className="size-5 text-emerald-500/50" />
-                          <p className="text-xs font-medium text-muted-foreground">Ready to subscribe, no configuration needed.</p>
+                          <p className="text-[12px] sm:text-[13px] font-medium text-muted-foreground">Ready to subscribe, no configuration needed.</p>
                         </div>
                       ) : (
                         selectedTrigger.configFields.map((field) => (
                           <div key={field.name} className="space-y-1.5">
-                            <Label htmlFor={field.name} className="text-[11px] sm:text-sm font-bold text-foreground/80">
+                            <Label htmlFor={field.name} className="text-[12px] sm:text-[13px] font-medium text-foreground/80">
                               {field.label} {field.required && <span className="text-primary">*</span>}
                             </Label>
                             <Input
                               id={field.name}
                               placeholder={field.placeholder || field.description}
-                              className="rounded-lg h-9 sm:h-11 text-xs sm:text-sm"
+                              className="rounded-[12px] h-8 sm:h-9 text-[12px] sm:text-[13px]"
                               onChange={(e) => setTriggerConfig({ ...triggerConfig, [field.name]: e.target.value })}
                             />
-                            <p className="text-[9px] sm:text-[11px] text-muted-foreground pl-1">{field.description}</p>
+                            <p className="text-[11px] sm:text-[12px] text-muted-foreground pl-1">{field.description}</p>
                           </div>
                         ))
                       )}
@@ -363,11 +363,11 @@ export default function EventsPage() {
               </div>
 
               <DialogFooter className="gap-2 pt-2 border-t border-border sm:space-x-0">
-                <Button variant="ghost" onClick={() => { setIsCreateDialogOpen(false); setSelectedTrigger(null); }} className="h-9 sm:h-10 text-xs sm:text-sm rounded-lg">Cancel</Button>
+                <Button variant="ghost" onClick={() => { setIsCreateDialogOpen(false); setSelectedTrigger(null); }} className="h-8 sm:h-9 text-[12px] sm:text-[13px] rounded-[10px] font-medium">Cancel</Button>
                 <Button 
                   disabled={!selectedTrigger || isActionLoading === "create"} 
                   onClick={handleCreateTrigger}
-                  className="h-9 sm:h-10 text-xs sm:text-sm rounded-lg px-6"
+                  className="rounded-[10px] h-8 sm:h-9 text-[12px] sm:text-[13px] px-5 font-medium"
                 >
                   {isActionLoading === "create" ? <LoaderIcon className="size-3.5 animate-spin" /> : "Subscribe"}
                 </Button>
@@ -376,32 +376,32 @@ export default function EventsPage() {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 items-start pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-start pb-20">
           {/* Active Subscriptions Section */}
-          <div className="lg:col-span-4 space-y-3 sm:space-y-6">
+          <div className="lg:col-span-4 space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between px-1 sm:px-2">
-              <h3 className="font-bold text-sm sm:text-xl flex items-center gap-2 text-foreground">
+              <h3 className="font-semibold text-[13px] sm:text-[15px] flex items-center gap-2 text-foreground">
                 <Activity className="size-3.5 sm:size-5 text-muted-foreground" />
                 Active Triggers
               </h3>
-              <Badge variant="secondary" className="rounded-full bg-muted text-muted-foreground border border-border px-1.5 py-0 font-bold text-[8px] sm:text-xs">
+              <Badge variant="secondary" className="rounded-full bg-muted text-muted-foreground border border-border px-1.5 py-0 font-medium text-[10px] sm:text-[11px]">
                 {activeTriggers.length}
               </Badge>
             </div>
 
             {isTriggersLoading ? (
-              <div className="flex flex-col items-center justify-center py-10 sm:py-16 gap-2 sm:gap-3 border border-border rounded-lg sm:rounded-xl bg-muted/30">
+              <div className="flex flex-col items-center justify-center py-6 sm:py-10 gap-2 sm:gap-3 border border-border rounded-2xl bg-muted/30">
                 <LoaderIcon className="size-4 sm:size-6 animate-spin text-primary" />
-                <p className="text-[10px] sm:text-xs font-medium text-muted-foreground">Syncing...</p>
+                <p className="text-[10px] sm:text-[12px] font-medium text-muted-foreground">Syncing...</p>
               </div>
             ) : activeTriggers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 sm:py-20 text-center border-2 border-dashed rounded-lg sm:rounded-xl border-border bg-muted/10 gap-3 sm:gap-4 px-4 sm:px-6 relative overflow-hidden group">
-                <div className="size-14 rounded-xl bg-muted/50 flex items-center justify-center border border-border shadow-sm">
-                  <Info className="size-6 text-muted-foreground" />
+              <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center border-2 border-dashed rounded-2xl border-border bg-muted/10 gap-2 sm:gap-3 px-4 sm:px-6 relative overflow-hidden group">
+                <div className="size-10 sm:size-12 rounded-xl bg-muted/50 flex items-center justify-center border border-border shadow-sm">
+                  <Info className="size-5 sm:size-6 text-muted-foreground" />
                 </div>
                 <div className="relative z-10">
-                  <p className="text-sm font-bold text-foreground/80">No active subscriptions</p>
-                  <p className="text-[11px] sm:text-[13px] text-muted-foreground mt-1 max-w-[200px]">Set up your first trigger to stream events.</p>
+                  <p className="text-[12px] sm:text-[13px] font-semibold text-foreground/80">No active subscriptions</p>
+                  <p className="text-[11px] sm:text-[12px] text-muted-foreground mt-0.5 max-w-[200px]">Set up your first trigger to stream events.</p>
                 </div>
               </div>
             ) : (
@@ -414,14 +414,14 @@ export default function EventsPage() {
                   
                   return (
                     <div key={triggerId || idx}>
-                      <Card className="border-border bg-card shadow-sm hover:bg-muted/50 transition-colors group rounded-lg sm:rounded-xl relative overflow-hidden">
-                        <CardHeader className="p-2 sm:p-4 flex flex-row items-center gap-2 sm:gap-4 space-y-0 text-foreground">
-                          <div className="size-8 sm:size-11 rounded-md sm:rounded-lg bg-background flex items-center justify-center border border-border shadow-sm shrink-0">
+                      <Card className="border-border bg-card shadow-sm hover:bg-muted/50 transition-colors group rounded-2xl relative overflow-hidden">
+                        <CardHeader className="p-2 sm:p-3 flex flex-row items-center gap-2 sm:gap-3 space-y-0 text-foreground">
+                          <div className="size-7 sm:size-9 rounded-[10px] bg-background flex items-center justify-center border border-border shadow-sm shrink-0">
                             {getAppIcon(def?.app || "", 16)}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <CardTitle className="text-xs sm:text-[15px] font-bold truncate text-foreground/90">{displaySlug}</CardTitle>
-                            <CardDescription className="text-[9px] sm:text-[11px] truncate text-muted-foreground mt-0 font-medium flex items-center gap-1">
+                            <CardTitle className="text-[12px] sm:text-[14px] font-semibold truncate text-foreground/90">{displaySlug}</CardTitle>
+                            <CardDescription className="text-[10px] sm:text-[12px] truncate text-muted-foreground mt-0 font-normal flex items-center gap-1">
                               <span className="inline-block size-1 rounded-full bg-emerald-500/50" />
                               ID: {triggerId?.slice(0, 8) ?? "N/A"}
                             </CardDescription>
@@ -429,11 +429,11 @@ export default function EventsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-7 sm:size-9 rounded-lg text-zinc-500 hover:text-destructive hover:bg-destructive/15 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
+                            className="size-7 sm:size-8 rounded-[10px] text-zinc-500 hover:text-destructive hover:bg-destructive/15 sm:opacity-0 sm:group-hover:opacity-100 transition-all"
                             onClick={() => triggerId && handleDeleteTrigger(triggerId)}
                             disabled={isActionLoading === triggerId}
                           >
-                            {isActionLoading === triggerId ? <LoaderIcon className="size-3.5 sm:size-4 animate-spin text-destructive" /> : <Trash2 className="size-3.5 sm:size-4" />}
+                            {isActionLoading === triggerId ? <LoaderIcon className="size-3.5 sm:size-4 animate-spin text-destructive" /> : <Trash2 className="size-3.5" />}
                           </Button>
                         </CardHeader>
                       </Card>
@@ -445,10 +445,10 @@ export default function EventsPage() {
           </div>
 
           {/* Event Timeline Section */}
-          <div className="lg:col-span-8 space-y-3 sm:space-y-6">
-             <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-4 bg-muted/30 border border-border rounded-lg sm:rounded-xl">
-              <h3 className="font-bold text-sm sm:text-xl flex items-center gap-2 text-foreground">
-                <Clock className="size-3.5 sm:size-5 text-muted-foreground" />
+          <div className="lg:col-span-8 space-y-3 sm:space-y-4">
+             <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 bg-muted/30 border border-border rounded-2xl">
+              <h3 className="font-semibold text-[13px] sm:text-[15px] flex items-center gap-2 text-foreground">
+                <Clock className="size-3.5 sm:size-4 text-muted-foreground" />
                 Live Stream
               </h3>
               <Button 
@@ -456,9 +456,9 @@ export default function EventsPage() {
                 size="sm" 
                 onClick={() => fetchEvents(true)} 
                 disabled={isRefreshing}
-                className="text-[9px] sm:text-xs h-6 sm:h-8 px-2 sm:px-4 gap-1 sm:gap-1.5 border-border bg-muted/50 hover:bg-muted text-muted-foreground rounded-full transition-all"
+                className="text-[11px] sm:text-[12px] h-7 sm:h-8 px-2 sm:px-3 font-medium gap-1 sm:gap-1.5 border-border bg-muted/50 hover:bg-muted text-muted-foreground rounded-full transition-all"
               >
-                <Activity className={cn("size-2.5 sm:size-3.5", isRefreshing && "animate-spin text-primary")} /> 
+                <Activity className={cn("size-2.5 sm:size-3", isRefreshing && "animate-spin text-primary")} /> 
                 {isRefreshing ? "Sync" : "Refresh"}
               </Button>
             </div>
@@ -469,18 +469,18 @@ export default function EventsPage() {
                 <div className="absolute left-[19px] sm:left-[29px] top-6 bottom-4 w-px bg-border hidden xs:block" />
               )}
 
-              <div className="space-y-3 sm:space-y-5 relative">
+              <div className="space-y-3 sm:space-y-4 relative">
                 {isLoading ? (
-                  <div className="flex flex-col items-center justify-center py-20 sm:py-28 gap-3 sm:gap-4 rounded-lg sm:rounded-xl border border-border bg-muted/30">
-                    <LoaderIcon className="size-6 sm:size-8 animate-spin text-primary" />
-                    <p className="text-[11px] sm:text-sm text-muted-foreground font-medium">Connecting...</p>
+                  <div className="flex flex-col items-center justify-center py-12 sm:py-16 gap-3 sm:gap-4 rounded-2xl border border-border bg-muted/30">
+                    <LoaderIcon className="size-5 sm:size-6 animate-spin text-primary" />
+                    <p className="text-[11px] sm:text-[13px] text-muted-foreground font-medium">Connecting...</p>
                   </div>
                 ) : eventLogs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-24 sm:py-32 text-center bg-muted/10 border border-border rounded-lg sm:rounded-xl gap-4 sm:gap-5 relative group overflow-hidden">
-                    <Calendar className="size-6 sm:size-8 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center bg-muted/10 border border-border rounded-2xl gap-3 sm:gap-4 relative group overflow-hidden">
+                    <Calendar className="size-5 sm:size-6 text-muted-foreground group-hover:text-primary transition-colors" />
                     <div className="relative z-10 space-y-1">
-                      <h3 className="text-base sm:text-xl font-bold text-foreground/80">Waiting for signals</h3>
-                      <p className="text-[11px] sm:text-[14px] text-muted-foreground max-w-[200px] sm:max-w-sm mx-auto font-medium">
+                      <h3 className="text-[14px] sm:text-[16px] font-semibold text-foreground/80">Waiting for signals</h3>
+                      <p className="text-[12px] sm:text-[13px] font-normal text-muted-foreground max-w-[200px] sm:max-w-sm mx-auto">
                         Real-time events will flow here.
                       </p>
                     </div>
@@ -502,32 +502,32 @@ export default function EventsPage() {
                           <div className="absolute left-[15px] sm:left-[24px] top-1/2 -translate-y-1/2 size-2 sm:size-2.5 rounded-full bg-background border-2 border-primary z-10 hidden xs:block shadow-sm" />
                           
                           <Card className={cn(
-                            "border-border bg-card shadow-sm transition-all hover:bg-muted/30 rounded-lg sm:rounded-xl overflow-hidden relative",
+                            "border-border bg-card shadow-sm transition-all hover:bg-muted/30 rounded-2xl overflow-hidden relative",
                             isExpanded && "ring-1 ring-primary/20 bg-muted/50"
                           )}>
                               
                               <div 
-                                className="p-2 sm:p-5 flex items-center gap-2 sm:gap-5 cursor-pointer select-none relative z-20"
+                                className="p-2 sm:p-3 flex items-center gap-2 sm:gap-3 cursor-pointer select-none relative z-20"
                                 onClick={() => setExpandedEventId(isExpanded ? null : event.id)}
                               >
-                                <div className="size-8 sm:size-12 rounded sm:rounded-lg bg-background border border-border flex items-center justify-center shadow-inner shrink-0">
+                                <div className="size-8 sm:size-10 rounded-[10px] bg-background border border-border flex items-center justify-center shadow-inner shrink-0">
                                   {getAppIcon(triggerDef?.app || "", 16)}
                                 </div>
                                 
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex flex-col xs:flex-row xs:items-center gap-0.5 sm:gap-3 mb-0.5 sm:mb-1">
-                                    <h4 className="font-bold text-xs sm:text-[15px] tracking-tight text-foreground/90 truncate">{displaySlug}</h4>
-                                    <Badge className={cn("w-fit text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 rounded font-bold uppercase", getStatusColor(event.status))}>
+                                  <div className="flex flex-col xs:flex-row xs:items-center gap-0.5 sm:gap-2 mb-0.5">
+                                    <h4 className="font-medium text-[13px] sm:text-[14px] tracking-tight text-foreground/90 truncate">{displaySlug}</h4>
+                                    <Badge className={cn("w-fit font-medium rounded-[6px] text-[9px] sm:text-[10px] px-1.5 py-0 uppercase", getStatusColor(event.status))}>
                                       {event.status}
                                     </Badge>
                                   </div>
-                                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-3 text-[9px] sm:text-[12px] text-muted-foreground font-medium">
+                                  <div className="flex flex-wrap items-center font-normal text-[11px] sm:text-[12px] gap-1.5 sm:gap-2 text-muted-foreground">
                                     <span className="flex items-center gap-1">
-                                      <Clock size={9} className="sm:size-3 text-muted-foreground/60" />
+                                      <Clock size={10} className="sm:size-3 text-muted-foreground/60" />
                                       {new Date(event.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                     <span className="flex items-center gap-1">
-                                      <Calendar size={9} className="sm:size-3 text-muted-foreground/60" />
+                                      <Calendar size={10} className="sm:size-3 text-muted-foreground/60" />
                                       {new Date(event.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}
                                     </span>
                                   </div>
@@ -543,12 +543,12 @@ export default function EventsPage() {
 
                               {isExpanded && (
                                 <div className="border-t border-border bg-muted/30 relative z-10">
-                                    <div className="p-3 sm:p-5 space-y-3 sm:space-y-4">
-                                      <div className="space-y-1.5 sm:space-y-2">
+                                    <div className="p-2 sm:p-3 space-y-2 sm:space-y-3">
+                                      <div className="space-y-1.5">
                                         <div className="flex items-center justify-between">
-                                          <h5 className="text-[9px] sm:text-[11px] uppercase tracking-widest font-extrabold text-muted-foreground">Payload Inspection</h5>
+                                          <h5 className="text-[10px] sm:text-[11px] uppercase tracking-widest font-semibold text-muted-foreground">Payload Inspection</h5>
                                         </div>
-                                        <div className="rounded-lg border border-border bg-background p-3 sm:p-4 font-mono text-[10px] sm:text-[12px] text-foreground shadow-inner relative">
+                                        <div className="rounded-[12px] border border-border bg-background p-2 sm:p-3 font-mono text-[10px] sm:text-[12px] text-foreground shadow-inner relative">
                                           <div className="max-h-[300px] sm:max-h-[500px] overflow-y-auto custom-scrollbar overflow-x-hidden">
                                             <pre className="relative z-10 text-foreground whitespace-pre-wrap break-all pr-2">{JSON.stringify(event.payload, null, 2)}</pre>
                                           </div>
@@ -564,9 +564,9 @@ export default function EventsPage() {
 
                     {/* Pagination Controls */}
                     {totalPages > 1 && (
-                      <div className="flex items-center justify-between px-3 sm:px-6 py-4 bg-muted/10 border border-border rounded-xl mt-4">
-                        <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                          Showing <span className="text-foreground font-bold">{Math.min(eventLogs.length, (currentPage - 1) * itemsPerPage + 1)}-{Math.min(eventLogs.length, currentPage * itemsPerPage)}</span> of <span className="text-foreground font-bold">{eventLogs.length}</span> signals
+                      <div className="flex items-center justify-between px-2 sm:px-3 py-2 sm:py-3 bg-muted/10 border border-border rounded-2xl mt-2">
+                        <p className="text-[11px] sm:text-[12px] font-normal text-muted-foreground">
+                          Showing <span className="text-foreground font-semibold">{Math.min(eventLogs.length, (currentPage - 1) * itemsPerPage + 1)}-{Math.min(eventLogs.length, currentPage * itemsPerPage)}</span> of <span className="text-foreground font-semibold">{eventLogs.length}</span> signals
                         </p>
                         <div className="flex items-center gap-2">
                           <Button 
@@ -574,11 +574,11 @@ export default function EventsPage() {
                             size="sm" 
                             disabled={currentPage === 1}
                             onClick={() => setCurrentPage(prev => prev - 1)}
-                            className="h-8 px-3 rounded-lg border-border text-[10px] sm:text-xs transition-all active:scale-95 disabled:opacity-50"
+                            className="h-7 px-2.5 rounded-[10px] text-[11px] sm:text-[12px] font-medium border-border transition-all active:scale-[1] disabled:opacity-50"
                           >
                             Previous
                           </Button>
-                          <div className="flex items-center justify-center min-w-[60px] text-[10px] sm:text-xs font-bold text-muted-foreground">
+                          <div className="flex items-center justify-center min-w-[50px] font-medium text-[11px] sm:text-[12px] text-muted-foreground">
                             {currentPage} / {totalPages}
                           </div>
                           <Button 
@@ -586,7 +586,7 @@ export default function EventsPage() {
                             size="sm" 
                             disabled={currentPage === totalPages}
                             onClick={() => setCurrentPage(prev => prev + 1)}
-                            className="h-8 px-3 rounded-lg border-border text-[10px] sm:text-xs transition-all active:scale-95 disabled:opacity-50"
+                            className="h-7 px-2.5 rounded-[10px] text-[11px] sm:text-[12px] font-medium border-border transition-all active:scale-[1] disabled:opacity-50"
                           >
                             Next
                           </Button>

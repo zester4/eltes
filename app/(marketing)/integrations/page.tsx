@@ -32,7 +32,7 @@ export default function IntegrationsPage() {
         <div className="relative z-10 max-w-4xl mt-6 lg:mt-0">
           <div className="liquid-glass rounded-full px-3 py-1 mb-4 md:mb-6 inline-block">
              <span className="font-body text-[10px] text-white uppercase tracking-widest flex items-center gap-1.5 md:gap-2">
-                <Globe className="w-3 h-3" /> 500+ Toolkits
+                <Globe className="w-3 h-3" /> 1000+ Toolkits
              </span>
           </div>
           <BlurText 
@@ -40,7 +40,7 @@ export default function IntegrationsPage() {
             className="text-2xl sm:text-4xl md:text-6xl font-heading italic text-white leading-tight tracking-tight md:tracking-[-2px] mb-4 md:mb-6"
           />
           <p className="font-body font-light text-white/60 text-sm md:text-lg max-w-xl mx-auto leading-relaxed mb-6 md:mb-10 px-2">
-            1,000+ integrations via Composio. Your agents don't need you to migrate to a new tool — they come to yours.
+            1,000+ integrations. Your agents don't need you to migrate to a new tool — they come to yours.
           </p>
         </div>
       </section>

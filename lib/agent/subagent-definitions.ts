@@ -1,5 +1,5 @@
 /**
- * 25 sub-agent definitions from SUBAGENTS_PLAN.md.
+ * 25+ sub-agent definitions from SUBAGENTS_PLAN.md.
  * Each agent has: slug, name, description, system prompt, and Composio toolkit hints.
  */
 

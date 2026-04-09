@@ -36,7 +36,7 @@ export default function LandingPage() {
             className="liquid-glass rounded-full px-1 py-1 md:px-1.5 md:py-1.5 inline-flex items-center gap-2 md:gap-3 mb-6 md:mb-8 max-w-full overflow-hidden"
           >
             <span className="bg-white text-black font-body text-[8px] md:text-xs font-bold md:font-semibold px-2 md:px-2.5 py-0.5 md:py-1 rounded-full uppercase tracking-wider shrink-0">New</span>
-            <span className="text-white/80 font-body text-[10px] md:text-sm pr-2 truncate">Introducing Etles — connected to 700+ tools.</span>
+            <span className="text-white/80 font-body text-[10px] md:text-sm pr-2 truncate">Introducing Etles — connected to 1000+ tools.</span>
           </motion.div>
 
           <BlurText 
@@ -50,7 +50,7 @@ export default function LandingPage() {
             transition={{ delay: 0.8, duration: 1 }}
             className="font-body font-light text-white/60 text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-8 md:mb-10"
           >
-            Natural language automation. 700+ tool integrations. Real-time event monitoring that actually works. This is AI agents, wildly reimagined.
+            Natural language automation. 1000+ tool integrations. Real-time event monitoring that actually works. This is AI agents, wildly reimagined.
           </motion.p>
 
           <motion.div 
@@ -119,7 +119,7 @@ export default function LandingPage() {
            </h2>
            
            <p className="font-body font-light text-white/60 text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-8 md:mb-10">
-             Tell Etles what you need in natural language. Our AI connects 700+ tools, builds workflows, monitors every event, and executes — all in minutes, not months.
+             Tell Etles what you need in natural language. Our AI connects 1000+ tools, builds workflows, monitors every event, and executes — all in minutes, not months.
            </p>
            
            <Link 
@@ -171,7 +171,7 @@ export default function LandingPage() {
           <div className="flex-1 flex flex-col items-start text-left">
             <h3 className="text-2xl md:text-3xl font-heading italic text-white mb-4 md:mb-6">Real-time Event Monitors</h3>
             <p className="font-body font-light text-white/60 text-base md:text-lg leading-relaxed mb-6 md:mb-8">
-              Set it and forget it. Etles listens for triggers across 700+ apps. When a high-priority ticket opens in Linear, your agent handles it instantly.
+              Set it and forget it. Etles listens for triggers across 1000+ apps. When a high-priority ticket opens in Linear, your agent handles it instantly.
             </p>
             <Link href="/chat" className="liquid-glass rounded-full px-5 md:px-6 py-2.5 md:py-3 font-body text-xs md:text-sm font-medium text-white hover:bg-white/5 transition-colors">
               View Triggers
@@ -203,7 +203,7 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 max-w-7xl mx-auto w-full">
           {[
-            { title: "700+ Integrations", desc: "Composio native integration puts the internet at your command." },
+            { title: "1000+ Integrations", desc: "Composio native integration puts the internet at your command." },
             { title: "Semantic Memory", desc: "Vector database integration means Etles remembers everything." },
             { title: "Cron Scheduling", desc: "Conversational scheduling via Upstash QStash. No crontab required." },
             { title: "Generative UI", desc: "Agents stream custom interactive components directly to your chat." }
@@ -225,7 +225,7 @@ export default function LandingPage() {
         
         <div className="relative z-10 w-full max-w-5xl liquid-glass rounded-[24px] md:rounded-[40px] p-8 md:p-20 grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-12 text-center">
           {[
-            { stat: "700+", label: "Integrated Tools", color: "from-amber-400 to-amber-600" },
+            { stat: "1000+", label: "Integrated Tools", color: "from-amber-400 to-amber-600" },
             { stat: "< 2ms", label: "Event Latency", color: "from-blue-400 to-blue-600" },
             { stat: "16+", label: "Specialized Agents", color: "from-emerald-400 to-emerald-600" }
           ].map((s) => (

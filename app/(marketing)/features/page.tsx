@@ -103,7 +103,7 @@ export default function FeaturesPage() {
               </div>
               <h2 className="text-2xl md:text-4xl font-heading italic text-white mb-3 md:mb-6">Autonomous Workflow Execution</h2>
               <p className="font-body font-light text-white/60 text-sm md:text-base leading-relaxed mb-4 md:mb-8">
-                Etles plans and executes complex, multi-step tasks across over 700+ tools. It doesn't just suggest actions; it takes them on your behalf safely and efficiently.
+                Etles plans and executes complex, multi-step tasks across over 1000+ tools. It doesn't just suggest actions; it takes them on your behalf safely and efficiently.
               </p>
               <ul className="space-y-2 md:space-y-4 font-body text-white/70 text-xs md:text-sm">
                 <li className="flex items-center gap-2 md:gap-3"><div className="w-1.5 h-1.5 rounded-full bg-white" /> Planning & Execution Loops</li>

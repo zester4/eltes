@@ -55,6 +55,33 @@ export const chatModels: ChatModel[] = [
     provider: "google",
     description: "Latest lightweight preview model",
   },
+  {
+    id: "google/gemma-4-26b-a4b-it",
+    name: "Gemma 4 26B",
+    provider: "google",
+    description: "Gemma 4 open weights model",
+  },
+  // DeepSeek
+  {
+    id: "deepseek/deepseek-v3.2",
+    name: "DeepSeek V3.2",
+    provider: "deepseek",
+    description: "Powerful open-source model",
+  },
+  // Perplexity
+  {
+    id: "perplexity/sonar",
+    name: "Sonar",
+    provider: "perplexity",
+    description: "Search-augmented model",
+  },
+  // NVIDIA
+  {
+    id: "nvidia/nemotron-3-nano-30b-a3b",
+    name: "Nemotron 3 Nano",
+    provider: "nvidia",
+    description: "Compact efficient model",
+  },
   // MoonshotAI
   {
     id: "moonshotai/kimi-k2.5",
@@ -96,6 +123,18 @@ export const chatModels: ChatModel[] = [
     description: "Fast with 30K context",
   },
   // Reasoning models (extended thinking)
+  {
+    id: "google/gemini-3.1-pro-preview",
+    name: "Gemini 3.1 Pro",
+    provider: "reasoning",
+    description: "Google reasoning preview",
+  },
+  {
+    id: "deepseek/deepseek-v3.2-thinking",
+    name: "DeepSeek V3.2 Thinking",
+    provider: "reasoning",
+    description: "DeepSeek extended thinking",
+  },
   {
     id: "anthropic/claude-3.7-sonnet-thinking",
     name: "Claude 3.7 Sonnet",

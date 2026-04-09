@@ -10,7 +10,7 @@ import { SessionProvider } from "next-auth/react";
 export const metadata: Metadata = {
   metadataBase: new URL("https://etles.vercel.app"),
   title: "EtlesAgent",
-  description: "Etles AI Agent connected to 700+ tools.",
+  description: "Etles AI Agent connected to 1000+ tools.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

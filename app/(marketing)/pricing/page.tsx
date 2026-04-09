@@ -32,7 +32,7 @@ export default function PricingPage() {
                <span className="text-white/40 font-body text-xs md:text-sm">/mo</span>
             </div>
             <ul className="space-y-3 md:space-y-4 mb-8 md:mb-12 w-full">
-              {['1 Active Agent', '50 Workflow steps/mo', '700+ Integrations', 'Standard Support'].map(f => (
+              {['1 Active Agent', '50 Workflow steps/mo', '1000+ Integrations', 'Standard Support'].map(f => (
                 <li key={f} className="flex items-center gap-3 text-white/60 font-body text-xs md:text-sm">
                    <Check className="w-3.5 h-3.5 md:w-4 md:h-4 text-white/20" /> {f}
                 </li>

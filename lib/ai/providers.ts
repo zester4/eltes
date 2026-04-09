@@ -39,7 +39,9 @@ export function getLanguageModel(modelId: string) {
     (modelId.includes("reasoning") && !modelId.includes("non-reasoning"));
 
   if (isReasoningModel) {
-    const gatewayModelId = modelId.replace(THINKING_SUFFIX_REGEX, "");
+    const gatewayModelId = modelId
+      .replace(THINKING_SUFFIX_REGEX, "")
+      .replace("-reasoning", "");
 
     return wrapLanguageModel({
       model: gateway.languageModel(gatewayModelId),
