@@ -71,7 +71,12 @@ import {
   gitPush,
   gitPull,
   gitBranch,
+  getPreviewLink,
+  runBackgroundProcess,
+  lspDiagnostics,
+  archiveSandbox,
 } from "@/lib/ai/tools/daytona";
+import * as twilio from "@/lib/ai/tools/twilio";
 import * as browserUseTools from "@/lib/ai/tools/browser-use";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 
@@ -145,6 +150,22 @@ export function buildEtlesTelegramTools({
     gitPush: gitPush({ userId }),
     gitPull: gitPull({ userId }),
     gitBranch: gitBranch({ userId }),
+    getPreviewLink: getPreviewLink({ userId }),
+    runBackgroundProcess: runBackgroundProcess({ userId }),
+    lspDiagnostics: lspDiagnostics({ userId }),
+    archiveSandbox: archiveSandbox({ userId }),
+    twilioMakeCall: twilio.twilioMakeCall({ userId }),
+    twilioGetCall: twilio.twilioGetCall({ userId }),
+    twilioListCalls: twilio.twilioListCalls({ userId }),
+    twilioModifyCall: twilio.twilioModifyCall({ userId }),
+    twilioSendSMS: twilio.twilioSendSMS({ userId }),
+    twilioGetMessage: twilio.twilioGetMessage({ userId }),
+    twilioListMessages: twilio.twilioListMessages({ userId }),
+    twilioListMyNumbers: twilio.twilioListMyNumbers({ userId }),
+    twilioSearchAvailableNumbers: twilio.twilioSearchAvailableNumbers({ userId }),
+    twilioProvisionNumber: twilio.twilioProvisionNumber({ userId }),
+    twilioReleaseNumber: twilio.twilioReleaseNumber({ userId }),
+    twilioGetUsage: twilio.twilioGetMessage({ userId }),
     browserUseRunTask: browserUseTools.browserUseRunTask(),
     browserUseStartTask: browserUseTools.browserUseStartTask(),
     browserUseGetTask: browserUseTools.browserUseGetTask(),

@@ -54,6 +54,7 @@ import {
 import * as daytonaTools from "@/lib/ai/tools/daytona";
 import * as browserUseTools from "@/lib/ai/tools/browser-use";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
+import * as twilio from "@/lib/ai/tools/twilio";
 
 const composio = new Composio({ provider: new VercelProvider() });
 
@@ -153,6 +154,20 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
     tavilyExtract,
     tavilyCrawl,
     tavilyMap,
+
+    // Twilio Voice & SMS Tools (Global)
+    twilioMakeCall: twilio.twilioMakeCall({ userId }),
+    twilioGetCall: twilio.twilioGetCall({ userId }),
+    twilioListCalls: twilio.twilioListCalls({ userId }),
+    twilioModifyCall: twilio.twilioModifyCall({ userId }),
+    twilioSendSMS: twilio.twilioSendSMS({ userId }),
+    twilioGetMessage: twilio.twilioGetMessage({ userId }),
+    twilioListMessages: twilio.twilioListMessages({ userId }),
+    twilioListMyNumbers: twilio.twilioListMyNumbers({ userId }),
+    twilioSearchAvailableNumbers: twilio.twilioSearchAvailableNumbers({ userId }),
+    twilioProvisionNumber: twilio.twilioProvisionNumber({ userId }),
+    twilioReleaseNumber: twilio.twilioReleaseNumber({ userId }),
+    twilioGetUsage: twilio.twilioGetMessage({ userId }),
 
     // Daytona Sandbox Tools (Sandbox Specialist + Browser Operator for Playwright sessions)
     ...(agentType === "sandbox_specialist" || agentType === "browser_operator"
