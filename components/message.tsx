@@ -162,7 +162,7 @@ const PurePreviewMessage = ({
                 ) ||
                   message.parts?.some((p) => p.type.startsWith("tool-")))) ||
               mode === "edit",
-            "max-w-[calc(100%-2.5rem)] sm:max-w-[min(fit-content,80%)]":
+            "max-w-[calc(100%-2.5rem)] sm:max-w-[80%]":
               message.role === "user" && mode !== "edit",
             "items-end": message.role === "user" && mode !== "edit",
           })}
@@ -250,7 +250,7 @@ const PurePreviewMessage = ({
                   {conversationalText.trim() && (
                     <MessageContent
                       className={cn({
-                        "wrap-break-word w-fit max-w-[90%] rounded-2xl px-2.5 py-2 text-left bg-zinc-800 text-zinc-100 text-[13px] leading-relaxed border border-white/[0.05] shadow-sm ml-auto":
+                        "break-words w-fit min-w-[32px] max-w-full rounded-2xl px-3 py-2 text-left bg-zinc-800 text-zinc-100 text-[13px] leading-relaxed border border-white/[0.05] shadow-sm ml-auto":
                           message.role === "user",
                         "bg-transparent px-0 py-0 text-left w-full text-[13px]":
                           message.role === "assistant",

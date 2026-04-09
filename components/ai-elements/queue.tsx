@@ -75,7 +75,7 @@ export const QueueItemContent = ({
 }: QueueItemContentProps) => (
   <span
     className={cn(
-      "wrap-break-word line-clamp-1 grow",
+      "break-words line-clamp-1 grow",
       completed
         ? "text-muted-foreground/50 line-through"
         : "text-muted-foreground",

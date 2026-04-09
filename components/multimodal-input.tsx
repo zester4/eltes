@@ -482,9 +482,16 @@ function PureMultimodalInput({
               selectedModelId={selectedModelId}
               status={status}
             />
+            <ModelSelectorCompact
+              onModelChange={onModelChange}
+              selectedModelId={selectedModelId}
+            />
+          </PromptInputTools>
+
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               className={cn(
-                "aspect-square h-7 rounded-md p-1 transition-colors hover:bg-accent",
+                "aspect-square h-8 rounded-lg p-1 transition-colors hover:bg-accent",
                 isRecording && "animate-pulse text-red-500 hover:text-red-600"
               )}
               data-testid="mic-button"
@@ -496,18 +503,13 @@ function PureMultimodalInput({
               title={isRecording ? "Stop recording" : "Start recording"}
               variant="ghost"
             >
-              <MicIcon size={14} style={{ width: 14, height: 14 }} />
+              <MicIcon size={16} />
             </Button>
-            <ModelSelectorCompact
-              onModelChange={onModelChange}
-              selectedModelId={selectedModelId}
-            />
-          </PromptInputTools>
 
-          {status === "submitted" || status === "streaming" ? (
-            <StopButton setMessages={setMessages} stop={stop} />
-          ) : (
-            <PromptInputSubmit
+            {status === "submitted" || status === "streaming" ? (
+              <StopButton setMessages={setMessages} stop={stop} />
+            ) : (
+              <PromptInputSubmit
               className="size-8 rounded-lg bg-primary text-primary-foreground transition-colors duration-200 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
               data-testid="send-button"
               disabled={!input.trim() || uploadQueue.length > 0}
@@ -515,7 +517,8 @@ function PureMultimodalInput({
             >
               <ArrowUpIcon size={14} />
             </PromptInputSubmit>
-          )}
+            )}
+          </div>
         </PromptInputToolbar>
       </PromptInput>
     </div>
