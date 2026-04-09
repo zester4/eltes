@@ -102,14 +102,14 @@ export default function ProfilePage() {
             </CardHeader>
 
             <CardContent className="px-3 sm:px-6 pb-6 sm:pb-8 border-t border-border bg-muted/30 relative z-10">
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 py-4 sm:py-6">
-                <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-card border border-border text-center group transition-colors">
-                   <p className="text-[8px] sm:text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-0.5 sm:mb-1 group-hover:text-primary transition-colors">Total Signals</p>
-                   <p className="text-lg sm:text-xl font-bold text-foreground">1.2k</p>
+              <div className="grid grid-cols-2 gap-3 py-4 sm:py-5">
+                <div className="p-3 sm:p-3.5 rounded-[14px] bg-card border border-border text-center group transition-colors">
+                   <p className="text-[8.5px] uppercase tracking-wider font-bold text-muted-foreground mb-0.5 group-hover:text-primary transition-colors">Total Signals</p>
+                   <p className="text-lg font-bold text-foreground">1.2k</p>
                 </div>
-                <div className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-card border border-border text-center group transition-colors">
-                   <p className="text-[8px] sm:text-[10px] uppercase tracking-wider font-bold text-muted-foreground mb-0.5 sm:mb-1 group-hover:text-primary transition-colors">Agent Tasks</p>
-                   <p className="text-lg sm:text-xl font-bold text-foreground">482</p>
+                <div className="p-3 sm:p-3.5 rounded-[14px] bg-card border border-border text-center group transition-colors">
+                   <p className="text-[8.5px] uppercase tracking-wider font-bold text-muted-foreground mb-0.5 group-hover:text-primary transition-colors">Agent Tasks</p>
+                   <p className="text-lg font-bold text-foreground">482</p>
                 </div>
               </div>
 
@@ -126,18 +126,18 @@ export default function ProfilePage() {
                     { label: "Member Since", value: "March 2024", icon: ShieldCheck },
                   ].map((item, idx) => (
                     <div key={item.label}>
-                      <div className="flex items-center justify-between p-3 sm:p-4 rounded-lg sm:rounded-xl bg-card border border-border hover:bg-muted/50 transition-all group">
-                        <div className="flex items-center gap-3 sm:gap-4">
-                          <div className="size-8 sm:size-10 rounded-lg bg-muted/50 border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
-                            <item.icon className="size-4 sm:size-5" />
+                      <div className="flex items-center justify-between p-3 rounded-[14px] bg-card border border-border hover:bg-muted/50 transition-all group">
+                        <div className="flex items-center gap-3">
+                          <div className="size-8 rounded-[10px] bg-muted/50 border border-border flex items-center justify-center text-muted-foreground group-hover:text-primary transition-colors">
+                            <item.icon className="size-4" />
                           </div>
                           <div>
-                            <p className="text-[8px] sm:text-[10px] uppercase tracking-wider font-bold text-muted-foreground">{item.label}</p>
-                            <p className="text-xs sm:text-sm font-bold text-foreground">{item.value}</p>
+                            <p className="text-[8.5px] uppercase tracking-wider font-bold text-muted-foreground">{item.label}</p>
+                            <p className="text-[13px] font-bold text-foreground">{item.value}</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="size-7 sm:size-8 rounded-lg text-muted-foreground/30 hover:text-primary">
-                          <ChevronRight className="size-3.5 sm:size-4" />
+                        <Button variant="ghost" size="icon" className="size-7 rounded-lg text-muted-foreground/30 hover:text-primary">
+                          <ChevronRight className="size-3.5" />
                         </Button>
                       </div>
                     </div>

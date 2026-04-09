@@ -173,15 +173,70 @@ export async function POST(
         await sendLongMessage(
           botToken,
           telegramChatId,
-          "🤖 <b>What I can do:</b>\n\n" +
+          "🤖 **What I can do:**\n\n" +
           "• Answer questions instantly\n" +
           "• Remember things for you\n" +
           "• Set reminders and recurring tasks\n" +
           "• Research topics in depth\n" +
           "• Perform multi-step tasks (even hours-long ones)\n" +
           "• Ask for your approval before irreversible actions\n\n" +
-          "<b>Commands:</b>\n/start — Reset conversation\n/help — Show this message\n/status — Verify integration is working",
+          "**Commands:**\n/start — Reset conversation\n/help — Show this message\n/status — Verify integration is working\n/automations — View scheduled tasks\n/goals — View memory goals",
         );
+        return;
+      }
+
+      if (userText === "/automations" || userText === "/scheduled") {
+        const { getAgentStatus } = await import("@/lib/db/queries/agent-status");
+        try {
+          const status = await getAgentStatus(ownerUserId);
+          let msg = `⚙️ **Your Automations**\n\n`;
+          msg += `**Heartbeat:** ${status.heartbeat.status}\n`;
+          msg += `**Connected Apps:** ${status.integrations.length}\n`;
+          
+          const crons = status.cronJobs.filter((j: any) => j.status === "active" || j.status === "pending" || j.cron);
+          if (crons.length > 0) {
+            msg += `\n**Active/Recurring Jobs:**\n`;
+            crons.forEach((job: any) => {
+              msg += `• ${job.task}${job.cron ? ` (${job.cron})` : ""}\n`;
+            });
+          } else {
+             msg += `\nNo active jobs scheduled.`;
+          }
+          await sendLongMessage(botToken, telegramChatId, msg);
+        } catch (err) {
+          console.error("Failed to fetch automations", err);
+          await sendLongMessage(botToken, telegramChatId, "Failed to load automations.");
+        }
+        return;
+      }
+
+      if (userText === "/goals") {
+        let goalsText = "🎯 **Your Memory Goals**\n\n";
+        if (redis) {
+          try {
+            const ids = await redis.smembers<string[]>(`goals:${ownerUserId}:ids`);
+            if (!ids || ids.length === 0) {
+              goalsText += "You have no goals set.";
+            } else {
+              const goalsTextBlocks = [];
+              for (const id of ids) {
+                const goalStr = await redis.get<string>(`goals:${ownerUserId}:item:${id}`);
+                if (goalStr) {
+                  const goal = typeof goalStr === "string" ? JSON.parse(goalStr) : goalStr;
+                  const icon = goal.status === "completed" ? "✅" : goal.status === "paused" ? "⏸️" : goal.status === "archived" ? "🗄️" : "🚀";
+                  goalsTextBlocks.push(`${icon} **${goal.title}**\n  Priority: ${goal.priority} | Progress: ${goal.progress}%`);
+                }
+              }
+              goalsText += goalsTextBlocks.length > 0 ? goalsTextBlocks.join("\n\n") : "No active goals found.";
+            }
+          } catch(e) {
+            console.error("Failed to fetch goals", e);
+            goalsText += "Failed to load goals.";
+          }
+        } else {
+          goalsText += "Redis not configured.";
+        }
+        await sendLongMessage(botToken, telegramChatId, goalsText);
         return;
       }
 

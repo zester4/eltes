@@ -250,9 +250,9 @@ const PurePreviewMessage = ({
                   {conversationalText.trim() && (
                     <MessageContent
                       className={cn({
-                        "wrap-break-word w-fit max-w-[90%] rounded-xl px-3 py-2 text-left bg-zinc-800 text-zinc-100 text-[13px] leading-relaxed border border-white/[0.05] shadow-sm ml-auto":
+                        "wrap-break-word w-fit max-w-[90%] rounded-2xl px-2.5 py-2 text-left bg-zinc-800 text-zinc-100 text-[13px] leading-relaxed border border-white/[0.05] shadow-sm ml-auto":
                           message.role === "user",
-                        "bg-transparent px-0 py-0 text-left w-full text-sm":
+                        "bg-transparent px-0 py-0 text-left w-full text-[13px]":
                           message.role === "assistant",
                       })}
                       data-testid="message-content"

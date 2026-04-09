@@ -30,13 +30,15 @@ export type AgentStatusData = {
   }[];
 };
 
-export async function getAgentStatus(): Promise<AgentStatusData> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+export async function getAgentStatus(serverUserId?: string): Promise<AgentStatusData> {
+  let userId = serverUserId;
+  if (!userId) {
+    const session = await auth();
+    if (!session?.user?.id) {
+      throw new Error("Unauthorized");
+    }
+    userId = session.user.id;
   }
-
-  const userId = session.user.id;
 
   // Instantiate Redis per-request to avoid build-time null (module-level init
   // can run when env vars are unavailable on Vercel's build phase).

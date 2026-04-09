@@ -378,10 +378,10 @@ export function SubAgentChat({
                           <div
                             key={key}
                             className={cn(
-                              "text-xs sm:text-[13px] leading-relaxed",
+                              "text-[13px] leading-relaxed",
                               message.role === "user"
-                                ? "bg-primary text-primary-foreground px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl rounded-tr-sm shadow-sm"
-                                : "bg-transparent w-full",
+                                ? "bg-primary text-primary-foreground px-2.5 py-2 rounded-2xl rounded-tr-[4px] shadow-sm"
+                                : "bg-transparent w-full text-[13px]",
                             )}
                           >
                             {message.role === "user" ? (

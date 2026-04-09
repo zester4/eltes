@@ -91,26 +91,26 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
 
   return (
     <div
-      className="not-prose my-2 w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] backdrop-blur-xl transition-all hover:bg-white/[0.05]"
+      className="not-prose my-1.5 w-full max-w-2xl overflow-hidden rounded-[14px] border border-white/5 bg-white/[0.02] backdrop-blur-xl transition-all hover:bg-white/[0.04]"
       data-agent-task-id={taskId}
     >
       <div
-        className="flex cursor-pointer items-center gap-3 p-3 select-none"
+        className="flex cursor-pointer items-center gap-2.5 p-2.5 select-none"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/40 shadow-inner">
-          <Bot size={16} className="text-primary" />
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/40 shadow-inner">
+          <Bot size={14} className="text-primary" />
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-0.5">
-            <h4 className="font-bold text-sm tracking-tight text-white/90">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 mb-0.5">
+            <h4 className="font-bold text-[13px] tracking-tight text-white/90">
               {agent.agentType}
             </h4>
             <Badge
               variant="outline"
               className={cn(
-                "w-fit text-[9px] px-1.5 py-0 rounded-md font-medium tracking-wide font-mono",
+                "w-fit text-[8.5px] px-1.5 py-0 rounded-[5px] font-medium tracking-wide font-mono",
                 status === "running" || status === "pending"
                   ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
                   : status === "failed"
@@ -136,17 +136,17 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
               )}
             </Badge>
           </div>
-          <p className="text-[12px] text-zinc-400 mt-0.5 line-clamp-1">
+          <p className="text-[11px] text-zinc-400 mt-0.5 line-clamp-1">
             {agent.task}
           </p>
           {agent.timestamp && (
-            <p className="text-[11px] text-zinc-500 mt-1">{agent.timestamp}</p>
+            <p className="text-[10px] text-zinc-500 mt-1">{agent.timestamp}</p>
           )}
         </div>
 
         <div
           className={cn(
-            "flex size-6 items-center justify-center rounded-full bg-white/5 text-zinc-500 transition-all",
+            "flex size-5 items-center justify-center rounded-full bg-white/5 text-zinc-500 transition-all",
             isExpanded && "bg-primary/20 text-primary rotate-180"
           )}
         >
@@ -163,9 +163,9 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
             transition={{ duration: 0.2, ease: "easeInOut" }}
             className="overflow-hidden border-t border-white/5 bg-black/60"
           >
-            <div className="p-3 space-y-2">
+            <div className="p-2.5 space-y-1.5">
               {isResult(agent) && (agent.result || agent.error) && (
-                <div className="rounded-lg border border-white/5 bg-[#080808] p-3 text-[14px] text-zinc-300 overflow-x-auto">
+                <div className="rounded-[10px] border border-white/5 bg-[#080808] p-2.5 text-[13px] text-zinc-300 overflow-x-auto">
                   {agent.error ? (
                     <span className="text-red-400 font-mono text-[12px] whitespace-pre-wrap">{agent.error}</span>
                   ) : (
@@ -203,40 +203,40 @@ export const AgentActionCard = ({ agent }: { agent: AgentActionData }) => {
 
 export const AgentMessageBubble = ({ agent }: { agent: AgentResultData }) => {
   return (
-    <div className="not-prose my-2 w-full max-w-2xl overflow-hidden rounded-xl border border-white/10 bg-[#0a0a0a] p-4 shadow-sm transition-all focus-within:ring-1 focus-within:ring-primary/20">
-      <div className="flex items-center gap-3 mb-3">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/60 shadow-inner">
-          <Bot size={16} className="text-primary" />
+    <div className="not-prose my-1.5 w-full max-w-2xl overflow-hidden rounded-[14px] border border-white/5 bg-[#0a0a0a] p-3 shadow-sm transition-all focus-within:ring-1 focus-within:ring-primary/20">
+      <div className="flex items-center gap-2.5 mb-2.5">
+        <div className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-black/60 shadow-inner">
+          <Bot size={14} className="text-primary" />
         </div>
-        <div className="flex-1 min-w-0 flex items-center gap-2">
-          <span className="text-sm font-bold tracking-tight text-white/90">{agent.agentType}</span>
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          <span className="text-[13px] font-bold tracking-tight text-white/90">{agent.agentType}</span>
           <Badge
             variant="outline"
-            className="w-fit text-[9px] px-1.5 py-0 rounded-md font-medium tracking-wide font-mono border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+            className="w-fit text-[8.5px] px-1.5 py-0 rounded-[5px] font-medium tracking-wide font-mono border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
           >
             <CheckCircle size={10} className="mr-0.5" />
             COMPLETED
           </Badge>
         </div>
       </div>
-      <div className="mt-2 border-t border-white/5 pt-3 w-full text-sm">
+      <div className="mt-1.5 border-t border-white/5 pt-2.5 w-full text-[13px]">
         {agent.error ? (
-          <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-[14px] text-red-400 font-mono text-[12px] whitespace-pre-wrap">
+          <div className="rounded-[10px] bg-red-500/10 border border-red-500/20 p-2.5 text-[13px] text-red-400 font-mono whitespace-pre-wrap">
             {agent.error}
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             {(() => {
               const { text, imageUrl, videoUrl } = extractMediaAndText(agent.result!);
               return (
                 <>
                   {imageUrl && <FeaturedImage url={imageUrl} />}
                   {videoUrl && (
-                    <div className="w-full h-auto mb-4">
+                    <div className="w-full h-auto mb-3">
                       <Video url={videoUrl} />
                     </div>
                   )}
-                  <div className="prose prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-white/5 prose-pre:border border-white/10">
+                  <div className="prose prose-sm prose-invert max-w-none text-[13px] prose-p:leading-relaxed prose-pre:bg-white/5 prose-pre:border border-white/10">
                     <Response>{text}</Response>
                   </div>
                 </>
@@ -246,7 +246,7 @@ export const AgentMessageBubble = ({ agent }: { agent: AgentResultData }) => {
         )}
       </div>
       {agent.timestamp && (
-        <div className="mt-3 text-[10px] text-zinc-500 font-mono">
+        <div className="mt-2 text-[9px] text-zinc-500 font-mono">
           {new Date(agent.timestamp).toLocaleString()}
         </div>
       )}
