@@ -3,7 +3,7 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { UIMessage } from "ai";
 import equal from "fast-deep-equal";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, MicIcon } from "lucide-react";
 import {
   type ChangeEvent,
   type Dispatch,
@@ -52,6 +52,20 @@ function setCookie(name: string, value: string) {
   // biome-ignore lint/suspicious/noDocumentCookie: needed for client-side cookie setting
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}`;
 }
+
+// Helper to convert Blob to Base64
+const blobToBase64 = (blob: Blob): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64data = reader.result?.toString().split(",")[1];
+      if (base64data) resolve(base64data);
+      else reject(new Error("Failed to convert blob to base64"));
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
 
 function PureMultimodalInput({
   chatId,
@@ -295,6 +309,90 @@ function PureMultimodalInput({
     return () => textarea.removeEventListener("paste", handlePaste);
   }, [handlePaste]);
 
+  // Audio Recording State and Refs
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const isStoppingRef = useRef(false);
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+        },
+      });
+      // Try to use a lower bitrate if supported to speed up upload
+      const options = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 16000 }
+        : undefined;
+      const mediaRecorder = new MediaRecorder(stream, options);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      isStoppingRef.current = false;
+
+      mediaRecorder.ondataavailable = async (event) => {
+        if (event.data.size === 0) return;
+        if (isStoppingRef.current) return;
+
+        audioChunksRef.current.push(event.data);
+
+        // Build a rolling blob of all chunks so far for better context
+        const rollingBlob = new Blob(audioChunksRef.current, {
+          type: mediaRecorder.mimeType,
+        });
+
+        const mimeType = mediaRecorder.mimeType;
+
+        try {
+          const base64Audio = await blobToBase64(rollingBlob);
+          const response = await fetch("/api/transcribe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ audioData: base64Audio, mimeType }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.text) {
+              // Replace input with latest full transcription (rolling window covers full speech so far)
+              setInput(data.text);
+            }
+          } else {
+            console.error("Transcription failed", await response.text());
+          }
+        } catch (err) {
+          console.error("Transcription error", err);
+        }
+      };
+
+      mediaRecorder.start(1500); // fire ondataavailable every 1.5s while recording
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Microphone error", err);
+      toast.error("Microphone access denied or unavailable.");
+    }
+  }, [setInput]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current && isRecording) {
+      isStoppingRef.current = true;
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach((t) => t.stop());
+      audioChunksRef.current = []; // clear for next session
+      setIsRecording(false);
+    }
+  }, [isRecording]);
+
+  const toggleRecording = useCallback(() => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  }, [isRecording, startRecording, stopRecording]);
+
   return (
     <div className={cn("relative flex w-full flex-col gap-3", className)}>
       {messages.length === 0 &&
@@ -384,6 +482,22 @@ function PureMultimodalInput({
               selectedModelId={selectedModelId}
               status={status}
             />
+            <Button
+              className={cn(
+                "aspect-square h-7 rounded-md p-1 transition-colors hover:bg-accent",
+                isRecording && "animate-pulse text-red-500 hover:text-red-600"
+              )}
+              data-testid="mic-button"
+              disabled={status !== "ready"}
+              onClick={(event) => {
+                event.preventDefault();
+                toggleRecording();
+              }}
+              title={isRecording ? "Stop recording" : "Start recording"}
+              variant="ghost"
+            >
+              <MicIcon size={14} style={{ width: 14, height: 14 }} />
+            </Button>
             <ModelSelectorCompact
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
