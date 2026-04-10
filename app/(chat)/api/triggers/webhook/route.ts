@@ -139,7 +139,8 @@ async function runAgentRoute(
   chatId: string,
   agentSlug: string,
   taskPrompt: string,
-  triggerName: string
+  triggerName: string,
+  baseUrl: string
 ): Promise<void> {
   const agent = getSubAgentBySlug(agentSlug);
   if (!agent) {
@@ -164,6 +165,13 @@ async function runAgentRoute(
     recallMemory: recallMemory({ userId }),
     updateMemory: updateMemory({ userId }),
     deleteMemory: deleteMemory({ userId }),
+    twilioMakeCall: twilioMakeCall({ userId }),
+    twilioSendSMS: twilioSendSMS({ userId }),
+    twilioListMyNumbers: twilioListMyNumbers({ userId }),
+    twilioGetCall: twilioGetCall({ userId }),
+    twilioGetMessage: twilioGetMessage({ userId }),
+    setReminder: setReminder({ userId, baseUrl }),
+    setCronJob: setCronJob({ userId, baseUrl }),
   };
 
   console.log(`[Webhook] Running agent "${agentSlug}" | trigger: ${triggerName} | user: ${userId}`);
@@ -314,7 +322,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ ok: false, error: "Chat resolution failed" }, { status: 500 });
   }
 
-  // 7. Split routes by priority
+  // 7. Extract baseUrl for scheduling tools
+  const baseUrl = new URL(req.url).origin;
+
+  // 8. Split routes by priority
   const routes = resolveRoutes(triggerName);
   const immediateRoutes = routes.filter((r) => r.priority === "immediate");
   const queuedRoutes = routes.filter((r) => r.priority === "queued");
@@ -325,7 +336,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   for (const route of immediateRoutes) {
     const taskPrompt = buildTaskPrompt(route, data, triggerName);
     try {
-      await runAgentRoute(userId, chatId, route.agentSlug, taskPrompt, triggerName);
+      await runAgentRoute(userId, chatId, route.agentSlug, taskPrompt, triggerName, baseUrl);
       results.push({ agentSlug: route.agentSlug, status: "ok" });
     } catch (e: any) {
       console.error(`[Webhook] Immediate agent "${route.agentSlug}" failed:`, e);
@@ -338,7 +349,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // dedicated worker route (same pattern as your /api/scheduled handler).
   for (const route of queuedRoutes) {
     const taskPrompt = buildTaskPrompt(route, data, triggerName);
-    const background = runAgentRoute(userId, chatId, route.agentSlug, taskPrompt, triggerName)
+    const background = runAgentRoute(userId, chatId, route.agentSlug, taskPrompt, triggerName, baseUrl)
       .catch((e) => console.error(`[Webhook] Queued agent "${route.agentSlug}" failed:`, e));
 
     // Vercel / Next.js edge runtime — keep the process alive for the background task
