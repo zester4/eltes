@@ -190,6 +190,7 @@ export default function EventsPage() {
       setIsCreateDialogOpen(false);
       setSelectedTrigger(null);
       setTriggerConfig({});
+      setSearchQuery("");
       await fetchTriggers();
     } catch (error: any) {
       toast.error(error.message || "Failed to subscribe to event");
@@ -328,14 +329,20 @@ export default function EventsPage() {
             </p>
           </div>
 
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) {
+              setSelectedTrigger(null);
+              setSearchQuery("");
+            }
+          }}>
             <DialogTrigger asChild>
               <Button className="gap-1.5 rounded-[12px] h-7 sm:h-8 md:h-9 px-2.5 sm:px-3 md:px-4 text-[11px] sm:text-[12px] md:text-[13px] font-medium transition-all active:scale-[1]">
                 <Plus className="size-3 sm:size-3.5" />
                 <span className="hidden xs:inline">Subscribe</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px] rounded-2xl bg-card border-border shadow-lg">
+            <DialogContent className="max-w-[95vw] xs:max-w-[340px] sm:max-w-[450px] md:max-w-[520px] rounded-2xl bg-card border-border shadow-lg p-4 sm:p-5 md:p-6">
               <DialogHeader>
                 <DialogTitle className="text-[16px] sm:text-[18px] font-semibold">Subscribe to Event</DialogTitle>
                 <DialogDescription className="text-[12px] sm:text-[13px] text-muted-foreground">
@@ -343,25 +350,59 @@ export default function EventsPage() {
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="grid gap-3 sm:gap-4 py-2">
+              <div className="grid gap-2 sm:gap-3 md:gap-4 py-2">
                 {!selectedTrigger ? (
-                  <div className="grid grid-cols-1 gap-2 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                    {availableTriggers.map((t) => (
+                  <>
+                    <div className="relative px-0.5 sm:px-1">
+                      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-3.5 sm:size-4 text-muted-foreground pointer-events-none" />
+                      <Input
+                        placeholder="Search triggers..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-9 sm:pl-10 pr-8 sm:pr-9 rounded-[12px] sm:rounded-[14px] h-8 sm:h-9 md:h-10 text-[11px] sm:text-[12px] md:text-[13px] bg-muted/50 border-border/50 focus:border-primary/50 focus:bg-background transition-all"
+                      />
+                      {searchQuery && (
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors p-1 hover:bg-muted rounded-md"
+                        >
+                          <X className="size-3.5 sm:size-4" />
+                        </button>
+                      )}
+                    </div>
+                    {filteredTriggers.length > 0 && searchQuery && (
+                      <p className="text-[10px] sm:text-[11px] text-muted-foreground px-1.5 sm:px-2">
+                        Found {filteredTriggers.length} trigger{filteredTriggers.length !== 1 ? "s" : ""}
+                      </p>
+                    )}
+                  </>
+                ) : null}
+                {!selectedTrigger ? (
+                  <div className="grid grid-cols-1 gap-1.5 sm:gap-2 max-h-[280px] xs:max-h-[320px] sm:max-h-[380px] md:max-h-[450px] overflow-y-auto pr-1.5 sm:pr-2 custom-scrollbar">
+                    {filteredTriggers.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-6 sm:py-8 gap-2 text-center">
+                        <Search className="size-4 sm:size-5 text-muted-foreground/50" />
+                        <p className="text-[11px] sm:text-[12px] md:text-[13px] font-medium text-muted-foreground">No triggers found</p>
+                        <p className="text-[10px] sm:text-[11px] md:text-[12px] text-muted-foreground/70">Try adjusting your search</p>
+                      </div>
+                    ) : (
+                      filteredTriggers.map((t) => (
                       <button
                         key={t.slug}
                         onClick={() => setSelectedTrigger(t)}
-                        className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-2xl border border-border/50 bg-muted/30 hover:bg-accent/10 transition-all text-left group"
+                        className="flex items-center gap-1.5 sm:gap-2.5 p-2 sm:p-2.5 rounded-[12px] sm:rounded-[16px] border border-border/50 bg-muted/30 hover:bg-accent/10 active:bg-accent/20 transition-all text-left group"
                       >
-                        <div className="size-8 sm:size-10 rounded-[10px] sm:rounded-[12px] bg-background flex items-center justify-center border border-border shadow-inner shrink-0">
-                          {getAppIcon(t.app, 20)}
+                        <div className="size-7 sm:size-9 md:size-10 rounded-[8px] sm:rounded-[10px] bg-background flex items-center justify-center border border-border shadow-inner shrink-0">
+                          {getAppIcon(t.app, 16)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-[12px] sm:text-[13px] text-foreground truncate">{t.name}</h4>
-                          <p className="text-[11px] sm:text-[12px] text-muted-foreground line-clamp-1">{t.description}</p>
+                          <h4 className="font-medium text-[11px] sm:text-[12px] md:text-[13px] text-foreground truncate">{t.name}</h4>
+                          <p className="text-[10px] sm:text-[11px] md:text-[12px] text-muted-foreground line-clamp-1">{t.description}</p>
                         </div>
-                        <ChevronRight className="size-3.5 sm:size-4 text-muted-foreground" />
+                        <ChevronRight className="size-3 sm:size-3.5 md:size-4 text-muted-foreground shrink-0" />
                       </button>
-                    ))}
+                      ))
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-4 sm:space-y-5">
@@ -373,7 +414,7 @@ export default function EventsPage() {
                         <h4 className="font-medium text-[12px] sm:text-[13px] text-foreground truncate">{selectedTrigger.name}</h4>
                         <p className="text-[10px] uppercase tracking-wider text-primary/80 font-semibold">{selectedTrigger.app}</p>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => setSelectedTrigger(null)} className="text-[11px] sm:text-[12px] h-7 sm:h-8 px-2 font-medium">Change</Button>
+                      <Button variant="ghost" size="sm" onClick={() => { setSelectedTrigger(null); setSearchQuery(""); }} className="text-[11px] sm:text-[12px] h-7 sm:h-8 px-2 font-medium">Change</Button>
                     </div>
 
                     <div className="space-y-3 px-1">
@@ -404,7 +445,7 @@ export default function EventsPage() {
               </div>
 
               <DialogFooter className="gap-2 pt-2 border-t border-border sm:space-x-0">
-                <Button variant="ghost" onClick={() => { setIsCreateDialogOpen(false); setSelectedTrigger(null); }} className="h-8 sm:h-9 text-[12px] sm:text-[13px] rounded-[10px] font-medium">Cancel</Button>
+                <Button variant="ghost" onClick={() => { setIsCreateDialogOpen(false); setSelectedTrigger(null); setSearchQuery(""); }} className="h-8 sm:h-9 text-[12px] sm:text-[13px] rounded-[10px] font-medium">Cancel</Button>
                 <Button 
                   disabled={!selectedTrigger || isActionLoading === "create"} 
                   onClick={handleCreateTrigger}

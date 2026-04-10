@@ -22,6 +22,14 @@ import {
   updateMemory,
   deleteMemory,
 } from "@/lib/ai/tools/memory";
+import {
+  twilioMakeCall,
+  twilioSendSMS,
+  twilioListMyNumbers,
+  twilioGetCall,
+  twilioGetMessage,
+} from "@/lib/ai/tools/twilio";
+import { setReminder, setCronJob, listSchedules, deleteSchedule } from "@/lib/ai/tools/schedule";
 import { generateUUID } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
