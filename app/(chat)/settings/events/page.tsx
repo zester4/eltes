@@ -36,6 +36,8 @@ import {
   Users,
   LifeBuoy,
   MessageSquare,
+  Search,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -59,19 +61,33 @@ type TriggerDefinition = {
   name: string;
   description: string;
   app:
-    | "github"
-    | "slack"
-    | "gmail"
-    | "stripe"
-    | "notion"
     | "agentmail"
+    | "asana"
+    | "box"
     | "confluence"
+    | "discord"
+    | "fireflies"
+    | "github"
+    | "gmail"
     | "googlecalendar"
     | "googledocs"
+    | "googletasks"
     | "googlesheets"
     | "hubspot"
+    | "jira"
+    | "linear"
+    | "mailchimp"
+    | "notion"
+    | "outlook"
+    | "pipedrive"
     | "salesforce"
-    | "zendesk" | "outlook" | "linear" | "discord";
+    | "slack"
+    | "spotify"
+    | "stripe"
+    | "todoist"
+    | "trello"
+    | "zendesk"
+    | "zoom";
   configFields: {
     name: string;
     label: string;
@@ -110,6 +126,7 @@ export default function EventsPage() {
   const [triggerConfig, setTriggerConfig] = useState<Record<string, any>>({});
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
   const itemsPerPage = 10;
 
   const router = useRouter();
@@ -202,21 +219,33 @@ export default function EventsPage() {
   const getAppIcon = (app: string, size = 20) => {
     const appLower = app.toLowerCase();
     const logoMap: Record<string, string> = {
-      github: "/logos/github.svg",
-      slack: "/logos/slack.svg",
-      gmail: "/logos/gmail.svg",
-      stripe: "/logos/stripe.svg",
-      notion: "/logos/notion.svg",
+      agentmail: "/logos/agentmail.jpeg",
+      asana: "/logos/asana.svg",
+      box: "/logos/box.png",
       confluence: "/logos/confluence.svg",
+      discord: "/logos/discord.svg",
+      fireflies: "/logos/fireflies.svg",
+      github: "/logos/github.svg",
+      gmail: "/logos/gmail.svg",
       googlecalendar: "/logos/google-calendar.svg",
       googledocs: "/logos/google-docs.svg",
+      googletasks: "/logos/google-task.png",
       googlesheets: "/logos/google-sheets.svg",
       hubspot: "/logos/hubspot.svg",
-      salesforce: "/logos/salesforce.svg",
-      zendesk: "/logos/zendesk.svg",
-      outlook: "/logos/outlook.svg",
+      jira: "/logos/jira.svg",
       linear: "/logos/linear.svg",
-      discord: "/logos/discord.svg",
+      mailchimp: "/logos/mailchimp.svg",
+      notion: "/logos/notion.svg",
+      outlook: "/logos/outlook.svg",
+      pipedrive: "/logos/pipedrive.png",
+      salesforce: "/logos/salesforce.svg",
+      slack: "/logos/slack.svg",
+      spotify: "/logos/spotify.png",
+      stripe: "/logos/stripe.svg",
+      todoist: "/logos/todoist.svg",
+      trello: "/logos/trello.svg",
+      zendesk: "/logos/zendesk.svg",
+      zoom: "/logos/zoom.svg",
     };
 
     if (logoMap[appLower]) {
@@ -252,6 +281,18 @@ export default function EventsPage() {
   }, [eventLogs, currentPage]);
 
   const totalPages = Math.ceil(eventLogs.length / itemsPerPage);
+
+  const filteredTriggers = useMemo(() => {
+    if (!searchQuery.trim()) return availableTriggers;
+    const query = searchQuery.toLowerCase();
+    return availableTriggers.filter(
+      (trigger) =>
+        trigger.name.toLowerCase().includes(query) ||
+        trigger.description.toLowerCase().includes(query) ||
+        trigger.app.toLowerCase().includes(query) ||
+        trigger.slug.toLowerCase().includes(query)
+    );
+  }, [availableTriggers, searchQuery]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

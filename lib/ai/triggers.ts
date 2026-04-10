@@ -3,22 +3,33 @@ export type TriggerDefinition = {
   name: string;
   description: string;
   app:
-    | "github"
-    | "slack"
-    | "gmail"
-    | "stripe"
-    | "notion"
     | "agentmail"
+    | "asana"
+    | "box"
     | "confluence"
+    | "discord"
+    | "fireflies"
+    | "github"
+    | "gmail"
     | "googlecalendar"
     | "googledocs"
+    | "googletasks"
     | "googlesheets"
     | "hubspot"
-    | "salesforce"
-    | "zendesk"
-    | "outlook"
+    | "jira"
     | "linear"
-    | "discord";
+    | "mailchimp"
+    | "notion"
+    | "outlook"
+    | "pipedrive"
+    | "salesforce"
+    | "slack"
+    | "spotify"
+    | "stripe"
+    | "todoist"
+    | "trello"
+    | "zendesk"
+    | "zoom";
   configFields: {
     name: string;
     label: string;
@@ -736,6 +747,443 @@ export const SUPPORTED_TRIGGERS: TriggerDefinition[] = [
     name: "New Zendesk Ticket",
     description: "Triggers when a new ticket is created.",
     app: "zendesk",
+    configFields: [],
+  },
+
+  // Box Triggers
+  {
+    slug: "BOX_COLLABORATION_DETAILS_CHANGED_TRIGGER",
+    name: "Collaboration Details Changed",
+    description: "Triggers when collaboration details are updated.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_COMMENT_CHANGED_TRIGGER",
+    name: "Comment Changed",
+    description: "Triggers when a comment is modified.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_NEW_FILE_COMMENT_ADDED_TRIGGER",
+    name: "New File Comment Added",
+    description: "Triggers when a new comment is added to a file.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_FILE_METADATA_CHANGED_TRIGGER",
+    name: "File Metadata Changed",
+    description: "Triggers when file metadata is updated.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_FILE_SHARED_LINK_CHANGED_TRIGGER",
+    name: "File Shared Link Changed",
+    description: "Triggers when a file's shared link is modified.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_NEW_FILE_VERSION_UPLOADED_TRIGGER",
+    name: "New File Version Uploaded",
+    description: "Triggers when a new version of a file is uploaded.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_NEW_ITEM_ADDED_TO_FOLDER_TRIGGER",
+    name: "New Item Added to Folder",
+    description: "Triggers when a new item is added to a folder.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_FOLDER_PROPERTIES_CHANGED_TRIGGER",
+    name: "Folder Properties Changed",
+    description: "Triggers when folder properties are updated.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_FOLDER_SHARED_LINK_CHANGED_TRIGGER",
+    name: "Folder Shared Link Changed",
+    description: "Triggers when a folder's shared link is modified.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_NEW_FILE_ADDED_TO_FOLDER_TRIGGER",
+    name: "New File Added to Folder",
+    description: "Triggers when a new file is added to a folder.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_NEW_FOLDER_COLLABORATION_CREATED_TRIGGER",
+    name: "New Folder Collaboration Created",
+    description: "Triggers when a new collaboration is created on a folder.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_NEW_PENDING_COLLABORATION_INVITE_TRIGGER",
+    name: "New Pending Collaboration Invite",
+    description: "Triggers when a pending collaboration invite is sent.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_NEW_SIGN_REQUEST_CREATED_TRIGGER",
+    name: "New Sign Request Created",
+    description: "Triggers when a new sign request is created.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_NEW_TASK_ASSIGNMENT_ADDED_TRIGGER",
+    name: "New Task Assignment Added",
+    description: "Triggers when a new task assignment is added.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_NEW_TASK_CREATED_ON_FILE_TRIGGER",
+    name: "New Task Created on File",
+    description: "Triggers when a new task is created on a file.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_SIGN_REQUEST_STATUS_CHANGED_TRIGGER",
+    name: "Sign Request Status Changed",
+    description: "Triggers when a sign request status changes.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_TASK_ASSIGNMENT_STATE_CHANGED_TRIGGER",
+    name: "Task Assignment State Changed",
+    description: "Triggers when a task assignment state changes.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_TASK_STATE_CHANGED_TRIGGER",
+    name: "Task State Changed",
+    description: "Triggers when a task state changes.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_TRASHED_FILE_STATE_CHANGED_TRIGGER",
+    name: "Trashed File State Changed",
+    description: "Triggers when a trashed file state changes.",
+    app: "box",
+    configFields: [],
+  },
+  {
+    slug: "BOX_TRASHED_FOLDER_STATE_CHANGED_TRIGGER",
+    name: "Trashed Folder State Changed",
+    description: "Triggers when a trashed folder state changes.",
+    app: "box",
+    configFields: [],
+  },
+
+  // Asana Triggers
+  {
+    slug: "ASANA_TASK_TRIGGER",
+    name: "Task Event",
+    description: "Triggers on Asana task events.",
+    app: "asana",
+    configFields: [],
+  },
+
+  // Jira Triggers
+  {
+    slug: "JIRA_NEW_ISSUE_TRIGGER",
+    name: "New Issue",
+    description: "Triggers when a new issue is created.",
+    app: "jira",
+    configFields: [],
+  },
+  {
+    slug: "JIRA_NEW_PROJECT_TRIGGER",
+    name: "New Project",
+    description: "Triggers when a new project is created.",
+    app: "jira",
+    configFields: [],
+  },
+  {
+    slug: "JIRA_UPDATED_ISSUE_TRIGGER",
+    name: "Issue Updated",
+    description: "Triggers when an issue is updated.",
+    app: "jira",
+    configFields: [],
+  },
+
+  // Linear Triggers
+  {
+    slug: "LINEAR_COMMENT_EVENT_TRIGGER",
+    name: "Comment Event",
+    description: "Triggers on Linear comment events.",
+    app: "linear",
+    configFields: [],
+  },
+  {
+    slug: "LINEAR_ISSUE_CREATED_TRIGGER",
+    name: "Issue Created",
+    description: "Triggers when a new issue is created.",
+    app: "linear",
+    configFields: [],
+  },
+  {
+    slug: "LINEAR_ISSUE_UPDATED_TRIGGER",
+    name: "Issue Updated",
+    description: "Triggers when an issue is updated.",
+    app: "linear",
+    configFields: [],
+  },
+
+  // Todoist Triggers
+  {
+    slug: "TODOIST_NEW_TASK_CREATED",
+    name: "New Task Created",
+    description: "Triggers when a new task is created in Todoist.",
+    app: "todoist",
+    configFields: [],
+  },
+
+  // Trello Triggers
+  {
+    slug: "TRELLO_ARCHIVED_CARD_TRIGGER",
+    name: "Card Archived",
+    description: "Triggers when a card is archived.",
+    app: "trello",
+    configFields: [],
+  },
+  {
+    slug: "TRELLO_NEW_ACTIVITY_TRIGGER",
+    name: "New Activity",
+    description: "Triggers on new Trello activity.",
+    app: "trello",
+    configFields: [],
+  },
+  {
+    slug: "TRELLO_NEW_BOARD_TRIGGER",
+    name: "New Board",
+    description: "Triggers when a new board is created.",
+    app: "trello",
+    configFields: [],
+  },
+  {
+    slug: "TRELLO_NEW_CARD_TRIGGER",
+    name: "New Card",
+    description: "Triggers when a new card is created.",
+    app: "trello",
+    configFields: [],
+  },
+  {
+    slug: "TRELLO_UPDATED_CARD_TRIGGER",
+    name: "Card Updated",
+    description: "Triggers when a card is updated.",
+    app: "trello",
+    configFields: [],
+  },
+
+  // Zoom Triggers
+  {
+    slug: "ZOOM_NEW_MEETING_CREATED_TRIGGER",
+    name: "New Meeting Created",
+    description: "Triggers when a new meeting is created.",
+    app: "zoom",
+    configFields: [],
+  },
+  {
+    slug: "ZOOM_NEW_MEETING_PARTICIPANT_TRIGGER",
+    name: "New Meeting Participant",
+    description: "Triggers when a participant joins a meeting.",
+    app: "zoom",
+    configFields: [],
+  },
+  {
+    slug: "ZOOM_USER_INFORMATION_CHANGED_TRIGGER",
+    name: "User Information Changed",
+    description: "Triggers when user information is updated.",
+    app: "zoom",
+    configFields: [],
+  },
+  {
+    slug: "ZOOM_WEBINAR_DETAILS_CHANGED_TRIGGER",
+    name: "Webinar Details Changed",
+    description: "Triggers when webinar details are updated.",
+    app: "zoom",
+    configFields: [],
+  },
+  {
+    slug: "ZOOM_MEETING_SUMMARY_UPDATED_TRIGGER",
+    name: "Meeting Summary Updated",
+    description: "Triggers when a meeting summary is updated.",
+    app: "zoom",
+    configFields: [],
+  },
+  {
+    slug: "ZOOM_MEETING_DETAILS_CHANGED_TRIGGER",
+    name: "Meeting Details Changed",
+    description: "Triggers when meeting details are updated.",
+    app: "zoom",
+    configFields: [],
+  },
+  {
+    slug: "ZOOM_DAILY_USAGE_REPORT_CHANGED_TRIGGER",
+    name: "Daily Usage Report Changed",
+    description: "Triggers when a daily usage report is updated.",
+    app: "zoom",
+    configFields: [],
+  },
+  {
+    slug: "ZOOM_MEETING_RECORDING_CHANGED_TRIGGER",
+    name: "Meeting Recording Changed",
+    description: "Triggers when a meeting recording is updated.",
+    app: "zoom",
+    configFields: [],
+  },
+  {
+    slug: "ZOOM_NEW_CLOUD_RECORDING_TRIGGER",
+    name: "New Cloud Recording",
+    description: "Triggers when a new cloud recording is created.",
+    app: "zoom",
+    configFields: [],
+  },
+  {
+    slug: "ZOOM_NEW_WEBINAR_CREATED_TRIGGER",
+    name: "New Webinar Created",
+    description: "Triggers when a new webinar is created.",
+    app: "zoom",
+    configFields: [],
+  },
+  {
+    slug: "ZOOM_NEW_WEBINAR_PARTICIPANT_TRIGGER",
+    name: "New Webinar Participant",
+    description: "Triggers when a participant joins a webinar.",
+    app: "zoom",
+    configFields: [],
+  },
+
+  // Fireflies Triggers
+  {
+    slug: "FIREFLIES_TRANSCRIPTION_COMPLETE",
+    name: "Transcription Complete",
+    description: "Triggers when a recording transcription is complete.",
+    app: "fireflies",
+    configFields: [],
+  },
+
+  // Google Tasks Triggers
+  {
+    slug: "GOOGLETASKS_NEW_TASK_CREATED_TRIGGER",
+    name: "New Task Created",
+    description: "Triggers when a new task is created.",
+    app: "googletasks",
+    configFields: [],
+  },
+  {
+    slug: "GOOGLETASKS_NEW_TASK_LIST_CREATED_TRIGGER",
+    name: "New Task List Created",
+    description: "Triggers when a new task list is created.",
+    app: "googletasks",
+    configFields: [],
+  },
+  {
+    slug: "GOOGLETASKS_TASK_DETAILS_CHANGED_TRIGGER",
+    name: "Task Details Changed",
+    description: "Triggers when task details are updated.",
+    app: "googletasks",
+    configFields: [],
+  },
+  {
+    slug: "GOOGLETASKS_TASK_LIST_CHANGED_TRIGGER",
+    name: "Task List Changed",
+    description: "Triggers when a task list is updated.",
+    app: "googletasks",
+    configFields: [],
+  },
+  {
+    slug: "GOOGLETASKS_TASK_UPDATED_TRIGGER",
+    name: "Task Updated",
+    description: "Triggers when a task is updated.",
+    app: "googletasks",
+    configFields: [],
+  },
+
+  // Mailchimp Triggers
+  {
+    slug: "MAILCHIMP_CAMPAIGN_TRIGGER",
+    name: "Campaign Event",
+    description: "Triggers on Mailchimp campaign events.",
+    app: "mailchimp",
+    configFields: [],
+  },
+  {
+    slug: "MAILCHIMP_PROFILE_UPDATE_TRIGGER",
+    name: "Profile Updated",
+    description: "Triggers when a profile is updated.",
+    app: "mailchimp",
+    configFields: [],
+  },
+  {
+    slug: "MAILCHIMP_SUBSCRIBE_TRIGGER",
+    name: "User Subscribed",
+    description: "Triggers when a user subscribes.",
+    app: "mailchimp",
+    configFields: [],
+  },
+  {
+    slug: "MAILCHIMP_UNSUBSCRIBE_TRIGGER",
+    name: "User Unsubscribed",
+    description: "Triggers when a user unsubscribes.",
+    app: "mailchimp",
+    configFields: [],
+  },
+
+  // Pipedrive Triggers
+  {
+    slug: "PIPEDRIVE_NEW_ORGANIZATION_TRIGGER",
+    name: "New Organization",
+    description: "Triggers when a new organization is created.",
+    app: "pipedrive",
+    configFields: [],
+  },
+  {
+    slug: "PIPEDRIVE_NEW_DEAL_TRIGGER",
+    name: "New Deal",
+    description: "Triggers when a new deal is created.",
+    app: "pipedrive",
+    configFields: [],
+  },
+  {
+    slug: "PIPEDRIVE_NEW_NOTE_TRIGGER",
+    name: "New Note",
+    description: "Triggers when a new note is created.",
+    app: "pipedrive",
+    configFields: [],
+  },
+
+  // Spotify Triggers
+  {
+    slug: "SPOTIFY_NEW_DEVICE_TRIGGER",
+    name: "New Device",
+    description: "Triggers when a new device is detected.",
+    app: "spotify",
+    configFields: [],
+  },
+  {
+    slug: "SPOTIFY_PLAYLIST_TRIGGER",
+    name: "Playlist Event",
+    description: "Triggers on Spotify playlist events.",
+    app: "spotify",
     configFields: [],
   },
 ];
