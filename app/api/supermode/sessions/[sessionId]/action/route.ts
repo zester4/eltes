@@ -45,6 +45,7 @@ export async function GET(
       actions,
       session: {
         id: supermodeSession.id,
+        chatId: supermodeSession.chatId,
         status: supermodeSession.status,
         currentStep: supermodeSession.currentStep,
         maxSteps: supermodeSession.maxSteps,

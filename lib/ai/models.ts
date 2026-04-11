@@ -1,9 +1,11 @@
 // Curated list of top models from Vercel AI Gateway
 //lib/ai/models.ts
 //
-// Gemini + gateway: set GOOGLE_GENERATIVE_AI_API_KEY. If the gateway is missing or
-// unusable, omit AI_GATEWAY / OIDC vars or set GEMINI_PREFER_GOOGLE_NATIVE=true so
-// `getLanguageModel` routes `google/*` ids through @ai-sdk/google (see providers.ts).
+// Google models (`google/*`, including Gemma and Gemini 3 / 3.1 previews, and
+// `google/gemini-3.1-pro-preview`): default routing uses `AI_GATEWAY_API_KEY`. If the
+// gateway runs out of credits, set `GOOGLE_GENERATIVE_AI_API_KEY` and
+// `GEMINI_USE_GOOGLE_GENERATIVE_AI=true` so chat uses @ai-sdk/google for those ids;
+// unset the flag to use the gateway again. See `getLanguageModel` in providers.ts.
 export const DEFAULT_CHAT_MODEL = "google/gemini-3-flash-preview";
 
 export type ChatModel = {

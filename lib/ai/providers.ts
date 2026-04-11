@@ -11,32 +11,37 @@ import { isTestEnvironment } from "../constants";
 
 const THINKING_SUFFIX_REGEX = /-thinking$/;
 
-/** True when the Vercel AI Gateway is likely available (API key or platform OIDC). */
-function isAiGatewayLikelyAvailable(): boolean {
-  return Boolean(
-    process.env.AI_GATEWAY_API_KEY?.trim() ||
-      process.env.VERCEL_OIDC_TOKEN?.trim() ||
-      process.env.VERCEL_AI_GATEWAY_AUTH_TOKEN?.trim(),
-  );
+function hasAiGatewayApiKey(): boolean {
+  return Boolean(process.env.AI_GATEWAY_API_KEY?.trim());
+}
+
+function hasGoogleGenerativeAiKey(): boolean {
+  return Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim());
+}
+
+/** Chat / title model ids that map to Google’s Generative Language API (`google/...`). */
+function isGoogleGenerativeLanguageModelId(modelId: string): boolean {
+  return modelId.startsWith("google/");
 }
 
 /**
- * Google Gemini ids in chat are normally routed through the AI Gateway.
- * When the gateway is not configured (or you set GEMINI_PREFER_GOOGLE_NATIVE),
- * use @ai-sdk/google with GOOGLE_GENERATIVE_AI_API_KEY so Gemini keeps working;
- * other providers still use the gateway when configured.
+ * Google chat models are usually called through the AI Gateway (`AI_GATEWAY_API_KEY`).
+ * When the gateway is out of credits but `GOOGLE_GENERATIVE_AI_API_KEY` is set, set
+ * `GEMINI_USE_GOOGLE_GENERATIVE_AI=true` to route all `google/*` ids (including Gemma
+ * and Gemini 3 / 3.1 previews) through `@ai-sdk/google` instead. Unset it to use the
+ * gateway again. Non-Google models always use the gateway.
  */
-function shouldRouteGeminiThroughGateway(modelId: string): boolean {
-  if (!modelId.startsWith("google/")) {
+function shouldUseGatewayForGoogleModel(modelId: string): boolean {
+  if (!isGoogleGenerativeLanguageModelId(modelId)) {
     return true;
   }
-  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim()) {
+  if (!hasGoogleGenerativeAiKey()) {
     return true;
   }
-  if (process.env.GEMINI_PREFER_GOOGLE_NATIVE === "true") {
+  if (process.env.GEMINI_USE_GOOGLE_GENERATIVE_AI === "true") {
     return false;
   }
-  return isAiGatewayLikelyAvailable();
+  return hasAiGatewayApiKey();
 }
 
 export const myProvider = isTestEnvironment
@@ -58,23 +63,27 @@ export const myProvider = isTestEnvironment
     })()
   : null;
 
+function isExtendedThinkingChatModel(modelId: string): boolean {
+  return (
+    modelId.endsWith("-thinking") ||
+    (modelId.includes("reasoning") && !modelId.includes("non-reasoning")) ||
+    modelId === "google/gemini-3.1-pro-preview"
+  );
+}
+
 export function getLanguageModel(modelId: string): LanguageModel {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel(modelId);
   }
 
-  const isReasoningModel =
-    modelId.endsWith("-thinking") ||
-    (modelId.includes("reasoning") && !modelId.includes("non-reasoning"));
-
-  if (isReasoningModel) {
+  if (isExtendedThinkingChatModel(modelId)) {
     const gatewayModelId = modelId
       .replace(THINKING_SUFFIX_REGEX, "")
       .replace("-reasoning", "");
 
     if (
-      gatewayModelId.startsWith("google/") &&
-      !shouldRouteGeminiThroughGateway(gatewayModelId)
+      isGoogleGenerativeLanguageModelId(gatewayModelId) &&
+      !shouldUseGatewayForGoogleModel(gatewayModelId)
     ) {
       return wrapLanguageModel({
         model: getGoogleModel(gatewayModelId),
@@ -88,7 +97,10 @@ export function getLanguageModel(modelId: string): LanguageModel {
     });
   }
 
-  if (!shouldRouteGeminiThroughGateway(modelId)) {
+  if (
+    isGoogleGenerativeLanguageModelId(modelId) &&
+    !shouldUseGatewayForGoogleModel(modelId)
+  ) {
     return getGoogleModel(modelId);
   }
 
@@ -96,15 +108,14 @@ export function getLanguageModel(modelId: string): LanguageModel {
 }
 
 /**
- * Returns a direct Google Gemini model, bypassing the AI Gateway.
- * Used for subagents and critical background tasks for maximum reliability.
+ * Returns a direct Google Generative AI model (no gateway).
+ * Used for SuperMode, sub-agents, scheduled jobs, and orchestration synthesis.
  */
 export function getGoogleModel(modelId: string) {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel(modelId);
   }
 
-  // Remove provider prefix if present (e.g., google/gemini-2.0-flash -> gemini-2.0-flash)
   const directId = modelId.replace(/^google\//, "");
 
   return google(directId);
@@ -115,7 +126,7 @@ export function getTitleModel(): LanguageModel {
     return myProvider.languageModel("title-model");
   }
   const titleId = "google/gemini-2.5-flash-lite";
-  if (!shouldRouteGeminiThroughGateway(titleId)) {
+  if (!shouldUseGatewayForGoogleModel(titleId)) {
     return getGoogleModel(titleId);
   }
   return gateway.languageModel(titleId);

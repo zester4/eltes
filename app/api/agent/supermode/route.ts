@@ -2,21 +2,35 @@
  * SuperMode Autonomous Workflow
  * Route: POST /api/agent/supermode
  *
- * Runs Etles as a fully autonomous agent loop toward a user objective.
- * Each step: decide next action → check if approval required → execute → log.
- * Uses context.waitForEvent() for approval gates so the workflow truly pauses
- * (zero compute, zero cost) until the user responds on Telegram.
+ * Architecture mirrors the Telegram workflow exactly:
+ *   Step 1 — setup: load context, session tail, build system prompt
+ *   Step 2 — execute: ONE generateText call with stopWhen:stepCountIs.
+ *             The AI SDK loop IS the agent loop. onStepFinish writes the
+ *             live activity feed as every tool call completes.
+ *   Step 3 — save-notify: persist to chat, update session, send Telegram
+ *
+ * Key design decisions:
+ * - getGoogleModel (direct, no gateway) — same as Telegram/subagent-runner
+ * - systemPrompt() from prompts.ts augmented with SuperMode context
+ * - markComplete tool signals objective achieved → AI stops calling tools
+ * - queueApproval reused for irreversible actions — no reinventing HITL
+ * - onStepFinish is non-fatal: DB write failures never abort the AI loop
+ * - No per-step generateObject/decision schema — that was the bug
  *
  * File location: app/api/agent/supermode/route.ts
  */
 
 import { serve } from "@upstash/workflow/nextjs";
-import { generateText, generateObject, stepCountIs } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
+import { Redis } from "@upstash/redis";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
+
 import { getGoogleModel } from "@/lib/ai/providers";
-import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+import { systemPrompt } from "@/lib/ai/prompts";
+import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
+
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
   saveMemory,
@@ -37,22 +51,31 @@ import {
 } from "@/lib/ai/tools/triggers";
 import {
   delegateToSubAgent,
-  listSubAgents,
   getSubAgentResult,
+  listSubAgents,
 } from "@/lib/ai/tools/subagents";
+import { orchestrateAgents } from "@/lib/ai/tools/orchestrate";
+import { queueApproval } from "@/lib/ai/tools/queue-approval";
 import {
+  tavilySearch,
+  tavilyExtract,
+  tavilyCrawl,
+  tavilyMap,
+} from "@/lib/ai/tools/tavily-search";
+import * as daytonaTools from "@/lib/ai/tools/daytona";
+import * as browserUseTools from "@/lib/ai/tools/browser-use";
+import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
+
+import {
+  getBotIntegration,
+  getMessagesByChatId,
+  saveMessages,
   updateSupermodeSession,
   createSupermodeAction,
-  getSupermodeActions,
-  getSupermodeSessionById,
-  saveMessages,
 } from "@/lib/db/queries";
+import { sendLongMessage } from "@/lib/telegram/api";
 import { generateUUID } from "@/lib/utils";
 import type { SupermodeWorkflowPayload } from "@/lib/workflow/client";
-import { tool } from "ai";
-import { sendLongMessage } from "@/lib/telegram/api";
-import { getBotIntegration } from "@/lib/db/queries";
-import { Redis } from "@upstash/redis";
 
 export const maxDuration = 300;
 
@@ -66,457 +89,390 @@ const redis =
       })
     : null;
 
-// ── Decision schema ───────────────────────────────────────────────────────────
-const DecisionSchema = z.object({
-  reasoning: z
-    .string()
-    .describe("Your internal reasoning about the current state and next action"),
-  summary: z
-    .string()
-    .describe("One-sentence description of what you are about to do"),
-  isComplete: z
-    .boolean()
-    .describe("True if the objective has been fully achieved or is unreachable"),
-  completionSummary: z
-    .string()
-    .optional()
-    .describe("If isComplete, what was accomplished"),
-  requiresApproval: z
-    .boolean()
-    .describe(
-      "True if the next action is irreversible (sending emails, posting publicly, payments, etc.)",
-    ),
-  approvalDescription: z
-    .string()
-    .optional()
-    .describe("If requiresApproval, describe exactly what you want to do"),
-  toolName: z
-    .string()
-    .nullable()
-    .describe("The exact tool name to call next, or null if complete"),
-  toolArgs: z
-    .record(z.unknown())
-    .nullable()
-    .describe("Arguments to pass to the tool"),
-});
+const BASE_URL =
+  process.env.BASE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : undefined) ||
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000");
 
-// ── Approval tools (signal intent, never block) ───────────────────────────────
-function buildMarkCompleteSignal() {
+// ── markComplete — the AI calls this to signal it is finished ────────────────
+// After this call, the AI produces a final text response with no more tool
+// calls, and stopWhen fires naturally on the next step count check.
+function buildMarkCompleteTool() {
   return tool({
     description:
-      "Signal that the objective is fully complete. Call when done.",
+      "Call this ONLY when the SuperMode objective is fully achieved, OR when you have determined it genuinely cannot be completed with the tools available. After calling this, write your final summary as a text response — do not call any more tools.",
     inputSchema: z.object({
-      summary: z.string().describe("Summary of what was accomplished"),
-      achieved: z.boolean().describe("Whether the objective was achieved"),
+      achieved: z
+        .boolean()
+        .describe(
+          "true if the objective was successfully achieved, false if it could not be done",
+        ),
+      summary: z
+        .string()
+        .min(50)
+        .describe(
+          "Detailed summary of everything that was done, found, sent, or created. This is shown directly to the user as the SuperMode report.",
+        ),
     }),
-    execute: async ({ summary, achieved }) => ({ summary, achieved }),
+    execute: async ({ achieved, summary }) => ({
+      achieved,
+      summary,
+      completedAt: new Date().toISOString(),
+    }),
   });
 }
 
-// ── System prompt builder ─────────────────────────────────────────────────────
-function buildPlannerPrompt(objective: string): string {
-  return `You are Etles in planning mode for a SuperMode autonomous session.
-
-OBJECTIVE: ${objective}
-
-Your job is to create a clear, step-by-step execution plan to achieve this objective using the tools available to you. The plan should be:
-1. Specific and actionable (each step should map to one or two tool calls)
-2. Ordered correctly (dependencies accounted for)
-3. Realistic given available integrations (Composio tools, memory, sub-agents, scheduling)
-
-Return a structured plan as JSON with:
-{
-  "steps": [
-    { "stepNumber": 1, "description": "...", "toolHint": "tool to likely use" }
-  ],
-  "estimatedSteps": number,
-  "strategy": "brief description of overall approach"
-}`;
-}
-
-function buildDecisionPrompt(
-  objective: string,
-  plan: unknown,
-  historyText: string,
-  step: number,
-  maxSteps: number,
-): string {
-  return `You are Etles running autonomously in SuperMode.
-
-OBJECTIVE: ${objective}
-
-EXECUTION PLAN:
-${JSON.stringify(plan, null, 2)}
-
-PROGRESS SO FAR (recent actions):
-${historyText || "No actions taken yet. This is step 1."}
-
-CURRENT STEP: ${step + 1} of ${maxSteps} maximum
-
-Decide your next specific action. Be decisive. Do not ask for information — act.
-
-IRREVERSIBLE ACTIONS (requiresApproval = true): sending emails, posting to social media, making payments, deleting records, creating calendar events, sending Slack messages to others.
-
-ALL OTHER ACTIONS: requiresApproval = false (reading, researching, saving memory, internal analysis, sub-agent delegation).
-
-Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`;
-}
-
-function buildExecutorPrompt(
-  decision: z.infer<typeof DecisionSchema>,
-  step: number,
-): string {
-  return `You are Etles executing one specific action in SuperMode.
-
-Your decided action:
-- Tool: ${decision.toolName}
-- Args: ${JSON.stringify(decision.toolArgs, null, 2)}
-- Reasoning: ${decision.reasoning}
-
-Call ONLY the ${decision.toolName} tool with the provided arguments. Do not call any other tools. Do not explain. Execute.
-
-Step: ${step + 1}`;
-}
-
-// ── Telegram approval sender ──────────────────────────────────────────────────
-async function sendTelegramApprovalForSupermode(
-  userId: string,
-  sessionId: string,
-  step: number,
-  description: string,
-): Promise<void> {
-  if (!redis) return;
-
-  try {
-    const integration = await getBotIntegration({ userId, platform: "telegram" });
-    if (!integration) return;
-
-    const telegramChatIdKey = `tg:chatid:${userId}`;
-    const telegramChatId = await redis.get<number>(telegramChatIdKey);
-    if (!telegramChatId) return;
-
-    const message =
-      `🔴 <b>SuperMode Approval Required</b>\n\n` +
-      `<b>Proposed action (Step ${step + 1}):</b>\n${description}\n\n` +
-      `This action is irreversible. Approve or reject:`;
-
-    const approveData = `supermode_approve:${sessionId}:${step}`;
-    const rejectData = `supermode_reject:${sessionId}:${step}`;
-
-    await fetch(`https://api.telegram.org/bot${integration.botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: telegramChatId,
-        text: message,
-        parse_mode: "HTML",
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: "✅ Approve", callback_data: approveData },
-              { text: "❌ Reject", callback_data: rejectData },
-            ],
-          ],
-        },
-      }),
-    });
-  } catch (err) {
-    console.error("[SuperMode] Failed to send Telegram approval:", err);
-  }
-}
-
 // ── Main workflow ─────────────────────────────────────────────────────────────
+
 export const { POST } = serve<SupermodeWorkflowPayload>(async (context) => {
   const { sessionId, userId, chatId, objective, maxSteps } =
     context.requestPayload;
 
-  const baseUrl =
-    process.env.BASE_URL ||
-    (process.env.VERCEL_PROJECT_PRODUCTION_URL
-      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-      : "http://localhost:3000");
+  // ── Step 1: Setup — load context, build the real system prompt ────────────
+  const setupResult = await context.run("setup", async () => {
+    await updateSupermodeSession({ id: sessionId, status: "running" });
 
-  // ── Step 1: Create execution plan ─────────────────────────────────────────
-  const plan = await context.run("plan", async () => {
-    const { text } = await generateText({
-      model: getGoogleModel(DEFAULT_CHAT_MODEL),
-      system: buildPlannerPrompt(objective),
-      prompt: "Create the execution plan.",
-    });
-
-    let parsedPlan: unknown = { strategy: text, steps: [] };
-    try {
-      const match = text.match(/```json\n?([\s\S]*?)\n?```/) || text.match(/\{[\s\S]*\}/);
-      if (match) {
-        parsedPlan = JSON.parse(match[1] ?? match[0]);
-      }
-    } catch {
-      // Keep raw text as plan if JSON parse fails
-      parsedPlan = { strategy: text, steps: [] };
-    }
-
-    await updateSupermodeSession({ id: sessionId, status: "running", plan: parsedPlan });
     await createSupermodeAction({
       sessionId,
       userId,
       stepIndex: 0,
       actionType: "planning",
-      summary: `Created execution plan: ${JSON.stringify(parsedPlan).slice(
-        0,
-        200
-      )}`,
-      reasoning: text,
-      toolName: null,
-      toolInput: null,
-      toolOutput: null,
+      summary: `SuperMode activated. Objective: ${objective.slice(0, 300)}`,
       requiresApproval: false,
+    }).catch(() => {
+      /* non-fatal */
     });
 
-    return parsedPlan;
+    // Load the last 8 messages from this chat as conversation context
+    // Gives SuperMode continuity with what the user was discussing
+    const dbMessages = await getMessagesByChatId({ id: chatId });
+    const history = dbMessages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .slice(-8)
+      .map((m) => {
+        const textPart = (
+          m.parts as { type: string; text?: string }[]
+        ).find((p) => p.type === "text");
+        return {
+          role: m.role as "user" | "assistant",
+          content: textPart?.text ?? "",
+        };
+      })
+      .filter((m) => m.content.length > 0);
+
+    // Load session tail — same as Telegram workflow
+    const sessionTail = await getSessionTail(userId);
+
+    // Build the REAL system prompt using prompts.ts — no custom prompt divergence
+    const basePrompt = systemPrompt({
+      selectedChatModel: "google/gemini-2.5-flash",
+      requestHints: {
+        latitude: undefined,
+        longitude: undefined,
+        city: undefined,
+        country: undefined,
+      },
+      sessionTail,
+      skipArtifacts: true,
+    });
+
+    return { history, basePrompt };
   });
 
-  // ── Steps 2-N: Autonomous execution loop ──────────────────────────────────
-  for (let step = 0; step < maxSteps; step++) {
-    // Update current step counter
-    await context.run(`update-step-${step}`, async () => {
-      await updateSupermodeSession({ id: sessionId, currentStep: step });
-    });
+  // ── Build SuperMode-augmented system prompt ───────────────────────────────
+  // Pure JS — not a context.run step, just string concatenation.
+  // Appended after the full base prompt so all tool knowledge is preserved.
+  const supermodeSystem = `${setupResult.basePrompt}
 
-    // ── Decide: What to do next ────────────────────────────────────────────
-    const decision = await context.run(`decide-${step}`, async () => {
-      // Load recent history (last 8 actions) to give agent context
-      const recentActions = await getSupermodeActions(sessionId, 8);
-      const historyText = recentActions
-        .map(
-          (a) =>
-            `[Step ${a.stepIndex}] ${a.actionType.toUpperCase()}: ${
-              a.summary ?? a.reasoning ?? "(no summary)"
-            }`
-        )
-        .join("\n");
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUPERMODE — FULLY AUTONOMOUS EXECUTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-      const { object } = await generateObject({
-        model: getGoogleModel(DEFAULT_CHAT_MODEL),
-        schema: DecisionSchema,
-        system: buildDecisionPrompt(
-          objective,
-          plan,
-          historyText,
-          step,
-          maxSteps
-        ),
-        prompt: "What is your next specific action?",
-      });
+You are Etles operating in SuperMode. The user has given you a goal and stepped away. You are fully autonomous. No human is available to answer questions or give guidance. Use every tool at your disposal.
 
-      await createSupermodeAction({
-        sessionId,
+YOUR OBJECTIVE:
+"${objective}"
+
+HOW TO OPERATE:
+• Start by calling recallMemory to surface any relevant context about the user, their business, preferences, and past work.
+• Work step by step toward the objective. Never pause to ask for clarification — make the best decision with available information and proceed.
+• For complex sub-tasks, use delegateToSubAgent to spawn specialized agents rather than doing everything yourself.
+• For problems that benefit from multiple specialists working simultaneously, use orchestrateAgents for parallel execution.
+• Use tavilySearch for any real-time research, news, or web intelligence.
+• When the objective is fully achieved OR you determine it cannot be completed, call markComplete with a detailed summary, then write your final response. Do not call any more tools after markComplete.
+
+APPROVAL RULES — STRICTLY ENFORCED:
+SAFE (execute immediately, no approval needed):
+  Reading emails, calendars, documents. Web research. Saving/recalling memory. Creating drafts. Delegating to sub-agents. Scheduling reminders. Checking statuses. Running code in sandboxes. Browsing the web.
+
+REQUIRES APPROVAL (call queueApproval FIRST — do NOT call the actual sending/payment/deletion tool):
+  Sending emails or messages to real people. Posting to social media. Making payments or financial transfers. Deleting records. Creating calendar events that send invitations to others. Publishing anything publicly.
+
+When you call queueApproval, the user receives a Telegram notification to approve or reject. Continue working on other parts of the objective while waiting.
+
+Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+  // ── Step 2: Execute — the full autonomous agent loop ─────────────────────
+  // This is ONE context.run step. generateText with stopWhen:stepCountIs
+  // handles all tool calls internally. This IS the agent loop — no manual
+  // iteration at the workflow level.
+  const executionResult = await context.run("execute", async () => {
+    // Load Composio tools — same pattern as subagent-runner and Telegram workflow
+    let composioTools: Record<string, unknown> = {};
+    try {
+      const session = await composio.create(userId, { manageConnections: true });
+      composioTools = await session.tools();
+    } catch (e) {
+      console.error("[SuperMode] Composio tools failed:", e);
+    }
+
+    let currentStepIndex = 0;
+    let completionData: { achieved: boolean; summary: string } | null = null;
+
+    const allTools = {
+      ...composioTools,
+
+      // SuperMode termination signal
+      markComplete: buildMarkCompleteTool(),
+
+      // Core tools
+      getWeather,
+
+      // HITL approval gate — reuses the existing queue-approval system
+      // irreversible actions go through this, not directly to the tool
+      queueApproval: queueApproval({ userId, chatId, skipTelegram: false }),
+
+      // Memory
+      saveMemory: saveMemory({ userId }),
+      recallMemory: recallMemory({ userId }),
+      updateMemory: updateMemory({ userId }),
+      deleteMemory: deleteMemory({ userId }),
+
+      // Scheduling
+      setReminder: setReminder({ userId, baseUrl: BASE_URL }),
+      setCronJob: setCronJob({ userId, baseUrl: BASE_URL }),
+      listSchedules: listSchedules({ userId }),
+      deleteSchedule: deleteSchedule(),
+
+      // Composio event triggers
+      setupTrigger: setupTrigger({ userId }),
+      listActiveTriggers: listActiveTriggers({ userId }),
+      removeTrigger: removeTrigger(),
+
+      // Sub-agent delegation
+      delegateToSubAgent: delegateToSubAgent({
         userId,
-        stepIndex: step,
-        actionType: "reasoning",
-        summary: object.summary,
-        reasoning: object.reasoning,
-        toolName: null,
-        toolInput: null,
-        toolOutput: null,
-        requiresApproval: object.requiresApproval,
-      });
+        chatId,
+        baseUrl: BASE_URL,
+      }),
+      getSubAgentResult: getSubAgentResult({ userId }),
+      listSubAgents: listSubAgents(),
 
-      return object;
+      // Multi-agent orchestration
+      orchestrateAgents: orchestrateAgents({ userId, chatId }),
+
+      // Web research (Tavily)
+      tavilySearch,
+      tavilyExtract,
+      tavilyCrawl,
+      tavilyMap,
+
+      // Daytona sandbox
+      createSandbox: daytonaTools.createSandbox({ userId }),
+      listSandboxes: daytonaTools.listSandboxes({ userId }),
+      deleteSandbox: daytonaTools.deleteSandbox({ userId }),
+      executeCommand: daytonaTools.executeCommand({ userId }),
+      runCode: daytonaTools.runCode({ userId }),
+      listFiles: daytonaTools.listFiles({ userId }),
+      readFile: daytonaTools.readFile({ userId }),
+      writeFile: daytonaTools.writeFile({ userId }),
+      createDirectory: daytonaTools.createDirectory({ userId }),
+      searchFiles: daytonaTools.searchFiles({ userId }),
+      replaceInFiles: daytonaTools.replaceInFiles({ userId }),
+      gitClone: daytonaTools.gitClone({ userId }),
+      gitStatus: daytonaTools.gitStatus({ userId }),
+      gitCommit: daytonaTools.gitCommit({ userId }),
+      gitPush: daytonaTools.gitPush({ userId }),
+      gitPull: daytonaTools.gitPull({ userId }),
+      gitBranch: daytonaTools.gitBranch({ userId }),
+      getPreviewLink: daytonaTools.getPreviewLink({ userId }),
+      runBackgroundProcess: daytonaTools.runBackgroundProcess({ userId }),
+      lspDiagnostics: daytonaTools.lspDiagnostics({ userId }),
+      archiveSandbox: daytonaTools.archiveSandbox({ userId }),
+
+      // Browser automation
+      browserUseRunTask: browserUseTools.browserUseRunTask(),
+      browserUseStartTask: browserUseTools.browserUseStartTask(),
+      browserUseGetTask: browserUseTools.browserUseGetTask(),
+      browserUseControlTask: browserUseTools.browserUseControlTask(),
+      browserUseCreateSession: browserUseTools.browserUseCreateSession(),
+      browserUseGetLiveUrl: browserUseTools.browserUseGetLiveUrl(),
+      browserUseListTasks: browserUseTools.browserUseListTasks(),
+      browserUseCheckCredits: browserUseTools.browserUseCheckCredits(),
+      browserSetup: daytonaBrowserTools.browserSetup({ userId }),
+      browserNavigate: daytonaBrowserTools.browserNavigate({ userId }),
+      browserInteract: daytonaBrowserTools.browserInteract({ userId }),
+      browserExtract: daytonaBrowserTools.browserExtract({ userId }),
+      browserMultiTab: daytonaBrowserTools.browserMultiTab({ userId }),
+      browserUploadFile: daytonaBrowserTools.browserUploadFile({ userId }),
+      browserScreenshot: daytonaBrowserTools.browserScreenshot({ userId }),
+      browserVisualInteract: daytonaBrowserTools.browserVisualInteract({
+        userId,
+      }),
+    };
+
+    const { text, steps } = await generateText({
+      model: getGoogleModel("google/gemini-2.5-flash"),
+      system: supermodeSystem,
+      messages: [
+        // Conversation history gives context continuity
+        ...setupResult.history,
+        // The autonomous execution trigger as the final user turn
+        {
+          role: "user" as const,
+          content: `You are now in SuperMode. Execute this objective autonomously: ${objective}`,
+        },
+      ],
+      tools: allTools as any,
+
+      // THE CORRECT STOP CONDITION — matches Telegram workflow and subagent-runner
+      // The AI SDK handles all tool call rounds internally until:
+      //   (a) the AI produces a final response with no tool calls, OR
+      //   (b) stepCountIs(maxSteps) fires
+      // The AI is instructed to call markComplete before (a), giving us
+      // a clean structured completion signal.
+      stopWhen: stepCountIs(maxSteps),
+
+      // onStepFinish fires after every tool-call round.
+      // Writes to the live activity feed. Errors are non-fatal.
+      onStepFinish: async ({ toolCalls, toolResults }) => {
+        currentStepIndex++;
+
+        try {
+          await updateSupermodeSession({
+            id: sessionId,
+            currentStep: currentStepIndex,
+          });
+
+          for (const tc of toolCalls ?? []) {
+            const result = (toolResults ?? []).find(
+              (r) => r.toolCallId === tc.toolCallId,
+            );
+
+            // Capture markComplete data so we have it after generateText returns
+            if (tc.toolName === "markComplete" && result) {
+              const r = (
+                result as {
+                  result?: { achieved?: boolean; summary?: string };
+                }
+              ).result;
+              completionData = {
+                achieved: r?.achieved ?? true,
+                summary: r?.summary ?? "",
+              };
+            }
+
+            await createSupermodeAction({
+              sessionId,
+              userId,
+              stepIndex: currentStepIndex,
+              actionType: "tool_call",
+              toolName: tc.toolName,
+              toolInput: (tc as { args?: unknown }).args ?? null,
+              toolOutput: result
+                ? (result as { result?: unknown }).result ?? null
+                : null,
+              summary: `Called ${tc.toolName}`,
+              requiresApproval: false,
+            });
+          }
+        } catch (err) {
+          // Activity feed write failure MUST NOT abort the AI execution
+          console.error("[SuperMode] onStepFinish write failed (non-fatal):", err);
+        }
+      },
     });
 
-    // ── Check for completion ───────────────────────────────────────────────
-    if (decision.isComplete) {
-      await context.run(`mark-complete-${step}`, async () => {
-        await updateSupermodeSession({
-          id: sessionId,
-          status: "completed",
-          completedAt: new Date(),
-          result: {
-            achieved: true,
-            summary: decision.completionSummary ?? "Objective achieved",
-            steps: step + 1,
-          },
-        });
+    // Serialise all tool call parts for DB persistence (same as subagent-runner)
+    const toolCallParts = steps.flatMap((s) =>
+      (s.toolCalls ?? []).map((tc) => ({
+        type: "tool-call" as const,
+        toolCallId: tc.toolCallId,
+        toolName: tc.toolName,
+        args: (tc as { args?: unknown }).args,
+      })),
+    );
 
-        await createSupermodeAction({
-          sessionId,
-          userId,
-          stepIndex: step,
-          actionType: "completed",
-          summary: decision.completionSummary ?? "Objective achieved",
-          reasoning: null,
-          toolName: null,
-          toolInput: null,
-          toolOutput: null,
-          requiresApproval: false,
-        });
+    return {
+      resultText: text,
+      stepsCompleted: currentStepIndex,
+      toolCallParts,
+      completionData,
+      wasExplicitlyCompleted: completionData !== null,
+    };
+  });
 
-        // Save completion message to chat
-        await saveMessages({
-          messages: [
-            {
-              id: generateUUID(),
-              chatId,
-              role: "assistant",
-              parts: [
-                {
-                  type: "text",
-                  text: `## ✅ SuperMode Complete\n\n**Objective:** ${objective}\n\n${decision.completionSummary ?? "Objective achieved successfully."}\n\n*Completed in ${step + 1} steps.*`,
-                },
-              ],
-              attachments: [],
-              createdAt: new Date(),
-            },
-          ],
-        });
-      });
-      break; // Exit the loop
-    }
+  // ── Step 3: Save results and notify user ──────────────────────────────────
+  await context.run("save-notify", async () => {
+    const {
+      resultText,
+      stepsCompleted,
+      toolCallParts,
+      completionData,
+      wasExplicitlyCompleted,
+    } = executionResult;
 
-    // ── Approval gate for irreversible actions ─────────────────────────────
-    if (decision.requiresApproval) {
-      await context.run(`request-approval-${step}`, async () => {
-        await sendTelegramApprovalForSupermode(
-          userId,
-          sessionId,
-          step,
-          decision.approvalDescription ?? decision.summary,
-        );
-        await updateSupermodeSession({ id: sessionId, status: "awaiting_approval" });
-        await createSupermodeAction({
-          sessionId,
-          userId,
-          stepIndex: step,
-          actionType: "approval_requested",
-          summary: `Awaiting approval: ${
-            decision.approvalDescription ?? decision.summary
-          }`,
-          reasoning: null,
-          toolName: null,
-          toolInput: null,
-          toolOutput: null,
-          requiresApproval: true,
-        });
-      });
+    const achieved = completionData?.achieved ?? true;
+    // Prefer the structured markComplete summary; fall back to the final text
+    const finalSummary =
+      completionData?.summary && completionData.summary.length > 20
+        ? completionData.summary
+        : resultText;
 
-      // Pause workflow until user responds (24h max, then skip)
-      const { eventData, timeout } = await context.waitForEvent(
-        `approval-gate-${step}`,
-        `supermode-${sessionId}-step-${step}-approval`,
-        { timeout: "24h" },
-      );
-
-      const approved =
-        !timeout && (eventData as { approved?: boolean })?.approved === true;
-
-      await context.run(`log-approval-${step}`, async () => {
-        await createSupermodeAction({
-          sessionId,
-          userId,
-          stepIndex: step,
-          actionType: timeout ? "failed" : approved ? "approved" : "rejected",
-          summary: timeout
-            ? "Approval timed out after 24h — skipping this action"
-            : approved
-            ? "Approved by user"
-            : "Rejected by user",
-          reasoning: null,
-          toolName: null,
-          toolInput: null,
-          toolOutput: null,
-          requiresApproval: false,
-        });
-        await updateSupermodeSession({ id: sessionId, status: "running" });
-      });
-
-      if (!approved) {
-        // Skip this action, continue loop
-        await context.sleep(`skip-rest-${step}`, 2);
-        continue;
-      }
-    }
-
-    // ── Execute: Call the decided tool ─────────────────────────────────────
-    if (decision.toolName) {
-      await context.run(`execute-${step}`, async () => {
-        let composioTools: Record<string, unknown> = {};
-        try {
-          const session = await composio.create(userId, { manageConnections: true });
-          composioTools = await session.tools();
-        } catch (e) {
-          console.error("[SuperMode] Composio tools unavailable:", e);
-        }
-
-        const allTools = {
-          ...composioTools,
-          getWeather,
-          markComplete: buildMarkCompleteSignal(),
-          saveMemory: saveMemory({ userId }),
-          recallMemory: recallMemory({ userId }),
-          updateMemory: updateMemory({ userId }),
-          deleteMemory: deleteMemory({ userId }),
-          setReminder: setReminder({ userId, baseUrl }),
-          setCronJob: setCronJob({ userId, baseUrl }),
-          listSchedules: listSchedules({ userId }),
-          deleteSchedule: deleteSchedule(),
-          setupTrigger: setupTrigger({ userId }),
-          listActiveTriggers: listActiveTriggers({ userId }),
-          removeTrigger: removeTrigger(),
-          delegateToSubAgent: delegateToSubAgent({ userId, chatId, baseUrl }),
-          getSubAgentResult: getSubAgentResult({ userId }),
-          listSubAgents: listSubAgents(),
-        };
-
-        const { toolCalls, toolResults, text } = await generateText({
-          model: getGoogleModel(DEFAULT_CHAT_MODEL),
-          system: buildExecutorPrompt(decision, step),
-          prompt: `Execute the ${decision.toolName} tool now.`,
-          tools: allTools as any,
-          stopWhen: stepCountIs(2), // execute at most 2 tool calls per step
-        });
-
-        // Log each tool call to the activity feed
-        for (const tc of toolCalls) {
-          const result = toolResults?.find((r) => r.toolCallId === tc.toolCallId);
-          await createSupermodeAction({
-            sessionId,
-            userId,
-            stepIndex: step,
-            actionType: "tool_call",
-            toolName: tc.toolName,
-            toolInput: (tc as any).args,
-            toolOutput: result ? (result as any).result : null,
-            summary: `Called ${tc.toolName}`,
-            reasoning: null,
-            requiresApproval: false,
-          });
-        }
-
-        return { executed: toolCalls.length, text };
-      });
-    }
-
-    // ── Rest between steps (keeps Upstash costs down) ─────────────────────
-    if (step < maxSteps - 1) {
-      await context.sleep(`rest-${step}`, 5);
-    }
-  }
-
-  // ── Timeout / max steps reached ───────────────────────────────────────────
-  await context.run("check-timeout", async () => {
-    const session = await getSupermodeSessionById(sessionId);
-    if (!session || session.status === "completed") return;
-
+    // Update session to completed
     await updateSupermodeSession({
       id: sessionId,
       status: "completed",
       completedAt: new Date(),
+      currentStep: stepsCompleted,
       result: {
-        achieved: false,
-        summary: `Reached maximum step limit (${maxSteps})`,
+        achieved,
+        summary: finalSummary,
+        steps: stepsCompleted,
+        explicitCompletion: wasExplicitlyCompleted,
       },
     });
 
+    // Log completion to activity feed
+    await createSupermodeAction({
+      sessionId,
+      userId,
+      stepIndex: stepsCompleted + 1,
+      actionType: "completed",
+      summary: wasExplicitlyCompleted
+        ? `${achieved ? "✅ Objective achieved" : "⚠️ Could not complete"} — ${stepsCompleted} steps`
+        : `🏁 Step limit reached — ${stepsCompleted} steps`,
+      requiresApproval: false,
+    }).catch(() => {});
+
+    // Build the chat message
+    const statusIcon = achieved ? "✅" : "⚠️";
+    const headline = wasExplicitlyCompleted
+      ? `## ${statusIcon} SuperMode Complete`
+      : `## 🏁 SuperMode — Step Limit Reached`;
+
+    const chatMessage =
+      `${headline}\n\n` +
+      `**Objective:** ${objective}\n\n` +
+      `${finalSummary}\n\n` +
+      `*${stepsCompleted} steps executed.*`;
+
+    // Save to chat — includes tool call parts so the UI can render them
     await saveMessages({
       messages: [
         {
@@ -524,15 +480,39 @@ export const { POST } = serve<SupermodeWorkflowPayload>(async (context) => {
           chatId,
           role: "assistant",
           parts: [
-            {
-              type: "text",
-              text: `## ⚠️ SuperMode — Step Limit Reached\n\nI've completed ${maxSteps} autonomous steps toward: **${objective}**\n\nI've stopped to wait for your review. Check the SuperMode activity feed to see what was accomplished. You can start a new SuperMode session to continue.`,
-            },
+            { type: "text", text: chatMessage },
+            ...toolCallParts,
           ],
           attachments: [],
           createdAt: new Date(),
         },
       ],
     });
+
+    // Update session tail for next conversation context continuity
+    await saveSessionTail(userId, [
+      { role: "assistant", text: chatMessage },
+    ]).catch(() => {});
+
+    // Send Telegram notification — same pattern as Telegram workflow
+    try {
+      const integration = await getBotIntegration({ userId, platform: "telegram" });
+      if (integration && redis) {
+        const telegramChatId = await redis.get<number>(`tg:chatid:${userId}`);
+        if (telegramChatId) {
+          const tgSummary = finalSummary.slice(0, 500);
+          await sendLongMessage(
+            integration.botToken,
+            telegramChatId,
+            `🤖 <b>SuperMode Complete</b>\n\n` +
+              `${achieved ? "✅ Objective achieved" : "⚠️ Partial"} — ${stepsCompleted} steps.\n\n` +
+              `${tgSummary}${finalSummary.length > 500 ? "…" : ""}\n\n` +
+              `<i>Full activity log is in your Etles chat.</i>`,
+          );
+        }
+      }
+    } catch (e) {
+      console.error("[SuperMode] Telegram notification failed (non-fatal):", e);
+    }
   });
 });
