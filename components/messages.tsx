@@ -7,6 +7,7 @@ import type { ChatMessage } from "@/lib/types";
 import { useDataStream } from "./data-stream-provider";
 import { Greeting } from "./greeting";
 import { PreviewMessage, ThinkingMessage } from "./message";
+import { SupermodeLiveFeed } from "./supermode-live-feed";
 
 type MessagesProps = {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
@@ -148,6 +149,8 @@ function PureMessages({
               }
             />
           ))}
+
+          <SupermodeLiveFeed chatId={chatId} />
 
           {status === "submitted" &&
             !messages.some((msg) =>

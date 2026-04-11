@@ -852,9 +852,18 @@ export async function createAgentTask({
   task: string;
 }) {
   try {
+    const values: any = {
+      id,
+      userId,
+      agentType,
+      task,
+      status: "pending",
+    };
+    if (chatId) values.chatId = chatId;
+
     const [created] = await db
       .insert(agentTask)
-      .values({ id, userId, chatId, agentType, task, status: "pending" })
+      .values(values)
       .returning(agentTaskListColumns);
     return created;
   } catch (error) {
@@ -1095,5 +1104,294 @@ export async function searchUserMessages({
   } catch (error) {
     console.error("Search failed:", error);
     throw new ChatbotError("bad_request:database", "Failed to search messages");
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AGENT ORCHESTRATION QUERIES
+// ─────────────────────────────────────────────────────────────────────────────
+
+import {
+  agentOrchestration,
+  type AgentOrchestration,
+  supermodeSession,
+  type SupermodeSession,
+  supermodeAction,
+  type SupermodeAction,
+} from "./schema";
+
+export async function createAgentOrchestration({
+  id,
+  userId,
+  chatId,
+  goal,
+  strategy,
+  agentSlugs,
+}: {
+  id: string;
+  userId: string;
+  chatId: string;
+  goal: string;
+  strategy: "parallel" | "sequential";
+  agentSlugs: string[];
+}): Promise<AgentOrchestration> {
+  try {
+    const [created] = await db
+      .insert(agentOrchestration)
+      .values({ id, userId, chatId, goal, strategy, agentSlugs })
+      .returning();
+    return created;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to create agent orchestration",
+    );
+  }
+}
+
+export async function updateAgentOrchestration({
+  id,
+  userId,
+  status,
+  plan,
+  result,
+  workflowRunId,
+}: {
+  id: string;
+  userId: string;
+  status?: AgentOrchestration["status"];
+  plan?: unknown;
+  result?: unknown;
+  workflowRunId?: string;
+}): Promise<void> {
+  try {
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (status !== undefined) updates.status = status;
+    if (plan !== undefined) updates.plan = plan;
+    if (result !== undefined) updates.result = result;
+    if (workflowRunId !== undefined) updates.workflowRunId = workflowRunId;
+    await db
+      .update(agentOrchestration)
+      .set(updates as any)
+      .where(
+        and(
+          eq(agentOrchestration.id, id),
+          eq(agentOrchestration.userId, userId),
+        ),
+      );
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to update agent orchestration",
+    );
+  }
+}
+
+export async function getAgentOrchestrationById({
+  id,
+  userId,
+}: {
+  id: string;
+  userId: string;
+}): Promise<AgentOrchestration | undefined> {
+  try {
+    const [row] = await db
+      .select()
+      .from(agentOrchestration)
+      .where(
+        and(
+          eq(agentOrchestration.id, id),
+          eq(agentOrchestration.userId, userId),
+        ),
+      );
+    return row;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get agent orchestration",
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPERMODE SESSION QUERIES
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createSupermodeSession({
+  id,
+  userId,
+  chatId,
+  objective,
+  maxSteps,
+}: {
+  id: string;
+  userId: string;
+  chatId: string;
+  objective: string;
+  maxSteps: number;
+}): Promise<SupermodeSession> {
+  try {
+    const [created] = await db
+      .insert(supermodeSession)
+      .values({ id, userId, chatId, objective, maxSteps })
+      .returning();
+    return created;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to create supermode session",
+    );
+  }
+}
+
+export async function updateSupermodeSession({
+  id,
+  status,
+  currentStep,
+  workflowRunId,
+  plan,
+  result,
+  completedAt,
+}: {
+  id: string;
+  status?: SupermodeSession["status"];
+  currentStep?: number;
+  workflowRunId?: string;
+  plan?: unknown;
+  result?: unknown;
+  completedAt?: Date;
+}): Promise<void> {
+  try {
+    const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (status !== undefined) updates.status = status;
+    if (currentStep !== undefined) updates.currentStep = currentStep;
+    if (workflowRunId !== undefined) updates.workflowRunId = workflowRunId;
+    if (plan !== undefined) updates.plan = plan;
+    if (result !== undefined) updates.result = result;
+    if (completedAt !== undefined) updates.completedAt = completedAt;
+    await db
+      .update(supermodeSession)
+      .set(updates as any)
+      .where(eq(supermodeSession.id, id));
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to update supermode session",
+    );
+  }
+}
+
+export async function getSupermodeSessionById(
+  id: string,
+): Promise<SupermodeSession | undefined> {
+  try {
+    const [row] = await db
+      .select()
+      .from(supermodeSession)
+      .where(eq(supermodeSession.id, id));
+    return row;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get supermode session",
+    );
+  }
+}
+
+export async function getActiveSupermodeSessionByUserId(
+  userId: string,
+): Promise<SupermodeSession | undefined> {
+  try {
+    const [row] = await db
+      .select()
+      .from(supermodeSession)
+      .where(
+        and(
+          eq(supermodeSession.userId, userId),
+          sql`${supermodeSession.status} NOT IN ('completed', 'failed', 'cancelled')`,
+        ),
+      )
+      .orderBy(desc(supermodeSession.createdAt))
+      .limit(1);
+    return row;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get active supermode session",
+    );
+  }
+}
+
+export async function getSupermodeSessionsByUserId(
+  userId: string,
+  limit = 10,
+): Promise<SupermodeSession[]> {
+  try {
+    return await db
+      .select()
+      .from(supermodeSession)
+      .where(eq(supermodeSession.userId, userId))
+      .orderBy(desc(supermodeSession.createdAt))
+      .limit(limit);
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to list supermode sessions",
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUPERMODE ACTION QUERIES (activity feed)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function createSupermodeAction(
+  data: Omit<SupermodeAction, "id" | "createdAt">,
+): Promise<SupermodeAction> {
+  try {
+    const [created] = await db
+      .insert(supermodeAction)
+      .values({
+        ...data,
+        requiresApproval: data.requiresApproval ?? false,
+      })
+      .returning();
+    return created;
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to create supermode action",
+    );
+  }
+}
+
+export async function getSupermodeActions(
+  sessionId: string,
+  limit = 50,
+  afterId?: string,
+): Promise<SupermodeAction[]> {
+  try {
+    const conditions: SQL[] = [eq(supermodeAction.sessionId, sessionId)];
+    if (afterId) {
+      // For polling: only return actions created after the last seen ID
+      const [lastSeen] = await db
+        .select({ createdAt: supermodeAction.createdAt })
+        .from(supermodeAction)
+        .where(eq(supermodeAction.id, afterId));
+      if (lastSeen) {
+        conditions.push(gt(supermodeAction.createdAt, lastSeen.createdAt));
+      }
+    }
+    return await db
+      .select()
+      .from(supermodeAction)
+      .where(and(...conditions))
+      .orderBy(asc(supermodeAction.createdAt))
+      .limit(limit);
+  } catch (_error) {
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get supermode actions",
+    );
   }
 }

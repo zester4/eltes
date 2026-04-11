@@ -2,6 +2,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
+  integer,
   json,
   pgTable,
   primaryKey,
@@ -209,6 +210,7 @@ export const agentTask = pgTable("AgentTask", {
     .notNull()
     .references(() => user.id),
   chatId: uuid("chatId")
+    .notNull()
     .references(() => chat.id),
   agentType: varchar("agentType", { length: 64 }).notNull(),
   task: text("task").notNull(),
@@ -224,3 +226,104 @@ export const agentTask = pgTable("AgentTask", {
 });
 
 export type AgentTask = InferSelectModel<typeof agentTask>;
+
+// ── AgentOrchestration ────────────────────────────────────────────────────────
+// Tracks multi-agent fan-out runs where an orchestrator coordinates N sub-agents
+// working in parallel or sequential order toward a shared goal.
+export const agentOrchestration = pgTable("AgentOrchestration", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  chatId: uuid("chatId")
+    .notNull()
+    .references(() => chat.id),
+  goal: text("goal").notNull(),
+  strategy: varchar("strategy", { enum: ["parallel", "sequential"] })
+    .notNull()
+    .default("parallel"),
+  status: varchar("status", {
+    enum: ["pending", "planning", "running", "completed", "failed"],
+  })
+    .notNull()
+    .default("pending"),
+  agentSlugs: json("agentSlugs").$type<string[]>().notNull(),
+  plan: json("plan"),
+  result: json("result"),
+  workflowRunId: varchar("workflowRunId", { length: 128 }),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type AgentOrchestration = InferSelectModel<typeof agentOrchestration>;
+
+// ── SupermodeSession ──────────────────────────────────────────────────────────
+// Tracks an autonomous SuperMode run. One session per user objective. The
+// workflow runs for as long as needed; idle time costs nothing.
+export const supermodeSession = pgTable("SupermodeSession", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  chatId: uuid("chatId")
+    .notNull()
+    .references(() => chat.id),
+  objective: text("objective").notNull(),
+  status: varchar("status", {
+    enum: [
+      "planning",
+      "running",
+      "awaiting_approval",
+      "completed",
+      "failed",
+      "cancelled",
+    ],
+  })
+    .notNull()
+    .default("planning"),
+  workflowRunId: varchar("workflowRunId", { length: 128 }),
+  currentStep: integer("currentStep").notNull().default(0),
+  maxSteps: integer("maxSteps").notNull().default(25),
+  plan: json("plan"),
+  result: json("result"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+  completedAt: timestamp("completedAt"),
+});
+
+export type SupermodeSession = InferSelectModel<typeof supermodeSession>;
+
+// ── SupermodeAction ───────────────────────────────────────────────────────────
+// Every action taken during a SuperMode session — the live activity feed.
+// Written after every tool call, approval gate, and completion event.
+export const supermodeAction = pgTable("SupermodeAction", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  sessionId: uuid("sessionId")
+    .notNull()
+    .references(() => supermodeSession.id),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  stepIndex: integer("stepIndex").notNull(),
+  actionType: varchar("actionType", {
+    enum: [
+      "planning",
+      "tool_call",
+      "reasoning",
+      "approval_requested",
+      "approved",
+      "rejected",
+      "completed",
+      "failed",
+    ],
+  }).notNull(),
+  toolName: varchar("toolName", { length: 128 }),
+  toolInput: json("toolInput"),
+  toolOutput: json("toolOutput"),
+  reasoning: text("reasoning"),
+  summary: text("summary"),
+  requiresApproval: boolean("requiresApproval").notNull().default(false),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+});
+
+export type SupermodeAction = InferSelectModel<typeof supermodeAction>;

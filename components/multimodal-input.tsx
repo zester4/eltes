@@ -135,6 +135,34 @@ function PureMultimodalInput({
     ""
   );
 
+  /** When true, the next send starts SuperMode via POST /api/supermode/sessions (not chat). */
+  const [agentModeArmed, setAgentModeArmed] = useState(false);
+  /** From server — if a session is already running, arming is blocked. */
+  const [hasActiveSupermode, setHasActiveSupermode] = useState(false);
+
+  useEffect(() => {
+    const checkActive = async () => {
+      try {
+        const res = await fetch("/api/supermode/sessions?active=1");
+        if (res.ok) {
+          const data = await res.json();
+          setHasActiveSupermode(Boolean(data.session));
+        }
+      } catch {
+        // ignore transient fetch errors
+      }
+    };
+    checkActive();
+    const interval = setInterval(checkActive, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (hasActiveSupermode) {
+      setAgentModeArmed(false);
+    }
+  }, [hasActiveSupermode]);
+
   useEffect(() => {
     if (textareaRef.current) {
       const domValue = textareaRef.current.value;
@@ -158,8 +186,60 @@ function PureMultimodalInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
 
-  const submitForm = useCallback(() => {
+  const submitForm = useCallback(async () => {
     window.history.pushState({}, "", `/chat/${chatId}`);
+
+    if (agentModeArmed) {
+      const objective = input.trim();
+      if (objective.length < 20) {
+        toast.error("SuperMode needs a clear objective (at least 20 characters).");
+        return;
+      }
+      try {
+        const res = await fetch("/api/supermode/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            objective,
+            chatId,
+            maxSteps: 25,
+            visibility: selectedVisibilityType,
+          }),
+        });
+
+        const payload = await res.json().catch(() => ({}));
+
+        const supermodeErrorMessage = (() => {
+          if (payload && typeof payload === "object") {
+            const p = payload as Record<string, unknown>;
+            if (typeof p.message === "string" && p.message.length > 0) {
+              return p.message;
+            }
+            if (typeof p.error === "string" && p.error.length > 0) {
+              return p.error;
+            }
+          }
+          return `Could not start SuperMode (${res.status}).`;
+        })();
+
+        if (res.ok) {
+          toast.success("SuperMode session started.");
+          setAgentModeArmed(false);
+          setAttachments([]);
+          setLocalStorageInput("");
+          resetHeight();
+          setInput("");
+          if (width && width > 768) {
+            textareaRef.current?.focus();
+          }
+          return;
+        }
+        toast.error(supermodeErrorMessage);
+      } catch {
+        toast.error("Could not start SuperMode. Try again.");
+      }
+      return;
+    }
 
     sendMessage({
       role: "user",
@@ -187,14 +267,16 @@ function PureMultimodalInput({
     }
   }, [
     input,
-    setInput,
-    attachments,
+    chatId,
+    agentModeArmed,
+    selectedVisibilityType,
     sendMessage,
+    attachments,
     setAttachments,
     setLocalStorageInput,
-    width,
-    chatId,
     resetHeight,
+    setInput,
+    width,
   ]);
 
   const uploadFile = useCallback(async (file: File) => {
@@ -486,6 +568,56 @@ function PureMultimodalInput({
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
             />
+            <div className="flex items-center gap-1.5 px-0.5">
+              <span className="hidden max-w-[4.5rem] truncate text-[10px] font-medium text-muted-foreground sm:inline">
+                Agent
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={agentModeArmed}
+                aria-label="SuperMode: send your next message as an autonomous objective"
+                className={cn(
+                  "relative inline-flex h-6 w-10 shrink-0 rounded-full border border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+                  agentModeArmed ? "bg-primary" : "bg-muted",
+                )}
+                disabled={hasActiveSupermode}
+                title={
+                  hasActiveSupermode
+                    ? "SuperMode is already running"
+                    : agentModeArmed
+                      ? "Next send starts SuperMode"
+                      : "Turn on, then send your objective"
+                }
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (hasActiveSupermode) {
+                    toast.info(
+                      "SuperMode is already running. Stop it from the panel first.",
+                    );
+                    return;
+                  }
+                  setAgentModeArmed((v) => {
+                    const next = !v;
+                    if (next) {
+                      toast.success(
+                        "Agent mode on — describe your objective and send.",
+                      );
+                    } else {
+                      toast.info("Agent mode off — messages use normal chat.");
+                    }
+                    return next;
+                  });
+                }}
+              >
+                <span
+                  className={cn(
+                    "pointer-events-none block h-5 w-5 rounded-full bg-background shadow-sm transition-transform",
+                    agentModeArmed ? "translate-x-4" : "translate-x-0.5",
+                  )}
+                />
+              </button>
+            </div>
           </PromptInputTools>
 
           <div className="flex items-center gap-1 sm:gap-2">

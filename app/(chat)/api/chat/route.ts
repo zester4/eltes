@@ -48,6 +48,12 @@ import {
 } from "@/lib/ai/tools/subagents";
 import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
 import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
+import { orchestrateAgents } from "@/lib/ai/tools/orchestrate";
+import {
+  startSupermode,
+  stopSupermode,
+  getSupermodeStatus,
+} from "@/lib/ai/tools/supermode";
 import { queueApproval } from "@/lib/ai/tools/queue-approval";
 import {
   upsertKnowledgeEntity,
@@ -322,6 +328,10 @@ export async function POST(request: Request) {
                 "listSubAgents",
                 "launchMission",
                 "getMissionStatus",
+                "orchestrateAgents",
+                "startSupermode",
+                "stopSupermode",
+                "getSupermodeStatus",
                 "queueApproval",
                 "upsertKnowledgeEntity",
                 "addKnowledgeRelation",
@@ -427,6 +437,20 @@ export async function POST(request: Request) {
                     baseUrl: process.env.BASE_URL || new URL(request.url).origin,
                   }),
                   getMissionStatus: getMissionStatus({ userId: session.user.id! }),
+                  orchestrateAgents: orchestrateAgents({
+                    userId: session.user.id!,
+                    chatId: id,
+                  }),
+                  startSupermode: startSupermode({
+                    userId: session.user.id!,
+                    chatId: id,
+                  }),
+                  stopSupermode: stopSupermode({
+                    userId: session.user.id!,
+                  }),
+                  getSupermodeStatus: getSupermodeStatus({
+                    userId: session.user.id!,
+                  }),
                   queueApproval: queueApproval({
                     userId: session.user.id!,
                     chatId: id,

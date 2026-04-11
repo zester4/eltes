@@ -41,9 +41,24 @@ export const ModelSelectorContent = ({
   title = "Model Selector",
   ...props
 }: ModelSelectorContentProps) => (
-  <DialogContent className={cn("p-0", className)} {...props}>
+  <DialogContent
+    className={cn(
+      "gap-0 overflow-hidden rounded-lg border border-border/90 p-0 shadow-md sm:max-w-[min(100vw-1.5rem,19rem)]",
+      className,
+    )}
+    {...props}
+  >
     <DialogTitle className="sr-only">{title}</DialogTitle>
-    <Command className="**:data-[slot=command-input-wrapper]:h-auto">
+    <Command
+      className={cn(
+        "**:data-[slot=command-input-wrapper]:h-auto rounded-lg",
+        "[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-[10px]",
+        "[&_[cmdk-group]]:p-0.5",
+        "[&_[cmdk-input-wrapper]]:border-border/80 [&_[cmdk-input-wrapper]]:px-2 [&_[cmdk-input-wrapper]]:py-1",
+        "[&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-1.5 [&_[cmdk-item]]:text-xs",
+        "[&_[cmdk-list]]:max-h-[min(50vh,260px)]",
+      )}
+    >
       {children}
     </Command>
   </DialogContent>
@@ -61,7 +76,13 @@ export const ModelSelectorInput = ({
   className,
   ...props
 }: ModelSelectorInputProps) => (
-  <CommandInput className={cn("h-auto py-3.5", className)} {...props} />
+  <CommandInput
+    className={cn(
+      "h-8 py-1.5 text-xs placeholder:text-muted-foreground/80",
+      className,
+    )}
+    {...props}
+  />
 );
 
 export type ModelSelectorListProps = ComponentProps<typeof CommandList>;

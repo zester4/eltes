@@ -26,6 +26,14 @@ const redis =
     : null;
  
 const composio = new Composio({ provider: new VercelProvider() });
+
+const BASE_URL =
+  process.env.BASE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "http://localhost:3000");
+
+const INTERNAL_SECRET = process.env.AGENT_DELEGATE_SECRET ?? "dev-internal";
  
 // ── Types ─────────────────────────────────────────────────────────────────────
  
@@ -77,10 +85,76 @@ export async function POST(
   if (!integration) return new Response("OK", { status: 200 });
  
   const botToken = integration.botToken;
-  const [action, draftId] = cq.data.split(":", 2);
+  const callbackData = cq.data;
+
+  // ── SuperMode approval/rejection ──────────────────────────────────────────
+  if (
+    callbackData.startsWith("supermode_approve:") ||
+    callbackData.startsWith("supermode_reject:")
+  ) {
+    const approved = callbackData.startsWith("supermode_approve:");
+    const parts = callbackData.split(":");
+    // Format: supermode_approve:{sessionId}:{step}
+    const sessionId = parts[1];
+    const step = Number.parseInt(parts[2] ?? "0", 10);
+
+    if (!sessionId) {
+      await answerCallbackQuery(botToken, cq.id, "Invalid approval data.");
+      return new Response("OK", { status: 200 });
+    }
+
+    try {
+      const res = await fetch(`${BASE_URL}/api/supermode/sessions/notify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-agent-secret": INTERNAL_SECRET,
+        },
+        body: JSON.stringify({
+          sessionId,
+          step,
+          approved,
+          userId: ownerUserId,
+        }),
+      });
+
+      const statusText = approved ? "✅ Approved" : "❌ Rejected";
+      await answerCallbackQuery(botToken, cq.id, statusText);
+
+      const tChatId = cq.message?.chat.id;
+      const tMsgId = cq.message?.message_id;
+
+      if (tChatId && tMsgId) {
+        await editMessageText(
+          botToken,
+          tChatId,
+          tMsgId,
+          approved
+            ? `✅ <b>SuperMode Action Approved</b>\n\nStep ${
+                step + 1
+              } will execute now.`
+            : `❌ <b>SuperMode Action Rejected</b>\n\nStep ${
+                step + 1
+              } was skipped. SuperMode will continue to the next action.`
+        );
+      }
+
+      if (!res.ok) {
+        console.error("[Callback] SuperMode notify failed:", await res.text());
+      }
+    } catch (err) {
+      console.error("[Callback] SuperMode approval error:", err);
+      await answerCallbackQuery(botToken, cq.id, "Error processing approval.");
+    }
+
+    return new Response("OK", { status: 200 });
+  }
+
+  // ── Existing HITL approval handling (approve:, reject:, edit:) ─────────
+  const [action, draftId] = callbackData.split(":", 2);
   const telegramChatId = cq.message?.chat.id ?? 0;
   const messageId = cq.message?.message_id ?? 0;
- 
+
   if (!draftId || !telegramChatId) {
     await answerCallbackQuery(botToken, cq.id, "Invalid action.");
     return new Response("OK", { status: 200 });

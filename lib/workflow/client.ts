@@ -29,6 +29,8 @@ export type WorkflowTriggerPayload = {
   chatId: string;
   agentType: string;
   task: string;
+  /** Present when this sub-agent is part of a multi-agent orchestration run. */
+  orchestrationId?: string;
 };
  
 export async function triggerAgentWorkflow(
@@ -48,6 +50,55 @@ export async function triggerAgentWorkflow(
   return { workflowRunId };
 }
  
+// ── Multi-agent orchestration workflow ────────────────────────────────────────
+
+export type OrchestrateWorkflowPayload = {
+  orchestrationId: string;
+  userId: string;
+  chatId: string;
+  goal: string;
+  strategy: "parallel" | "sequential";
+  agents: Array<{ slug: string; task: string; taskId: string }>;
+};
+
+export async function triggerOrchestratorWorkflow(
+  payload: OrchestrateWorkflowPayload,
+): Promise<{ workflowRunId: string } | null> {
+  const client = getWorkflowClient();
+  if (!client || !appBaseUrl) return null;
+
+  const { workflowRunId } = await client.trigger({
+    url: `${appBaseUrl}/api/agent/orchestrate`,
+    body: payload,
+    retries: 2,
+  });
+  return { workflowRunId };
+}
+
+// ── SuperMode autonomous workflow ─────────────────────────────────────────────
+
+export type SupermodeWorkflowPayload = {
+  sessionId: string;
+  userId: string;
+  chatId: string;
+  objective: string;
+  maxSteps: number;
+};
+
+export async function triggerSupermodeWorkflow(
+  payload: SupermodeWorkflowPayload,
+): Promise<{ workflowRunId: string } | null> {
+  const client = getWorkflowClient();
+  if (!client || !appBaseUrl) return null;
+
+  const { workflowRunId } = await client.trigger({
+    url: `${appBaseUrl}/api/agent/supermode`,
+    body: payload,
+    retries: 1,
+  });
+  return { workflowRunId };
+}
+
 // ── Subagent chat workflow ────────────────────────────────────────────────────
 
 export type SubagentChatWorkflowPayload = {
