@@ -366,7 +366,7 @@ About the origin of user's request:
 - country: ${requestHints.country}
 `;
 
-function sessionTailPrompt(tail: TailMessage[]): string {
+export function sessionTailPrompt(tail: TailMessage[]): string {
   if (!tail.length) return "";
   const lines = tail
     .map((m) => `[${m.role === "user" ? "User" : "Etles"}]: ${m.text}`)
@@ -385,19 +385,30 @@ export const systemPrompt = ({
   sessionTail?: TailMessage[];
   skipArtifacts?: boolean;
 }) => {
-  const requestPrompt = getRequestPromptFromHints(requestHints);
+  const base = getBasePrompt({ selectedChatModel, skipArtifacts });
   const tailPrompt = sessionTailPrompt(sessionTail);
+  const requestPrompt = getRequestPromptFromHints(requestHints);
 
+  return `${base}${tailPrompt}\n\n${requestPrompt}`;
+};
+
+export const getBasePrompt = ({
+  selectedChatModel,
+  skipArtifacts = false,
+}: {
+  selectedChatModel: string;
+  skipArtifacts?: boolean;
+}) => {
   // reasoning models and Telegram don't need artifacts prompt
   if (
     skipArtifacts ||
     selectedChatModel.includes("reasoning") ||
     selectedChatModel.includes("thinking")
   ) {
-    return `${regularPrompt}${tailPrompt}\n\n${requestPrompt}`;
+    return regularPrompt;
   }
 
-  return `${regularPrompt}${tailPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
+  return `${regularPrompt}\n\n${artifactsPrompt}`;
 };
 
 export const codePrompt = `

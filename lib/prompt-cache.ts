@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { Redis } from "@upstash/redis";
 
-const PROMPT_CACHE_TTL_SECONDS = 60 * 5;
+const PROMPT_CACHE_TTL_SECONDS = 60 * 60; // 1 hour
 
 function getRedis() {
   if (

@@ -14,7 +14,13 @@ import { auth, type UserType } from "@/app/(auth)/auth";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import { allowedModelIds, DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { guestRegex } from "@/lib/constants";
-import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
+import {
+  type RequestHints,
+  systemPrompt,
+  getBasePrompt,
+  sessionTailPrompt,
+  getRequestPromptFromHints,
+} from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { generateImageTool } from "@/lib/ai/tools/generate-image";
@@ -265,39 +271,38 @@ export async function POST(request: Request) {
         const promptScope = isOnboarding ? "onboarding" : "main";
         const promptSignature = JSON.stringify({
           selectedChatModel,
-          requestHints,
-          sessionTail: sessionTail ?? [],
           promptScope,
         });
-        let corePrompt = await getCachedSystemPrompt({
+
+        let basePrompt = await getCachedSystemPrompt({
           userId: session.user.id!,
           scope: promptScope,
           signature: promptSignature,
         });
-        if (!corePrompt) {
-          corePrompt = isOnboarding
+
+        if (!basePrompt) {
+          basePrompt = isOnboarding
             ? getSubAgentBySlug("onboarding_specialist")?.systemPrompt ??
-              systemPrompt({
-                selectedChatModel,
-                requestHints: requestHints as RequestHints,
-                sessionTail: sessionTail as any,
-              })
-            : systemPrompt({
-                selectedChatModel,
-                requestHints: requestHints as RequestHints,
-                sessionTail: sessionTail as any,
-              });
+              getBasePrompt({ selectedChatModel })
+            : getBasePrompt({ selectedChatModel });
+
           await setCachedSystemPrompt({
             userId: session.user.id!,
             scope: promptScope,
             signature: promptSignature,
-            prompt: corePrompt,
+            prompt: basePrompt,
           });
         }
 
-    const result = streamText({
-      model: getLanguageModel(isOnboarding ? DEFAULT_CHAT_MODEL : selectedChatModel),
-      system: corePrompt,
+        const corePrompt = `${basePrompt}${sessionTailPrompt(
+          sessionTail ?? []
+        )}\n\n${getRequestPromptFromHints(requestHints)}`;
+
+        const result = streamText({
+          model: getLanguageModel(
+            isOnboarding ? DEFAULT_CHAT_MODEL : selectedChatModel
+          ),
+          system: corePrompt,
           messages: modelMessages,
           stopWhen: stepCountIs(25),
             experimental_activeTools: (isReasoningModel
