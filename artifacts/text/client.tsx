@@ -28,14 +28,82 @@ function downloadFile(filename: string, content: string, mimeType: string) {
 
 function markdownToPlainText(markdown: string): string {
   return markdown
-    .replace(/```[\s\S]*?```/g, "")
     .replace(/`([^`]+)`/g, "$1")
     .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/^#{1,6}\s+/gm, "")
-    .replace(/[*_~>-]/g, "")
+    .replace(/\*\*([^\*]+)\*\*/g, "$1")
+    .replace(/__([^_]+)__/g, "$1")
+    .replace(/\*([^\*]+)\*/g, "$1")
+    .replace(/_([^_]+)_/g, "$1")
+    .replace(/~~([^~]+)~~/g, "$1")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
+}
+
+function markdownToHTML(markdown: string): string {
+  let html = markdown
+    .split("\n")
+    .map((line) => {
+      // Headings
+      const headingMatch = line.match(/^(#{1,6})\s+(.*)$/);
+      if (headingMatch) {
+        const level = headingMatch[1].length;
+        return `<h${level}>${headingMatch[2]}</h${level}>`;
+      }
+
+      // Ordered lists
+      if (/^\d+\.\s+/.test(line)) {
+        return `<li>${line.replace(/^\d+\.\s+/, "")}</li>`;
+      }
+
+      // Unordered lists
+      if (/^[\*\-]\s+/.test(line)) {
+        return `<li>${line.replace(/^[\*\-]\s+/, "")}</li>`;
+      }
+
+      // Bold
+      let processed = line
+        .replace(/\*\*([^\*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/__([^_]+)__/g, "<strong>$1</strong>");
+
+      // Italic
+      processed = processed
+        .replace(/\*([^\*]+)\*/g, "<em>$1</em>")
+        .replace(/_([^_]+)_/g, "<em>$1</em>");
+
+      // Inline code
+      processed = processed.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+      // Links
+      processed = processed.replace(
+        /\[([^\]]+)\]\(([^)]+)\)/g,
+        '<a href="$2">$1</a>'
+      );
+
+      // Empty line = paragraph break
+      if (line.trim() === "") {
+        return "";
+      }
+
+      return `<p>${processed}</p>`;
+    })
+    .join("\n");
+
+  // Wrap consecutive list items
+  html = html.replace(
+    /(<li>.*?<\/li>)\n(?=<li>)/g,
+    "$1\n"
+  );
+  html = html.replace(
+    /(?<=<li>.*<\/li>\n)(<li>)/,
+    "<ul>\n$1"
+  );
+  html = html.replace(
+    /(<\/li>)\n(?!<li>)/g,
+    "$1\n</ul>"
+  );
+
+  return html;
 }
 
 type TextArtifactMetadata = {
@@ -202,22 +270,78 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
         {
           label: "PDF (print)",
           onClick: ({ content }) => {
-            const clean = markdownToPlainText(content)
-              .replace(/&/g, "&amp;")
-              .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;");
-            const popup = window.open("", "_blank", "noopener,noreferrer");
-            if (!popup) {
-              toast.error("Could not open print window.");
-              return;
+            const html = markdownToHTML(content);
+            const htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Artifact PDF</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+      padding: 40px;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: white;
+    }
+    h1 { font-size: 28px; font-weight: 700; margin: 24px 0 16px 0; }
+    h2 { font-size: 24px; font-weight: 700; margin: 20px 0 12px 0; }
+    h3 { font-size: 20px; font-weight: 700; margin: 16px 0 10px 0; }
+    h4, h5, h6 { font-size: 16px; font-weight: 700; margin: 12px 0 8px 0; }
+    p { margin: 12px 0; }
+    code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+    }
+    ul, ol {
+      margin: 12px 0 12px 24px;
+    }
+    li {
+      margin: 6px 0;
+    }
+    strong { font-weight: 600; }
+    em { font-style: italic; }
+    a {
+      color: #0066cc;
+      text-decoration: none;
+    }
+    a:hover { text-decoration: underline; }
+    @media print {
+      body { padding: 20px; }
+      h1 { page-break-after: avoid; }
+      h2 { page-break-after: avoid; }
+      h3 { page-break-after: avoid; }
+    }
+  </style>
+</head>
+<body>${html}</body>
+</html>`;
+
+            try {
+              const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+              const url = URL.createObjectURL(blob);
+              const popup = window.open(url, "_blank", "noopener,noreferrer");
+              
+              if (!popup) {
+                toast.error("Could not open print window.");
+                URL.revokeObjectURL(url);
+                return;
+              }
+              
+              // Give the popup time to load before printing
+              setTimeout(() => {
+                popup.focus();
+                popup.print();
+                toast.success("Print dialog opened for PDF export");
+              }, 500);
+            } catch (error) {
+              toast.error("Failed to open print dialog");
+              console.error(error);
             }
-            popup.document.write(
-              `<html><head><title>Artifact PDF</title><style>body{font-family:Inter,Arial,sans-serif;padding:28px;line-height:1.45;white-space:pre-wrap;color:#111}</style></head><body>${clean}</body></html>`
-            );
-            popup.document.close();
-            popup.focus();
-            popup.print();
-            toast.success("Print dialog opened for PDF export");
           },
         },
       ],

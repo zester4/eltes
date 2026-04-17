@@ -66,7 +66,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
     <>
       <Sidebar className="group-data-[side=left]:border-r-0">
         <SidebarHeader>
-          <div className="flex flex-row items-center justify-between px-2 pt-2 pb-1">
+          <div className="flex flex-row items-center px-2 pt-2 pb-1">
             <Link
               className="flex flex-row items-center gap-2"
               href="/"
@@ -78,22 +78,6 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 Etles
               </span>
             </Link>
-            <Button
-              className="h-7 w-7 text-muted-foreground"
-              onClick={() => {
-                const isMobile = window.innerWidth < 768;
-                if (isMobile) {
-                  setOpenMobile(false);
-                } else {
-                  document.querySelector<HTMLButtonElement>('[data-sidebar="trigger"]')?.click();
-                }
-              }}
-              type="button"
-              variant="ghost"
-              size="icon"
-            >
-              <PanelLeft className="h-4 w-4" />
-            </Button>
           </div>
         </SidebarHeader>
         <SidebarContent>

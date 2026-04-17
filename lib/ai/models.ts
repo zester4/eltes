@@ -115,12 +115,32 @@ export const chatModels: ChatModel[] = [
     provider: "zai",
     description: "High performance GLM model",
   },
+  {
+    id: "zai/glm-5.1",
+    name: "GLM-5.1",
+    provider: "zai",
+    description: "Enhanced GLM-5 model",
+  },
   // xAI
   {
     id: "xai/grok-4.1-fast-non-reasoning",
     name: "Grok 4.1 Fast",
     provider: "xai",
     description: "Fast with 30K context",
+  },
+  // Inception
+  {
+    id: "inception/mercury-2",
+    name: "Mercury 2",
+    provider: "inception",
+    description: "Advanced reasoning and capabilities",
+  },
+  // Alibaba
+  {
+    id: "alibaba/qwen3-coder",
+    name: "Qwen3 Coder",
+    provider: "alibaba",
+    description: "Specialized for code generation and analysis",
   },
   // Reasoning models (extended thinking)
   {
