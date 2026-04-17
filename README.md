@@ -19,7 +19,7 @@
 ## Features
 
 - **Autonomous Sub-Agents Framework**
-  - Includes 16 specialized agents out of the box (e.g., SDR, Chief of Staff, Project Manager, Incident Responder, Cloud Cost Optimizer).
+  - Includes 26+ specialized agents out of the box (e.g., SDR, Chief of Staff, Project Manager, Incident Responder, Cloud Cost Optimizer).
   - Sub-agents operate intelligently out-of-band to perform complex, multi-step actions and proactive delegations.
 - **Deep Triggers & Automations (via Composio)**
   - Seamlessly connect to over 100+ platforms (Jira, Slack, Salesforce, Stripe, GitHub).
