@@ -747,11 +747,11 @@ const PurePreviewMessage = ({
                              approval={{ id: draftId }}
                            >
                              <ConfirmationRequest>
-                               <div className="flex flex-col gap-3">
-                                 <ConfirmationActions className="flex-wrap justify-start sm:justify-end">
+                               <div className="flex flex-col w-full gap-3">
+                                 <ConfirmationActions className="flex flex-col sm:flex-row gap-2 w-full justify-end">
                                    <ConfirmationAction
                                      variant="outline"
-                                     className="h-8 text-xs border-destructive/20 text-destructive hover:bg-destructive/5"
+                                     className="w-full sm:w-auto h-9 text-xs border-destructive/20 text-destructive hover:bg-destructive/5"
                                      onClick={async () => {
                                        const res = await fetch("/api/approval", {
                                          method: "POST",
@@ -769,7 +769,7 @@ const PurePreviewMessage = ({
 
                                    <ConfirmationAction
                                      variant="outline"
-                                     className="h-8 text-xs border-primary/20"
+                                     className="w-full sm:w-auto h-9 text-xs border-primary/20"
                                      onClick={() => {
                                         const editPrompt = window.prompt("What settings would you like to change?");
                                         if (editPrompt) {
@@ -787,7 +787,7 @@ const PurePreviewMessage = ({
                                    </ConfirmationAction>
 
                                    <ConfirmationAction
-                                     className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700"
+                                     className="w-full sm:w-auto h-9 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
                                      onClick={async () => {
                                        const res = await fetch("/api/approval", {
                                          method: "POST",

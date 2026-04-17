@@ -161,6 +161,9 @@ export async function getAgentStatus(serverUserId?: string): Promise<AgentStatus
               if (!synthesisData.savedAt) {
                  synthesisData.savedAt = lastSynthesis?.lastRun;
               }
+            } else if (!body.type) {
+              // Skip non-typed schedules (old format)
+              continue;
             } else if (body.type === "cron") {
               const scheduleId =
                 typeof s.scheduleId === "string"

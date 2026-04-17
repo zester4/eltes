@@ -50,6 +50,11 @@ import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
 import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
 import { queueApproval } from "@/lib/ai/tools/queue-approval";
 import {
+  activateHeartbeat,
+  getAgentSystemStatus,
+  setMorningBriefingTime,
+} from "@/lib/ai/tools/proactive";
+import {
   upsertKnowledgeEntity,
   addKnowledgeRelation,
   getKnowledgeEntity,
@@ -323,6 +328,9 @@ export async function POST(request: Request) {
                 "launchMission",
                 "getMissionStatus",
                 "queueApproval",
+                "activateHeartbeat",
+                "getAgentSystemStatus",
+                "setMorningBriefingTime",
                 "upsertKnowledgeEntity",
                 "addKnowledgeRelation",
                 "getKnowledgeEntity",
@@ -431,6 +439,15 @@ export async function POST(request: Request) {
                     userId: session.user.id!,
                     chatId: id,
                     skipTelegram: true,
+                  }),
+                  activateHeartbeat: activateHeartbeat({
+                    userId: session.user.id!,
+                    baseUrl: process.env.BASE_URL || new URL(request.url).origin,
+                  }),
+                  getAgentSystemStatus: getAgentSystemStatus({ userId: session.user.id! }),
+                  setMorningBriefingTime: setMorningBriefingTime({
+                    userId: session.user.id!,
+                    baseUrl: process.env.BASE_URL || new URL(request.url).origin,
                   }),
                   upsertKnowledgeEntity: upsertKnowledgeEntity({
                     userId: session.user.id!,
