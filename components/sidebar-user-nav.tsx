@@ -1,6 +1,16 @@
 "use client";
 
-import { ChevronUp } from "lucide-react";
+import {
+  Activity,
+  Calendar,
+  ChevronUp,
+  Link,
+  LogIn,
+  LogOut,
+  Moon,
+  Sun,
+  User as UserIcon,
+} from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
@@ -74,24 +84,28 @@ export function SidebarUserNav({ user }: { user: User }) {
               className="cursor-pointer"
               onSelect={() => router.push("/settings/profile")}
             >
+              <UserIcon className="mr-2 size-4" />
               Profile
             </DropdownMenuItem>
             <DropdownMenuItem
               className="cursor-pointer"
               onSelect={() => router.push("/settings/connections")}
             >
+              <Link className="mr-2 size-4" />
               App Connections
             </DropdownMenuItem>
             <DropdownMenuItem
               className="cursor-pointer"
               onSelect={() => router.push("/settings/events")}
             >
+              <Calendar className="mr-2 size-4" />
               Events
             </DropdownMenuItem>
             <DropdownMenuItem
               className="cursor-pointer"
               onSelect={() => router.push("/settings/agents")}
             >
+              <Activity className="mr-2 size-4" />
               Agent activity
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -101,12 +115,17 @@ export function SidebarUserNav({ user }: { user: User }) {
                 setTheme(resolvedTheme === "dark" ? "light" : "dark")
               }
             >
+              {resolvedTheme === "light" ? (
+                <Moon className="mr-2 size-4" />
+              ) : (
+                <Sun className="mr-2 size-4" />
+              )}
               {`Toggle ${resolvedTheme === "light" ? "dark" : "light"} mode`}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild data-testid="user-nav-item-auth">
               <button
-                className="w-full cursor-pointer"
+                className="flex w-full cursor-pointer flex-row items-center"
                 onClick={() => {
                   if (status === "loading") {
                     toast({
@@ -128,6 +147,11 @@ export function SidebarUserNav({ user }: { user: User }) {
                 }}
                 type="button"
               >
+                {isGuest ? (
+                  <LogIn className="mr-2 size-4" />
+                ) : (
+                  <LogOut className="mr-2 size-4" />
+                )}
                 {isGuest ? "Login to your account" : "Sign out"}
               </button>
             </DropdownMenuItem>

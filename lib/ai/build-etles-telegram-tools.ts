@@ -1,4 +1,4 @@
-/**
+ /**
  * Tool set for Telegram AI paths (workflow + inline fallback).
  * Mirrors the web chat agent's core tools (memory, search, schedule, sandbox, etc.)
  * so behaviour stays consistent across surfaces.
@@ -31,6 +31,11 @@ import {
   listSubAgents,
 } from "@/lib/ai/tools/subagents";
 import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
+import {
+  activateHeartbeat,
+  getAgentSystemStatus,
+  setMorningBriefingTime,
+} from "@/lib/ai/tools/proactive";
 import { queueApproval } from "@/lib/ai/tools/queue-approval";
 import {
   upsertKnowledgeEntity,
@@ -117,6 +122,9 @@ export function buildEtlesTelegramTools({
     listSubAgents: listSubAgents(),
     launchMission: launchMission({ userId, chatId, baseUrl }),
     getMissionStatus: getMissionStatus({ userId }),
+    activateHeartbeat: activateHeartbeat({ userId, baseUrl }),
+    getAgentSystemStatus: getAgentSystemStatus({ userId }),
+    setMorningBriefingTime: setMorningBriefingTime({ userId, baseUrl }),
     queueApproval: queueApproval({ userId, chatId, skipTelegram: false }),
     upsertKnowledgeEntity: upsertKnowledgeEntity({ userId }),
     addKnowledgeRelation: addKnowledgeRelation({ userId }),

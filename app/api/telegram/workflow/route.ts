@@ -170,34 +170,30 @@ export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
 
     const sessionTail = await getSessionTail(ownerUserId);
     const promptSignature = JSON.stringify({
-      selectedChatModel: "google/gemini-2.5-flash",
-      requestHints: {
-        latitude: undefined,
-        longitude: undefined,
-        city: undefined,
-        country: undefined,
-      },
-      sessionTail,
+      selectedChatModel: "google/gemini-3-flash-preview",
       skipArtifacts: true,
       surface: "telegram-workflow",
     });
+
     let cachedPrompt = await getCachedSystemPrompt({
       userId: ownerUserId,
       scope: "telegram",
       signature: promptSignature,
     });
+
     if (!cachedPrompt) {
       cachedPrompt = systemPrompt({
-        selectedChatModel: "google/gemini-2.5-flash",
+        selectedChatModel: "google/gemini-3-flash-preview",
         requestHints: {
           latitude: undefined,
           longitude: undefined,
           city: undefined,
           country: undefined,
         },
-        sessionTail,
+        sessionTail: [], // history is cached separately now
         skipArtifacts: true,
       });
+
       await setCachedSystemPrompt({
         userId: ownerUserId,
         scope: "telegram",
@@ -205,6 +201,10 @@ export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
         prompt: cachedPrompt,
       });
     }
+
+    // Append session tail separately to the cached base prompt
+    const { sessionTailPrompt } = await import("@/lib/ai/prompts");
+    const corePrompt = `${cachedPrompt}${sessionTailPrompt(sessionTail ?? [])}`;
 
     const allMessages = [
       ...history,
@@ -219,8 +219,8 @@ export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
     });
 
     const { text, toolCalls } = await generateText({
-      model: getGoogleModel("gemini-2.5-flash"),
-      system: cachedPrompt,
+      model: getGoogleModel("gemini-3-flash-preview"),
+      system: corePrompt,
       messages: allMessages,
       stopWhen: stepCountIs(25),
       tools,
