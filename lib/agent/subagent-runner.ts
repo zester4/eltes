@@ -385,7 +385,7 @@ Execute the task now. Summarize what you did in your final response.`;
   const model =
     subagentModel && subagentModel.startsWith("google/")
       ? getGoogleModel(subagentModel)
-      : getGoogleModel("google/gemini-2.5-flash");
+      : getGoogleModel("google/gemini-3-flash-preview");
 
   try {
     const userContent: any[] = [{ type: "text", text: `Task: ${promptTask}` }];

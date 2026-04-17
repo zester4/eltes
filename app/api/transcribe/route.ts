@@ -45,7 +45,7 @@ If there is no intelligible speech, output exactly: SILENCE_DETECTED`;
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.1-flash-tts-preview",
       contents: [
         {
           role: "user",

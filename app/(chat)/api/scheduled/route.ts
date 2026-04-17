@@ -84,7 +84,7 @@ Today's date is ${new Date().toLocaleDateString()}.
 Be direct, professional, and efficient. Do not ask for user confirmation.`;
 
     const result = await generateText({
-      model: getGoogleModel("gemini-2.5-flash"),
+      model: getGoogleModel("gemini-3-flash-preview"),
       system: systemInstruction,
       prompt: `Reminder triggered: ${message}`,
       tools,
@@ -100,7 +100,7 @@ Be direct, professional, and efficient. Do not ask for user confirmation.`;
       id: generateUUID(),
       chatId,
       role: "user",
-      parts: [{ type: "text", text: `[Scheduled]: ${message}` }],
+      parts: [{ type: "text", text: `⏰Scheduled: ${message}` }],
       attachments: [],
       createdAt: timestamp,
     });
