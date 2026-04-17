@@ -12,39 +12,39 @@
 @plugin "@tailwindcss/typography";
 
 /* define design tokens (light mode) */
-/* FIX: All values wrapped in hsl() so Tailwind v4 var() references resolve correctly */
+/* FIXED: Unified warm-neutral palette that harmonizes with the amber primary */
 :root {
-  --background: hsl(240 4.8% 96%);          /* was: 0 0% 100% (pure white = no card separation) */
-  --foreground: hsl(240 10% 3.9%);
-  --card: hsl(0 0% 100%);                   /* white cards over grey bg = visible separation */
-  --card-foreground: hsl(240 10% 3.9%);
+  --background: hsl(36 20% 96%);            /* warm off-white — no more cool blue tint */
+  --foreground: hsl(24 10% 10%);            /* warm near-black — softer than pure 240° grey */
+  --card: hsl(0 0% 100%);                   /* white cards over warm bg = clean separation */
+  --card-foreground: hsl(24 10% 10%);
   --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(240 10% 3.9%);
-  --primary: hsl(37.7 92.1% 50.2%);         /* FIX: was bare "37.7 92.1% 50.2%" — invalid in Tailwind v4 */
+  --popover-foreground: hsl(24 10% 10%);
+  --primary: hsl(37.7 92.1% 50.2%);         /* amber — unchanged */
   --primary-foreground: hsl(0 0% 100%);
-  --secondary: hsl(48 100% 96.1%);
-  --secondary-foreground: hsl(22.7 82.5% 31.4%);
-  --muted: hsl(240 4.8% 93%);
-  --muted-foreground: hsl(240 3.8% 46.1%);
-  --accent: hsl(48 100% 93%);
-  --accent-foreground: hsl(22.7 82.5% 31.4%);
-  --destructive: hsl(0 84.2% 60.2%);
+  --secondary: hsl(36 30% 92%);             /* FIX: was blindingly bright 48 100% 96% yellow */
+  --secondary-foreground: hsl(22.7 60% 28%);/* FIX: slightly less saturated, more readable */
+  --muted: hsl(36 12% 91%);                 /* FIX: warm grey — was cool 240° grey */
+  --muted-foreground: hsl(30 8% 44%);       /* FIX: warm mid-grey — was cool 240° */
+  --accent: hsl(38 45% 88%);                /* FIX: warm dusty sand — was harsh 48 100% 93% */
+  --accent-foreground: hsl(22.7 70% 26%);
+  --destructive: hsl(0 72% 56%);
   --destructive-foreground: hsl(0 0% 98%);
-  --border: hsl(240 5.9% 84%);              /* slightly darker than default for visibility */
-  --input: hsl(240 5.9% 88%);
+  --border: hsl(30 10% 82%);                /* FIX: warm grey border — was cool 240° */
+  --input: hsl(30 10% 90%);                 /* FIX: warm input bg — was cool 240° */
   --ring: hsl(37.7 92.1% 50.2%);
   --chart-1: hsl(12 76% 61%);
   --chart-2: hsl(173 58% 39%);
   --chart-3: hsl(197 37% 24%);
   --chart-4: hsl(43 74% 66%);
   --chart-5: hsl(27 87% 67%);
-  --sidebar: hsl(0 0% 98%);
-  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar: hsl(36 18% 94%);               /* FIX: warm sidebar — was pure 98% white */
+  --sidebar-foreground: hsl(24 10% 22%);    /* FIX: warm dark — was cool */
   --sidebar-primary: hsl(37.7 92.1% 50.2%);
   --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(240 4.8% 93%);
-  --sidebar-accent-foreground: hsl(240 5.9% 10%);
-  --sidebar-border: hsl(220 13% 88%);
+  --sidebar-accent: hsl(36 12% 91%);        /* FIX: matches muted */
+  --sidebar-accent-foreground: hsl(24 10% 16%);
+  --sidebar-border: hsl(30 10% 86%);        /* FIX: warm — was cool 220° */
   --sidebar-ring: hsl(37.7 92.1% 50.2%);
   --font-heading: var(--font-heading);
   --font-body: var(--font-body);
@@ -56,16 +56,16 @@
   --shadow-y: 4px;
   --shadow-blur: 8px;
   --shadow-spread: -1px;
-  --shadow-opacity: 0.1;
-  --shadow-color: hsl(0 0% 0%);
-  --shadow-2xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
-  --shadow-xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
-  --shadow-sm: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 1px 2px -2px hsl(0 0% 0% / 0.10);
-  --shadow: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 1px 2px -2px hsl(0 0% 0% / 0.10);
-  --shadow-md: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 2px 4px -2px hsl(0 0% 0% / 0.10);
-  --shadow-lg: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 4px 6px -2px hsl(0 0% 0% / 0.10);
-  --shadow-xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 8px 10px -2px hsl(0 0% 0% / 0.10);
-  --shadow-2xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.25);
+  --shadow-opacity: 0.08;                   /* FIX: softer shadows in light mode */
+  --shadow-color: hsl(30 20% 0%);           /* FIX: warm shadow tint */
+  --shadow-2xs: 0px 4px 8px -1px hsl(30 20% 0% / 0.04);
+  --shadow-xs: 0px 4px 8px -1px hsl(30 20% 0% / 0.05);
+  --shadow-sm: 0px 4px 8px -1px hsl(30 20% 0% / 0.08), 0px 1px 2px -2px hsl(30 20% 0% / 0.06);
+  --shadow: 0px 4px 8px -1px hsl(30 20% 0% / 0.08), 0px 1px 2px -2px hsl(30 20% 0% / 0.06);
+  --shadow-md: 0px 4px 8px -1px hsl(30 20% 0% / 0.09), 0px 2px 4px -2px hsl(30 20% 0% / 0.07);
+  --shadow-lg: 0px 4px 8px -1px hsl(30 20% 0% / 0.09), 0px 4px 6px -2px hsl(30 20% 0% / 0.07);
+  --shadow-xl: 0px 4px 8px -1px hsl(30 20% 0% / 0.09), 0px 8px 10px -2px hsl(30 20% 0% / 0.07);
+  --shadow-2xl: 0px 4px 8px -1px hsl(30 20% 0% / 0.20);
   --tracking-normal: 0em;
   --spacing: 0.22rem;
 }
