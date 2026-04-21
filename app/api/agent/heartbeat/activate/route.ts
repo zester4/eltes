@@ -51,7 +51,11 @@ function statusKey(userId: string) {
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.id) {
+  const agentSecret = req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
+  const isAgent = agentSecret === (process.env.AGENT_DELEGATE_SECRET ?? "dev-internal");
+  const userId = isAgent ? req.headers.get("x-user-id") : session?.user?.id;
+
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -60,9 +64,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ active: false, error: "Redis not configured" });
   }
 
-  const stored = await redis.get<Record<string, string>>(
-    statusKey(session.user.id),
-  );
+  const stored = await redis.get<Record<string, string>>(statusKey(userId));
 
   return NextResponse.json({
     active: !!stored?.heartbeatScheduleId,
@@ -75,7 +77,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.id) {
+  const agentSecret = req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
+  const isAgent = agentSecret === (process.env.AGENT_DELEGATE_SECRET ?? "dev-internal");
+  const userId = isAgent ? req.headers.get("x-user-id") : session?.user?.id;
+
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -104,9 +110,7 @@ export async function POST(req: NextRequest) {
 
   const morningHour = body.morningHour ?? DEFAULT_MORNING_HOUR;
   const morningCron = `0 ${morningHour} * * *`;
-  const userId = session.user.id;
-  const heartbeatSecret =
-    process.env.AGENT_DELEGATE_SECRET ?? "dev-internal";
+  const heartbeatSecret = process.env.AGENT_DELEGATE_SECRET ?? "dev-internal";
 
   const results: Record<string, string> = {};
 
@@ -189,13 +193,16 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.id) {
+  const agentSecret = req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
+  const isAgent = agentSecret === (process.env.AGENT_DELEGATE_SECRET ?? "dev-internal");
+  const userId = isAgent ? req.headers.get("x-user-id") : session?.user?.id;
+
+  if (!userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const qstash = getQStash();
   const redis = getRedis();
-  const userId = session.user.id;
 
   if (!qstash) {
     return NextResponse.json({ error: "QStash not configured" }, { status: 503 });
