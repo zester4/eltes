@@ -52,11 +52,15 @@ function statusKey(userId: string) {
 export async function GET(req: NextRequest) {
   const session = await auth();
   const agentSecret = req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
-  const isAgent = agentSecret === (process.env.AGENT_DELEGATE_SECRET ?? "dev-internal");
+  const validSecret = process.env.AGENT_DELEGATE_SECRET || process.env.AUTH_SECRET || "dev-internal";
+  const isAgent = agentSecret === validSecret;
   const userId = isAgent ? req.headers.get("x-user-id") : session?.user?.id;
 
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ 
+      error: "Unauthorized",
+      message: isAgent ? "Missing x-user-id header" : "No active session and secret mismatch"
+    }, { status: 401 });
   }
 
   const redis = getRedis();
@@ -78,11 +82,15 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth();
   const agentSecret = req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
-  const isAgent = agentSecret === (process.env.AGENT_DELEGATE_SECRET ?? "dev-internal");
+  const validSecret = process.env.AGENT_DELEGATE_SECRET || process.env.AUTH_SECRET || "dev-internal";
+  const isAgent = agentSecret === validSecret;
   const userId = isAgent ? req.headers.get("x-user-id") : session?.user?.id;
 
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ 
+      error: "Unauthorized",
+      message: isAgent ? "Missing x-user-id header" : "No active session and secret mismatch"
+    }, { status: 401 });
   }
 
   const qstash = getQStash();
@@ -194,11 +202,15 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const session = await auth();
   const agentSecret = req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
-  const isAgent = agentSecret === (process.env.AGENT_DELEGATE_SECRET ?? "dev-internal");
+  const validSecret = process.env.AGENT_DELEGATE_SECRET || process.env.AUTH_SECRET || "dev-internal";
+  const isAgent = agentSecret === validSecret;
   const userId = isAgent ? req.headers.get("x-user-id") : session?.user?.id;
 
   if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ 
+      error: "Unauthorized",
+      message: isAgent ? "Missing x-user-id header" : "No active session and secret mismatch"
+    }, { status: 401 });
   }
 
   const qstash = getQStash();

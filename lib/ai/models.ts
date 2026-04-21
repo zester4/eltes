@@ -89,6 +89,12 @@ export const chatModels: ChatModel[] = [
     provider: "moonshotai",
     description: "Next generation Kimi model",
   },
+  {
+    id: "moonshotai/kimi-k2.6",
+    name: "Kimi K2.6",
+    provider: "moonshotai",
+    description: "Latest Kimi model",
+  },
   // Minimax
   {
     id: "minimax/minimax-m2.5",

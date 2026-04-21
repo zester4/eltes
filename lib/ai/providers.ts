@@ -78,5 +78,5 @@ export function getArtifactModel() {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel("artifact-model");
   }
-  return gateway.languageModel("anthropic/claude-haiku-4.5");
+  return gateway.languageModel("moonshotai/kimi-k2.5");
 }

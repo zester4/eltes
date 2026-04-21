@@ -61,8 +61,12 @@ export async function POST(req: NextRequest) {
 
   // Dev mode (no signing keys) — still require a basic secret
   const devSecret = req.headers.get("x-heartbeat-secret") || req.headers.get("x-agent-secret");
-  if (devSecret !== (process.env.AGENT_DELEGATE_SECRET ?? "dev-internal")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const validSecret = process.env.AGENT_DELEGATE_SECRET || process.env.AUTH_SECRET || "dev-internal";
+  if (devSecret !== validSecret) {
+    return NextResponse.json({ 
+      error: "Unauthorized",
+      message: "Secret mismatch"
+    }, { status: 401 });
   }
 
   let body: { userId?: string; type?: string };
