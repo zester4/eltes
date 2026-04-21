@@ -58,6 +58,7 @@ import {
   tavilyCrawl,
   tavilyMap,
 } from "@/lib/ai/tools/tavily-search";
+import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
 import {
   createSandbox,
   listSandboxes,
@@ -141,6 +142,8 @@ export function buildEtlesTelegramTools({
     tavilyExtract,
     tavilyCrawl,
     tavilyMap,
+    wikiQuery: wikiQuery(),
+    wikiIngest: wikiIngest(),
     createSandbox: createSandbox({ userId }),
     listSandboxes: listSandboxes({ userId }),
     deleteSandbox: deleteSandbox({ userId }),

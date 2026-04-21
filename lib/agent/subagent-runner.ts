@@ -66,6 +66,7 @@ import {
   tavilyCrawl,
   tavilyMap,
 } from "@/lib/ai/tools/tavily-search";
+import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
 import * as daytonaTools from "@/lib/ai/tools/daytona";
 import * as browserUseTools from "@/lib/ai/tools/browser-use";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
@@ -185,6 +186,8 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
     tavilyExtract,
     tavilyCrawl,
     tavilyMap,
+    wikiQuery: wikiQuery(),
+    wikiIngest: wikiIngest(),
 
     // Sandbox tools for specialist agents
     ...(agentType === "sandbox_specialist" || agentType === "browser_operator"

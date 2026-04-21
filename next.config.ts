@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
         "localhost:3000",
       ],
     },
+    // @ts-ignore
+    outputFileTracingIncludes: {
+      "/api/**": ["./.wiki/**/*.md"],
+    },
   },
   images: {
     remotePatterns: [

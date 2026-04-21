@@ -29,6 +29,7 @@ import { getWeather } from "@/lib/ai/tools/get-weather";
 import { renderChart } from "@/lib/ai/tools/render-chart";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
+import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
 import {
   saveMemory,
   recallMemory,
@@ -351,6 +352,8 @@ export async function POST(request: Request) {
                 "tavilyExtract",
                 "tavilyCrawl",
                 "tavilyMap",
+                "wikiQuery",
+                "wikiIngest",
                 // Twilio tools
                 "twilioMakeCall",
                 "twilioGetCall",
@@ -399,6 +402,8 @@ export async function POST(request: Request) {
             generateImage: generateImageTool(dataStream),
             generateVideo: generateVideoTool(),
             renderChart,
+            wikiQuery: wikiQuery(),
+            wikiIngest: wikiIngest(),
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
