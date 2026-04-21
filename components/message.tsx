@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { ChartToolPayload } from "@/lib/ai/tools/render-chart";
 import { parseSubAgentHandoffMarker } from "@/lib/agent/sub-agent-handoff-markers";
+import { decodeWorkflowProgress } from "@/lib/agent/workflow-progress";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { isToolCall, isToolResult } from "@/lib/utils";
@@ -16,6 +17,7 @@ import { DocumentPreview } from "./document-preview";
 import { AgentActionCard, AgentActionData, AgentMessageBubble, isResult, parseAgentMessage, type AgentResultData } from "./elements/agent-action";
 import { ChartDisplay } from "./elements/chart-display";
 import { EventCard, parseEventMessage } from "./elements/event";
+import { WorkflowProgressCard } from "./elements/workflow-step";
 import { ExpandableContent } from "./elements/expandable-content";
 import { MessageContent } from "./elements/message";
 import { Response } from "./elements/response";
@@ -218,6 +220,13 @@ const PurePreviewMessage = ({
               if (parseSubAgentHandoffMarker(rawText)) {
                 return null;
               }
+
+              // ---------- WORKFLOW_PROGRESS card (must come before the other prefixes) -----
+              const workflowProgress = decodeWorkflowProgress(rawText);
+              if (workflowProgress) {
+                return <WorkflowProgressCard key={key} progress={workflowProgress} />;
+              }
+              // ---------- end WORKFLOW_PROGRESS block --------------------------------------
 
               let conversationalText = rawText;
               let partAgent: AgentActionData | null = null;

@@ -33,7 +33,7 @@ import {
   modelsByProvider,
 } from "@/lib/ai/models";
 import type { Attachment, ChatMessage } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, generateUUID } from "@/lib/utils";
 import {
   PromptInput,
   PromptInputSubmit,
@@ -158,7 +158,74 @@ function PureMultimodalInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
 
-  const submitForm = useCallback(() => {
+  const submitForm = useCallback(async () => {
+    // ── /agent slash-command ─────────────────────────────────────────────────
+    const trimmed = input.trim();
+    if (trimmed.toLowerCase().startsWith("/agent ")) {
+      const task = trimmed.slice("/agent ".length).trim();
+      if (!task) return; // Nothing after the command — ignore silently.
+
+      // Reset input immediately for snappy UX.
+      setInput("");
+      setLocalStorageInput("");
+      resetHeight();
+      if (width && width > 768) textareaRef.current?.focus();
+
+      // Optimistically add the user message to the local UI state.
+      // The server will persist it via upsertMessages; the IDs match so
+      // no duplicate appears when the next poll arrives.
+      const userMessageId = generateUUID();
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: userMessageId,
+          role: "user" as const,
+          parts: [{ type: "text" as const, text: trimmed }],
+          createdAt: new Date(),
+          attachments: [],
+        },
+      ]);
+
+      // Push URL so the back button works correctly.
+      window.history.pushState({}, "", `/chat/${chatId}`);
+
+      // Hit the authenticated trigger endpoint.
+      try {
+        const res = await fetch("/api/agent/run", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            task,
+            chatId,
+            model: selectedModelId,
+            userMessageId, // for idempotent server-side upsert
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: "Unknown error" }));
+          toast.error(
+            `Agent run failed: ${
+              (err as { error?: string }).error ?? res.statusText
+            }`
+          );
+          // Remove the optimistic message on failure so the user can retry.
+          setMessages((prev) => prev.filter((m) => m.id !== userMessageId));
+        }
+        // On success: the polling loop in chat.tsx (activeAgentTasks) picks up
+        // the AgentTask row created by the server and starts fetching progress
+        // messages every 4 seconds. No extra wiring needed here.
+      } catch (err) {
+        console.error("[AgentRun] Fetch failed:", err);
+        toast.error("Could not reach the agent service. Check your connection.");
+        setMessages((prev) => prev.filter((m) => m.id !== userMessageId));
+      }
+
+      return; // ← exit before the normal sendMessage path
+    }
+    // ── End /agent block ─────────────────────────────────────────────────────
+
+    // Normal message flow (unchanged from original)
     window.history.pushState({}, "", `/chat/${chatId}`);
 
     sendMessage({
@@ -171,7 +238,7 @@ function PureMultimodalInput({
           mediaType: attachment.contentType,
         })),
         {
-          type: "text",
+          type: "text" as const,
           text: input,
         },
       ],
@@ -192,9 +259,11 @@ function PureMultimodalInput({
     sendMessage,
     setAttachments,
     setLocalStorageInput,
+    setMessages,
     width,
     chatId,
     resetHeight,
+    selectedModelId,
   ]);
 
   const uploadFile = useCallback(async (file: File) => {
