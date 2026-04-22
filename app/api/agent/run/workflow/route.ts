@@ -22,12 +22,12 @@
  */
 
 import { serve } from "@upstash/workflow/nextjs";
-import { generateText, stepCountIs } from "ai";
+import { convertToModelMessages, generateText, stepCountIs } from "ai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { Index } from "@upstash/vector";
 import { getLanguageModel } from "@/lib/ai/providers";
-import { regularPrompt } from "@/lib/ai/prompts";
+import { regularPrompt, sessionTailPrompt } from "@/lib/ai/prompts";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
   saveMemory,
@@ -74,8 +74,9 @@ import {
   tavilyMap,
 } from "@/lib/ai/tools/tavily-search";
 import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
-import { saveMessages, updateAgentTask } from "@/lib/db/queries";
-import { generateUUID } from "@/lib/utils";
+import { getMessagesByChatId, saveMessages, updateAgentTask } from "@/lib/db/queries";
+import { convertToUIMessages, generateUUID, getTextFromMessage } from "@/lib/utils";
+import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import { upsertWorkflowProgress } from "@/lib/agent/workflow-progress.server";
 import {
   makeRunningStep,
@@ -164,6 +165,39 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         startedAt,
       });
 
+      // Load chat history & session tail for context continuity
+      const [dbMessages, sessionTail] = await Promise.all([
+        getMessagesByChatId({ id: chatId }),
+        getSessionTail(userId),
+      ]);
+
+      const uiMessages = convertToUIMessages(dbMessages);
+      let onboardingTail: { role: "assistant"; text: string }[] = [];
+
+      // Onboarding check for new users
+      if (uiMessages.length <= 1) {
+        try {
+          const index = new Index({
+            url: process.env.UPSTASH_VECTOR_REST_URL!,
+            token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
+          });
+          const ns = index.namespace(`memory-${userId}`);
+          const onboarding = await ns.fetch(["onboarding_complete"]);
+          if (!onboarding || onboarding.length === 0) {
+            onboardingTail = [
+              {
+                role: "assistant",
+                text: "SYSTEM: User is new. You MUST start with a guided setup: 'Hi! I'm Etles. Let's take 2 minutes to set you up. What do you do for work? what apps do you use (Gmail, Slack, GitHub, etc.)?' Proactively save every answer using saveMemory. When they finish, saveMemory with key 'onboarding_complete' to register their background jobs.",
+              },
+            ];
+          }
+        } catch (e) {
+          console.error("[AgentRunWorkflow] Onboarding check failed:", e);
+        }
+      }
+
+      const modelMessages = await convertToModelMessages(uiMessages);
+
       // Load Composio tools — optional, continue without if unavailable
       let composioTools: Record<string, unknown> = {};
       try {
@@ -215,6 +249,16 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         ? `\n\n═══════════════════════════════════\nUSER MEMORY (loaded from long-term store)\n═══════════════════════════════════\n${memoryContext}\n`
         : "";
 
+      const systemPrompt = `${regularPrompt}${sessionTailPrompt([
+        ...(sessionTail ?? []),
+        ...onboardingTail,
+      ])}${memorySection}\n\nToday is ${new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })}.`;
+
       // Mutable refs for onStepFinish — these accumulate across all model steps.
       let toolCallCount = 0;
       let currentTool: string | undefined;
@@ -225,8 +269,8 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
       try {
         const result = await generateText({
           model: getLanguageModel(model),
-          system: `${regularPrompt}${memorySection}\n\nToday is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.`,
-          messages: [{ role: "user", content: task }],
+          system: systemPrompt,
+          messages: modelMessages,
           tools,
           stopWhen: stepCountIs(25),
           onStepFinish: async ({ toolCalls }) => {
@@ -323,5 +367,18 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
       status: "completed",
       result: { text: resultText },
     });
+
+    // Update session tail for cross-surface continuity
+    const dbMessages = await getMessagesByChatId({ id: chatId });
+    const uiMessages = convertToUIMessages(dbMessages);
+    const tail = uiMessages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .slice(-5)
+      .map((m) => ({
+        role: m.role as "user" | "assistant",
+        text: getTextFromMessage(m),
+      }));
+
+    await saveSessionTail(userId, tail);
   });
 });

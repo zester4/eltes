@@ -394,3 +394,13 @@
     min-height: 72dvh;
   }
 }
+
+@layer utilities {
+  .agent-active {
+    background-color: color-mix(in srgb, var(--primary) 15%, transparent) !important;
+    color: var(--primary) !important;
+    border-color: color-mix(in srgb, var(--primary) 50%, transparent) !important;
+    box-shadow: 0 0 12px 2px color-mix(in srgb, var(--primary) 25%, transparent) !important;
+    transition: all 0.3s ease;
+  }
+}

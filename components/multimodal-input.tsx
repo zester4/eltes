@@ -41,7 +41,7 @@ import {
   PromptInputToolbar,
   PromptInputTools,
 } from "./elements/prompt-input";
-import { ArrowUpIcon, PaperclipIcon, StopIcon } from "./icons";
+import { ArrowUpIcon, BotIcon, PaperclipIcon, StopIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
 import { SuggestedActions } from "./suggested-actions";
 import { Button } from "./ui/button";
@@ -100,6 +100,7 @@ function PureMultimodalInput({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { width } = useWindowSize();
+  const [isAgentMode, setIsAgentMode] = useState(false);
 
   const adjustHeight = useCallback(() => {
     if (textareaRef.current) {
@@ -158,12 +159,16 @@ function PureMultimodalInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
 
-  const submitForm = useCallback(async () => {
-    // ── /agent slash-command ─────────────────────────────────────────────────
-    const trimmed = input.trim();
-    if (trimmed.toLowerCase().startsWith("/agent ")) {
-      const task = trimmed.slice("/agent ".length).trim();
-      if (!task) return; // Nothing after the command — ignore silently.
+  const triggerAgent = useCallback(
+    async (taskText: string) => {
+      const trimmed = taskText.trim();
+      if (!trimmed) return;
+
+      const isSlashCommand = trimmed.toLowerCase().startsWith("/agent ");
+      const task = isSlashCommand ? trimmed.slice(7).trim() : trimmed;
+      if (!task) return;
+
+      const displayMessage = isSlashCommand ? trimmed : `/agent ${trimmed}`;
 
       // Reset input immediately for snappy UX.
       setInput("");
@@ -180,7 +185,7 @@ function PureMultimodalInput({
         {
           id: userMessageId,
           role: "user" as const,
-          parts: [{ type: "text" as const, text: trimmed }],
+          parts: [{ type: "text" as const, text: displayMessage }],
           createdAt: new Date(),
           attachments: [],
         },
@@ -199,6 +204,7 @@ function PureMultimodalInput({
             chatId,
             model: selectedModelId,
             userMessageId, // for idempotent server-side upsert
+            visibility: selectedVisibilityType,
           }),
         });
 
@@ -220,10 +226,26 @@ function PureMultimodalInput({
         toast.error("Could not reach the agent service. Check your connection.");
         setMessages((prev) => prev.filter((m) => m.id !== userMessageId));
       }
+    },
+    [
+      chatId,
+      selectedModelId,
+      selectedVisibilityType,
+      setInput,
+      setLocalStorageInput,
+      setMessages,
+      width,
+      resetHeight,
+    ]
+  );
 
-      return; // ← exit before the normal sendMessage path
+  const submitForm = useCallback(async () => {
+    // ── Agent Mode Handling ──────────────────────────────────────────────────
+    if (isAgentMode || input.trim().toLowerCase().startsWith("/agent ")) {
+      await triggerAgent(input);
+      setIsAgentMode(false);
+      return;
     }
-    // ── End /agent block ─────────────────────────────────────────────────────
 
     // Normal message flow (unchanged from original)
     window.history.pushState({}, "", `/chat/${chatId}`);
@@ -555,6 +577,22 @@ function PureMultimodalInput({
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
             />
+            <Button
+              className={cn(
+                "h-7 gap-1.5 px-2 text-xs transition-all duration-300",
+                isAgentMode && "agent-active"
+              )}
+              disabled={status !== "ready"}
+              onClick={(event) => {
+                event.preventDefault();
+                setIsAgentMode(!isAgentMode);
+                textareaRef.current?.focus();
+              }}
+              variant="ghost"
+            >
+              <BotIcon />
+              Agent
+            </Button>
           </PromptInputTools>
 
           <div className="flex items-center gap-1 sm:gap-2">
@@ -674,7 +712,7 @@ function PureModelSelectorCompact({
   return (
     <ModelSelector onOpenChange={setOpen} open={open}>
       <ModelSelectorTrigger asChild>
-        <Button className="h-7 w-[190px] justify-between px-2 text-xs" variant="ghost">
+        <Button className="h-7 w-auto max-w-[190px] gap-1.5 px-2 text-xs" variant="ghost">
           {provider && <ModelSelectorLogo provider={provider} />}
           <ModelSelectorName>{selectedModel.name}</ModelSelectorName>
         </Button>
