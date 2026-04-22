@@ -306,7 +306,7 @@ export async function POST(request: Request) {
           ),
           system: corePrompt,
           messages: modelMessages,
-          stopWhen: stepCountIs(25),
+          stopWhen: stepCountIs(5),
             experimental_activeTools: (isReasoningModel
               ? []
               : [

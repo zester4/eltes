@@ -73,6 +73,7 @@ import {
   tavilyCrawl,
   tavilyMap,
 } from "@/lib/ai/tools/tavily-search";
+import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
 import { saveMessages, updateAgentTask } from "@/lib/db/queries";
 import { generateUUID } from "@/lib/utils";
 import { upsertWorkflowProgress } from "@/lib/agent/workflow-progress.server";
@@ -195,6 +196,8 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         tavilyExtract,
         tavilyCrawl,
         tavilyMap,
+        wikiQuery: wikiQuery(),
+        wikiIngest: wikiIngest(),
         upsertKnowledgeEntity: upsertKnowledgeEntity({ userId }),
         addKnowledgeRelation: addKnowledgeRelation({ userId }),
         getKnowledgeEntity: getKnowledgeEntity({ userId }),
