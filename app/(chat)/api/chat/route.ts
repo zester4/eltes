@@ -23,6 +23,7 @@ import {
 } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
+import { editDocument } from "@/lib/ai/tools/edit-document";
 import { generateImageTool } from "@/lib/ai/tools/generate-image";
 import { generateVideoTool } from "@/lib/ai/tools/generate-video";
 import { getWeather } from "@/lib/ai/tools/get-weather";
@@ -315,6 +316,7 @@ export async function POST(request: Request) {
                   "renderChart",
                   "createDocument",
                 "updateDocument",
+                "editDocument",
                 "requestSuggestions",
                 "saveMemory",
                 "recallMemory",
@@ -406,6 +408,7 @@ export async function POST(request: Request) {
             wikiIngest: wikiIngest(),
             createDocument: createDocument({ session, dataStream }),
             updateDocument: updateDocument({ session, dataStream }),
+            editDocument: editDocument({ session, dataStream }),
             requestSuggestions: requestSuggestions({ session, dataStream }),
             // Memory tools (per-user Upstash Vector)
             saveMemory: saveMemory({ userId: session.user.id! }),

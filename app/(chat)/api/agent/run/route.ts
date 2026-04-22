@@ -19,6 +19,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import {
   createAgentTask,
+  getChatById,
+  saveChat,
   saveMessages,
   updateAgentTask,
   upsertMessages,
@@ -73,6 +75,21 @@ export async function POST(req: NextRequest) {
   const taskText = task.trim();
   const taskId = generateUUID();
   const startedAt = new Date().toISOString();
+
+  // ── Ensure chat exists ─────────────────────────────────────────────────────
+  const chat = await getChatById({ id: chatId });
+  if (chat) {
+    if (chat.userId !== userId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  } else {
+    await saveChat({
+      id: chatId,
+      userId,
+      title: taskText.slice(0, 100),
+      visibility: "private",
+    });
+  }
 
   // ── Persist user message ───────────────────────────────────────────────────
   // upsertMessages → onConflictDoNothing equivalent via idempotent userMessageId

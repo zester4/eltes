@@ -78,5 +78,5 @@ export function getArtifactModel() {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel("artifact-model");
   }
-  return gateway.languageModel("moonshotai/kimi-k2.5");
+  return gateway.languageModel("google/gemini-3-flash-preview");
 }
