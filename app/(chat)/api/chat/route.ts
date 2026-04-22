@@ -4,6 +4,7 @@ import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
+  type UIMessageStreamWriter,
   generateId,
   stepCountIs,
   streamText,
@@ -306,10 +307,8 @@ export async function POST(request: Request) {
           ),
           system: corePrompt,
           messages: modelMessages,
-          stopWhen: stepCountIs(5),
-            experimental_activeTools: (isReasoningModel
-              ? []
-              : [
+          stopWhen: stepCountIs(25),
+            experimental_activeTools: [
                   "getWeather",
                   "generateImage",
                   "generateVideo",
@@ -390,7 +389,7 @@ export async function POST(request: Request) {
                 "getPreviewLink",
                 "runBackgroundProcess",
                 ...Object.keys(composioTools),
-              ]) as any,
+              ] as any,
           providerOptions: isReasoningModel
             ? {
                 anthropic: {
@@ -406,10 +405,22 @@ export async function POST(request: Request) {
             renderChart,
             wikiQuery: wikiQuery(),
             wikiIngest: wikiIngest(),
-            createDocument: createDocument({ session, dataStream }),
-            updateDocument: updateDocument({ session, dataStream }),
+            createDocument: createDocument({
+              session,
+              dataStream,
+              modelId: selectedChatModel,
+            }),
+            updateDocument: updateDocument({
+              session,
+              dataStream,
+              modelId: selectedChatModel,
+            }),
             editDocument: editDocument({ session, dataStream }),
-            requestSuggestions: requestSuggestions({ session, dataStream }),
+            requestSuggestions: requestSuggestions({
+              session,
+              dataStream,
+              modelId: selectedChatModel,
+            }),
             // Memory tools (per-user Upstash Vector)
             saveMemory: saveMemory({ userId: session.user.id! }),
             recallMemory: recallMemory({ userId: session.user.id! }),

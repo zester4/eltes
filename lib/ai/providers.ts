@@ -38,13 +38,14 @@ export function getLanguageModel(modelId: string) {
     modelId.endsWith("-thinking") ||
     (modelId.includes("reasoning") && !modelId.includes("non-reasoning"));
 
-  if (isReasoningModel) {
-    const gatewayModelId = modelId
-      .replace(THINKING_SUFFIX_REGEX, "")
-      .replace("-reasoning", "");
+  // Diagnostic log for model selection
+  console.log(`[AI SDK] Using model: ${modelId} (reasoning: ${isReasoningModel})`);
 
+  if (isReasoningModel) {
+    // We wrap with reasoning middleware to extract thinking blocks if present.
+    // We pass the FULL modelId to the gateway to ensure correct routing.
     return wrapLanguageModel({
-      model: gateway.languageModel(gatewayModelId),
+      model: gateway.languageModel(modelId),
       middleware: extractReasoningMiddleware({ tagName: "thinking" }),
     });
   }
@@ -74,9 +75,14 @@ export function getTitleModel() {
   return gateway.languageModel("google/gemini-2.5-flash-lite");
 }
 
-export function getArtifactModel() {
+export function getArtifactModel(modelId?: string) {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel("artifact-model");
   }
+
+  if (modelId) {
+    return getLanguageModel(modelId);
+  }
+
   return gateway.languageModel("google/gemini-3-flash-preview");
 }

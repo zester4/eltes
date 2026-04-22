@@ -28,6 +28,8 @@ import { VercelProvider } from "@composio/vercel";
 import { Index } from "@upstash/vector";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { regularPrompt, sessionTailPrompt } from "@/lib/ai/prompts";
+import { createDocument } from "@/lib/ai/tools/create-document";
+import { updateDocument } from "@/lib/ai/tools/update-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
   saveMemory,
@@ -74,6 +76,8 @@ import {
   tavilyMap,
 } from "@/lib/ai/tools/tavily-search";
 import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
+import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
+import * as twilioTools from "@/lib/ai/tools/twilio";
 import { getMessagesByChatId, saveMessages, updateAgentTask } from "@/lib/db/queries";
 import { convertToUIMessages, generateUUID, getTextFromMessage } from "@/lib/utils";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
@@ -232,6 +236,39 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         tavilyMap,
         wikiQuery: wikiQuery(),
         wikiIngest: wikiIngest(),
+        // New: Pass current workflow model to artifact tools
+        createDocument: createDocument({
+          session: { user: { id: userId } } as any,
+          dataStream: { write: () => {} } as any, // Workflow handles storage via handlers
+          modelId: model,
+        }),
+        updateDocument: updateDocument({
+          session: { user: { id: userId } } as any,
+          dataStream: { write: () => {} } as any,
+          modelId: model,
+        }),
+        // Daytona Browser
+        browserSetup: daytonaBrowserTools.browserSetup({ userId }),
+        browserNavigate: daytonaBrowserTools.browserNavigate({ userId }),
+        browserInteract: daytonaBrowserTools.browserInteract({ userId }),
+        browserExtract: daytonaBrowserTools.browserExtract({ userId }),
+        browserMultiTab: daytonaBrowserTools.browserMultiTab({ userId }),
+        browserUploadFile: daytonaBrowserTools.browserUploadFile({ userId }),
+        browserScreenshot: daytonaBrowserTools.browserScreenshot({ userId }),
+        browserVisualInteract: daytonaBrowserTools.browserVisualInteract({ userId }),
+        // Twilio
+        twilioMakeCall: twilioTools.twilioMakeCall({ userId }),
+        twilioGetCall: twilioTools.twilioGetCall({ userId }),
+        twilioListCalls: twilioTools.twilioListCalls({ userId }),
+        twilioModifyCall: twilioTools.twilioModifyCall({ userId }),
+        twilioSendSMS: twilioTools.twilioSendSMS({ userId }),
+        twilioGetMessage: twilioTools.twilioGetMessage({ userId }),
+        twilioListMessages: twilioTools.twilioListMessages({ userId }),
+        twilioListMyNumbers: twilioTools.twilioListMyNumbers({ userId }),
+        twilioSearchAvailableNumbers: twilioTools.twilioSearchAvailableNumbers({ userId }),
+        twilioProvisionNumber: twilioTools.twilioProvisionNumber({ userId }),
+        twilioReleaseNumber: twilioTools.twilioReleaseNumber({ userId }),
+        twilioUpdateNumber: twilioTools.twilioUpdateNumber({ userId }),
         upsertKnowledgeEntity: upsertKnowledgeEntity({ userId }),
         addKnowledgeRelation: addKnowledgeRelation({ userId }),
         getKnowledgeEntity: getKnowledgeEntity({ userId }),

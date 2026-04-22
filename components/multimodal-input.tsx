@@ -243,7 +243,7 @@ function PureMultimodalInput({
     // ── Agent Mode Handling ──────────────────────────────────────────────────
     if (isAgentMode || input.trim().toLowerCase().startsWith("/agent ")) {
       await triggerAgent(input);
-      setIsAgentMode(false);
+      // Keep isAgentMode sticky if it was explicitly toggled on via button
       return;
     }
 
