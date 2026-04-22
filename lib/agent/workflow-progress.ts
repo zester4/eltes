@@ -55,9 +55,13 @@ export function encodeWorkflowProgress(p: WorkflowProgress): string {
 }
 
 export function decodeWorkflowProgress(text: string): WorkflowProgress | null {
-  if (!text.startsWith(WORKFLOW_PROGRESS_PREFIX)) return null;
+  const trimmed = text.trim();
+  if (!trimmed.includes(WORKFLOW_PROGRESS_PREFIX)) return null;
+
   try {
-    return JSON.parse(text.slice(WORKFLOW_PROGRESS_PREFIX.length)) as WorkflowProgress;
+    const parts = trimmed.split(WORKFLOW_PROGRESS_PREFIX);
+    const jsonStr = parts[parts.length - 1];
+    return JSON.parse(jsonStr) as WorkflowProgress;
   } catch {
     return null;
   }
