@@ -10,7 +10,13 @@ async function listDefaultPages() {
   try {
     const entries = await fs.readdir(WIKI_ROOT, { withFileTypes: true });
     const pages = entries
-      .filter((e) => e.isFile() && e.name.endsWith(".md") && e.name !== "index.md")
+      .filter(
+        (e) =>
+          e.isFile() &&
+          e.name.endsWith(".md") &&
+          e.name !== "index.md" &&
+          e.name !== "instructions.md",
+      )
       .map((e) => e.name.replace(".md", ""));
     
     return await Promise.all(pages.map(async (slug) => {

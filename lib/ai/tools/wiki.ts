@@ -68,7 +68,13 @@ async function listAllPages(): Promise<string[]> {
   try {
     const entries = await fs.readdir(WIKI_ROOT, { withFileTypes: true });
     return entries
-      .filter((e) => e.isFile() && e.name.endsWith(".md") && e.name !== "index.md")
+      .filter(
+        (e) =>
+          e.isFile() &&
+          e.name.endsWith(".md") &&
+          e.name !== "index.md" &&
+          e.name !== "instructions.md",
+      )
       .map((e) => e.name.replace(".md", ""));
   } catch {
     return [];
