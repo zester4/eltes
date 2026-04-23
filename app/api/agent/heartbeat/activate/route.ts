@@ -178,7 +178,28 @@ export async function POST(req: NextRequest) {
     console.error("[Heartbeat Activate] Failed to create morning schedule:", err?.message);
   }
 
-  // ── 4. Persist schedule IDs in Redis for status + deactivation ────────────
+  // ── 4. Sandbox keep-alive schedule ──────────────────────────────────────────
+  try {
+    const sandboxKeepalive = await (qstash.schedules as any).create({
+      destination: `${baseUrl}/api/agent/sandbox/keepalive`,
+      cron: "0 3 1,21 * *", // 3am UTC on the 1st and 21st of every month (every ~20 days)
+      body: JSON.stringify({ userId }),
+      headers: {
+        "Content-Type": "application/json",
+        "x-agent-secret": heartbeatSecret,
+      },
+      retries: 3,
+      deduplicationId: `sandbox-keepalive-${userId}`,
+    });
+    results.sandboxKeepaliveScheduleId = sandboxKeepalive.scheduleId;
+  } catch (err: any) {
+    console.error(
+      "[Heartbeat Activate] Failed to create sandbox keep-alive schedule:",
+      err?.message,
+    );
+  }
+
+  // ── 5. Persist schedule IDs in Redis for status + deactivation ────────────
   const redis = getRedis();
   if (redis && Object.keys(results).length > 0) {
     await redis.set(statusKey(userId), JSON.stringify(results), {
@@ -192,7 +213,7 @@ export async function POST(req: NextRequest) {
     ok: activated,
     schedules: results,
     message: activated
-      ? `Background intelligence activated. Hourly heartbeat + weekly synthesis${results.morningScheduleId ? " + morning briefing" : ""} running.`
+      ? `Background intelligence activated. Hourly heartbeat + weekly synthesis${results.morningScheduleId ? " + morning briefing" : ""}${results.sandboxKeepaliveScheduleId ? " + sandbox keep-alive" : ""} running.`
       : "Activation partially failed — check server logs.",
   });
 }

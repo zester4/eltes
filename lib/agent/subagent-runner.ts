@@ -70,6 +70,7 @@ import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
 import * as daytonaTools from "@/lib/ai/tools/daytona";
 import * as browserUseTools from "@/lib/ai/tools/browser-use";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
+import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
 import * as twilio from "@/lib/ai/tools/twilio";
 
 const composio = new Composio({ provider: new VercelProvider() });
@@ -155,8 +156,14 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
     getCollaborationStatus: getCollaborationStatus(),
   };
 
+  const persistentSandboxTools =
+    agentType === "sandbox_specialist" || agentType === "browser_operator"
+      ? getPersistentSandboxTools({ userId })
+      : {};
+
   const tools = {
     ...composioTools,
+    ...persistentSandboxTools,
     ...collaborationTools,
     getWeather,
     generateImage: generateImageTool(),

@@ -77,6 +77,7 @@ import {
 } from "@/lib/ai/tools/tavily-search";
 import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
+import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
 import * as twilioTools from "@/lib/ai/tools/twilio";
 import { getMessagesByChatId, saveMessages, updateAgentTask } from "@/lib/db/queries";
 import { convertToUIMessages, generateUUID, getTextFromMessage } from "@/lib/utils";
@@ -269,6 +270,8 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         twilioProvisionNumber: twilioTools.twilioProvisionNumber({ userId }),
         twilioReleaseNumber: twilioTools.twilioReleaseNumber({ userId }),
         twilioUpdateNumber: twilioTools.twilioUpdateNumber({ userId }),
+        // Persistent Sandbox
+        ...getPersistentSandboxTools({ userId }),
         upsertKnowledgeEntity: upsertKnowledgeEntity({ userId }),
         addKnowledgeRelation: addKnowledgeRelation({ userId }),
         getKnowledgeEntity: getKnowledgeEntity({ userId }),

@@ -85,6 +85,7 @@ import {
 import * as twilio from "@/lib/ai/tools/twilio";
 import * as browserUseTools from "@/lib/ai/tools/browser-use";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
+import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
 
 export type TelegramEtlesToolsParams = {
   userId: string;
@@ -165,6 +166,8 @@ export function buildEtlesTelegramTools({
     runBackgroundProcess: runBackgroundProcess({ userId }),
     lspDiagnostics: lspDiagnostics({ userId }),
     archiveSandbox: archiveSandbox({ userId }),
+    // Persistent Sandbox
+    ...getPersistentSandboxTools({ userId }),
     twilioMakeCall: twilio.twilioMakeCall({ userId }),
     twilioGetCall: twilio.twilioGetCall({ userId }),
     twilioListCalls: twilio.twilioListCalls({ userId }),

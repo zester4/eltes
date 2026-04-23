@@ -85,7 +85,7 @@ import {
   tavilyMap,
 } from "@/lib/ai/tools/tavily-search";
 import * as twilioTools from "@/lib/ai/tools/twilio";
-import * as daytonaTools from "@/lib/ai/tools/daytona";
+import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import { touchUserActivity } from "@/lib/user-activity";
 import { getCachedSystemPrompt, setCachedSystemPrompt } from "@/lib/prompt-cache";
@@ -368,26 +368,14 @@ export async function POST(request: Request) {
                 "twilioProvisionNumber",
                 "twilioReleaseNumber",
                 "twilioUpdateNumber",
-                // Daytona tools
-                "createSandbox",
-                "listSandboxes",
-                "deleteSandbox",
-                "executeCommand",
-                "runCode",
-                "listFiles",
-                "readFile",
-                "writeFile",
-                "createDirectory",
-                "searchFiles",
-                "replaceInFiles",
-                "gitClone",
-                "gitStatus",
-                "gitCommit",
-                "gitPush",
-                "gitPull",
-                "gitBranch",
-                "getPreviewLink",
-                "runBackgroundProcess",
+                "sandboxStatus",
+                "sandboxRun",
+                "sandboxWriteFile",
+                "sandboxReadFile",
+                "sandboxListFiles",
+                "sandboxInstall",
+                "sandboxStartService",
+                "sandboxReset",
                 ...Object.keys(composioTools),
               ] as any,
           providerOptions: isReasoningModel
@@ -513,26 +501,8 @@ export async function POST(request: Request) {
                   twilioProvisionNumber: twilioTools.twilioProvisionNumber({ userId: session.user.id! }),
                   twilioReleaseNumber: twilioTools.twilioReleaseNumber({ userId: session.user.id! }),
                   twilioUpdateNumber: twilioTools.twilioUpdateNumber({ userId: session.user.id! }),
-                  // Daytona Tools
-                  createSandbox: daytonaTools.createSandbox({ userId: session.user.id! }),
-                  listSandboxes: daytonaTools.listSandboxes({ userId: session.user.id! }),
-                  deleteSandbox: daytonaTools.deleteSandbox({ userId: session.user.id! }),
-                  executeCommand: daytonaTools.executeCommand({ userId: session.user.id! }),
-                  runCode: daytonaTools.runCode({ userId: session.user.id! }),
-                  listFiles: daytonaTools.listFiles({ userId: session.user.id! }),
-                  readFile: daytonaTools.readFile({ userId: session.user.id! }),
-                  writeFile: daytonaTools.writeFile({ userId: session.user.id! }),
-                  createDirectory: daytonaTools.createDirectory({ userId: session.user.id! }),
-                  searchFiles: daytonaTools.searchFiles({ userId: session.user.id! }),
-                  replaceInFiles: daytonaTools.replaceInFiles({ userId: session.user.id! }),
-                  gitClone: daytonaTools.gitClone({ userId: session.user.id! }),
-                  gitStatus: daytonaTools.gitStatus({ userId: session.user.id! }),
-                  gitCommit: daytonaTools.gitCommit({ userId: session.user.id! }),
-                  gitPush: daytonaTools.gitPush({ userId: session.user.id! }),
-                  gitPull: daytonaTools.gitPull({ userId: session.user.id! }),
-                  gitBranch: daytonaTools.gitBranch({ userId: session.user.id! }),
-                  getPreviewLink: daytonaTools.getPreviewLink({ userId: session.user.id! }),
-                  runBackgroundProcess: daytonaTools.runBackgroundProcess({ userId: session.user.id! }),
+                  // Persistent sandbox — Etles's "home computer" that survives sessions
+                  ...getPersistentSandboxTools({ userId: session.user.id! }),
                 }),
           },
           experimental_telemetry: {
