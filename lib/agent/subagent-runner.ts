@@ -193,8 +193,8 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
     tavilyExtract,
     tavilyCrawl,
     tavilyMap,
-    wikiQuery: wikiQuery(),
-    wikiIngest: wikiIngest(),
+    wikiQuery: wikiQuery({ userId }),
+    wikiIngest: wikiIngest({ userId }),
 
     // Sandbox tools for specialist agents
     ...(agentType === "sandbox_specialist" || agentType === "browser_operator"

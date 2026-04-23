@@ -391,8 +391,8 @@ export async function POST(request: Request) {
             generateImage: generateImageTool(dataStream),
             generateVideo: generateVideoTool(),
             renderChart,
-            wikiQuery: wikiQuery(),
-            wikiIngest: wikiIngest(),
+            wikiQuery: wikiQuery({ userId: session.user.id! }),
+            wikiIngest: wikiIngest({ userId: session.user.id! }),
             createDocument: createDocument({
               session,
               dataStream,

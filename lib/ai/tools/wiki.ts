@@ -24,6 +24,11 @@ import { tool } from "ai";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
+import {
+  getUserSkillsByUserId,
+  getUserSkillBySlug,
+  saveUserSkill,
+} from "@/lib/db/queries";
 
 const WIKI_ROOT = path.join(process.cwd(), ".wiki");
 const INDEX_PATH = path.join(WIKI_ROOT, "index.md");
@@ -72,15 +77,15 @@ async function listAllPages(): Promise<string[]> {
 
 // ── wikiQuery ─────────────────────────────────────────────────────────────────
 
-export const wikiQuery = () =>
+export const wikiQuery = ({ userId }: { userId?: string } = {}) =>
   tool({
     description:
-      "Query the Etles knowledge wiki. The wiki contains compiled expertise on " +
-      "copywriting, ad creative, research methodology, content creation, and coding craft. " +
-      "Always call with action='index' first to see what's available, then call with " +
-      "action='read' and the specific page name. Use this before starting any task " +
-      "that involves writing, ads, research, content, or code — the wiki contains " +
-      "accumulated best practices that improve output quality.",
+      "Query the Etles knowledge base and user-defined skills. The wiki contains " +
+      "compiled expertise on various topics, as well as private skills uploaded by the user " +
+      "or learned by agents. Always call with action='index' first to see ALL available " +
+      "pages and skills, then call with action='read' and the specific page name. " +
+      "Use this to retrieve custom instructions, frameworks, or domain-specific knowledge " +
+      "associated with the user's account.",
     inputSchema: z.object({
       action: z
         .enum(["index", "read"])
@@ -99,18 +104,36 @@ export const wikiQuery = () =>
 
       if (action === "index") {
         const index = await readMd(INDEX_PATH);
-        if (!index) {
-          return {
-            success: false,
-            error: "Wiki index not found. The wiki may not be initialized yet.",
-          };
+        const defaultPages = await listAllPages();
+        let userSkillsData: any[] = [];
+
+        if (userId) {
+          try {
+            userSkillsData = await getUserSkillsByUserId(userId);
+          } catch (error) {
+            console.error("Failed to load user skills for index:", error);
+          }
         }
-        const pages = await listAllPages();
+
+        const userSkillsSlugs = userSkillsData.map((s) => s.slug);
+        const allPages = Array.from(new Set([...defaultPages, ...userSkillsSlugs]));
+
+        // Construct a dynamic index that includes user skills
+        let dynamicIndex = index ?? "# Etles Knowledge Wiki\n\n";
+        if (userSkillsData.length > 0) {
+          dynamicIndex += "\n\n## User-Specific Skills (Private)\n";
+          for (const s of userSkillsData) {
+            dynamicIndex += `- **${s.title}** (slug: \`${s.slug}\`) — ${s.description ?? "No description"}\n`;
+          }
+        }
+
         return {
           success: true,
-          index,
-          availablePages: pages,
-          message: `Wiki has ${pages.length} pages. Use action='read' with a page name to load content.`,
+          index: dynamicIndex,
+          availablePages: allPages,
+          userSkills: userSkillsSlugs,
+          defaultPages: defaultPages,
+          message: `Wiki has ${defaultPages.length} default pages and ${userSkillsData.length} user-specific skills. Use action='read' with a page name to load content.`,
         };
       }
 
@@ -119,73 +142,89 @@ export const wikiQuery = () =>
         return { success: false, error: "page is required when action='read'" };
       }
 
+      // 1. Check user skills in DB first
+      if (userId) {
+        try {
+          const skill = await getUserSkillBySlug(userId, page);
+          if (skill) {
+            return {
+              success: true,
+              page,
+              content: skill.content,
+              isUserSkill: true,
+              size: skill.content.length,
+            };
+          }
+        } catch (error) {
+          console.error(`Failed to load user skill "${page}":`, error);
+        }
+      }
+
+      // 2. Check default pages in .wiki folder
       const resolved = safePath(`${page}.md`);
-      if (!resolved) {
-        return { success: false, error: `Invalid page name: "${page}". Use simple names like 'copywriting'.` };
+      if (resolved) {
+        const content = await readMd(resolved);
+        if (content) {
+          return {
+            success: true,
+            page,
+            content,
+            isUserSkill: false,
+            size: content.length,
+          };
+        }
       }
 
-      const content = await readMd(resolved);
-      if (!content) {
-        const pages = await listAllPages();
-        return {
-          success: false,
-          error: `Page "${page}" not found.`,
-          availablePages: pages,
-        };
-      }
-
+      const defaultPages = await listAllPages();
       return {
-        success: true,
-        page,
-        content,
-        size: content.length,
+        success: false,
+        error: `Page "${page}" not found.`,
+        availablePages: defaultPages,
       };
     },
   });
 
 // ── wikiIngest ────────────────────────────────────────────────────────────────
 
-export const wikiIngest = () =>
+export const wikiIngest = ({ userId }: { userId?: string } = {}) =>
   tool({
     description:
-      "Write or update a page in the Etles knowledge wiki. Use this to save " +
-      "valuable knowledge the agent has learned or synthesized — a copywriting insight " +
-      "that worked well, a research methodology that produced great results, " +
-      "an ad angle that converted, a coding pattern that solved a hard problem. " +
-      "The wiki grows over time. Write concise, dense, practitioner-grade content. " +
-      "No fluff. Every sentence should earn its place. " +
-      "After writing, update the index page to reflect the new/updated content.",
+      "Write or update a page in the user's knowledge base (Skills). Use this to save " +
+      "valuable knowledge the agent has learned or synthesized for THIS specific user. " +
+      "The user's knowledge base grows over time. Write concise, dense, practitioner-grade content. " +
+      "No fluff. Every sentence should earn its place.",
     inputSchema: z.object({
       page: z
         .string()
         .describe(
-          "Page name without .md extension. Use existing pages to update them " +
-          "or a new name to create a new page. Use kebab-case. " +
-          "Examples: 'copywriting', 'ad-creative', 'hook-formulas', 'email-sequences'."
+          "Page name without .md extension. Use kebab-case. " +
+          "Examples: 'project-preferences', 'style-guide', 'technical-stack'."
         ),
+      title: z
+        .string()
+        .optional()
+        .describe("Human-readable title for the skill. Default is capitalized page name."),
       content: z
         .string()
         .max(MAX_WRITE_CHARS)
         .describe(
           "Full markdown content for the page. Must start with a # heading. " +
-          "Include: what works, what doesn't, specific examples, frameworks, rules. " +
-          "Dense and specific — not generic advice. Append '\\n\\n---\\n*Last updated by Etles: [date]*' at the bottom."
+          "Include: what works, what doesn't, specific examples, frameworks, rules."
         ),
+      description: z
+        .string()
+        .optional()
+        .describe("One-sentence summary of what this skill covers."),
       reason: z
         .string()
         .describe("Why this knowledge is being added or what triggered this update."),
-      updateIndex: z
-        .boolean()
-        .optional()
-        .default(true)
-        .describe("Whether to update index.md to reflect this change. Default true."),
     }),
-    execute: async ({ page, content, reason, updateIndex }) => {
-      await ensureWikiDir();
-
-      const resolved = safePath(`${page}.md`);
-      if (!resolved) {
-        return { success: false, error: `Invalid page name: "${page}". Use kebab-case, no special chars.` };
+    execute: async ({ page, title, content, description, reason }) => {
+      if (!userId) {
+        return {
+          success: false,
+          error: "Unauthorized: No userId provided for wiki ingestion.",
+        };
       }
 
       // Add timestamp if not present
@@ -194,61 +233,30 @@ export const wikiIngest = () =>
         ? content.replace(/\*Last updated by Etles:.*\*/, `*Last updated by Etles: ${timestamp}*`)
         : `${content}\n\n---\n*Last updated by Etles: ${timestamp}*`;
 
+      const humanTitle = title ?? page.split("-").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" ");
+
       try {
-        await fs.writeFile(resolved, finalContent, "utf-8");
+        await saveUserSkill({
+          userId,
+          title: humanTitle,
+          slug: page,
+          content: finalContent,
+          description: description ?? reason,
+        });
+
+        return {
+          success: true,
+          page,
+          title: humanTitle,
+          reason,
+          size: finalContent.length,
+          message: `Skill '${humanTitle}' saved to user knowledge base.`,
+        };
       } catch (error) {
         return {
           success: false,
           error: error instanceof Error ? error.message : String(error),
         };
       }
-
-      // Optionally refresh index
-      if (updateIndex) {
-        try {
-          const pages = await listAllPages();
-          const existingIndex = await readMd(INDEX_PATH);
-
-          if (!existingIndex) {
-            // Bootstrap a minimal index
-            const bootstrapIndex = `# Etles Knowledge Wiki — Index
-
-*This wiki compounds Etles's expertise over time. Agents read this index first, then load specific pages.*
-
-## Pages
-
-${pages.map((p) => `- **${p}** — see \`${p}.md\``).join("\n")}
-
----
-*Index last updated: ${timestamp}*
-`;
-            await fs.writeFile(INDEX_PATH, bootstrapIndex, "utf-8");
-          } else if (!existingIndex.includes(page)) {
-            // Append new page to index
-            const updated = existingIndex.replace(
-              /---\n\*Index last updated:.*\*/,
-              `- **${page}** — see \`${page}.md\`\n\n---\n*Index last updated: ${timestamp}*`
-            );
-            await fs.writeFile(INDEX_PATH, updated !== existingIndex ? updated : existingIndex + `\n- **${page}** — see \`${page}.md\``, "utf-8");
-          } else {
-            // Update timestamp in existing index
-            const updated = existingIndex.replace(
-              /\*Index last updated:.*\*/,
-              `*Index last updated: ${timestamp}*`
-            );
-            await fs.writeFile(INDEX_PATH, updated, "utf-8");
-          }
-        } catch {
-          // Non-fatal — page was written, index update failed
-        }
-      }
-
-      return {
-        success: true,
-        page,
-        reason,
-        size: finalContent.length,
-        message: `Wiki page '${page}' saved. ${updateIndex ? "Index updated." : ""}`,
-      };
     },
   });

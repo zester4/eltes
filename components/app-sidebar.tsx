@@ -7,7 +7,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
-import { ActivityIcon, PlusIcon, TrashIcon } from "@/components/icons";
+import {
+  ActivityIcon,
+  PlusIcon,
+  TrashIcon,
+} from "@/components/icons";
+import { BookText } from "lucide-react";
 import {
   getChatHistoryPaginationKey,
   SidebarHistory,
@@ -118,6 +123,17 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   >
                     <ActivityIcon />
                     <span>Agent Status</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => {
+                      setOpenMobile(false);
+                      router.push("/skills");
+                    }}
+                  >
+                    <BookText className="size-4" />
+                    <span>Skills</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 {user && (

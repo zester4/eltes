@@ -40,6 +40,8 @@ import {
   type AgentTask,
   messageDeprecated,
   voteDeprecated,
+  userSkill,
+  type UserSkill,
 } from "./schema";
 import { generateHashedPassword } from "./utils";
 
@@ -985,6 +987,85 @@ export async function getActiveAgentTasksByChatId(chatId: string, userId: string
       return [];
     }
     throw new ChatbotError("bad_request:database", "Failed to get agent tasks");
+  }
+}
+
+export async function saveUserSkill({
+  userId,
+  title,
+  slug,
+  content,
+  description,
+}: {
+  userId: string;
+  title: string;
+  slug: string;
+  content: string;
+  description?: string;
+}) {
+  try {
+    const [existing] = await db
+      .select()
+      .from(userSkill)
+      .where(and(eq(userSkill.userId, userId), eq(userSkill.slug, slug)));
+
+    if (existing) {
+      return await db
+        .update(userSkill)
+        .set({ title, content, description, updatedAt: new Date() })
+        .where(eq(userSkill.id, existing.id))
+        .returning();
+    }
+
+    return await db
+      .insert(userSkill)
+      .values({
+        userId,
+        title,
+        slug,
+        content,
+        description,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+  } catch (error) {
+    throw new ChatbotError("bad_request:database", "Failed to save user skill");
+  }
+}
+
+export async function getUserSkillsByUserId(userId: string) {
+  try {
+    return await db
+      .select()
+      .from(userSkill)
+      .where(eq(userSkill.userId, userId))
+      .orderBy(desc(userSkill.createdAt));
+  } catch (error) {
+    throw new ChatbotError("bad_request:database", "Failed to get user skills");
+  }
+}
+
+export async function getUserSkillBySlug(userId: string, slug: string) {
+  try {
+    const [skill] = await db
+      .select()
+      .from(userSkill)
+      .where(and(eq(userSkill.userId, userId), eq(userSkill.slug, slug)));
+    return skill;
+  } catch (error) {
+    throw new ChatbotError("bad_request:database", "Failed to get user skill by slug");
+  }
+}
+
+export async function deleteUserSkill(userId: string, slug: string) {
+  try {
+    return await db
+      .delete(userSkill)
+      .where(and(eq(userSkill.userId, userId), eq(userSkill.slug, slug)))
+      .returning();
+  } catch (error) {
+    throw new ChatbotError("bad_request:database", "Failed to delete user skill");
   }
 }
 

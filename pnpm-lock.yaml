@@ -71,11 +71,11 @@ importers:
         specifier: ^6.40.0
         version: 6.40.0
       '@composio/core':
-        specifier: ^0.6.10
-        version: 0.6.10(ws@8.20.0(bufferutil@4.1.0))(zod@3.25.76)
+        specifier: ^0.6.11
+        version: 0.6.11(ws@8.20.0(bufferutil@4.1.0))(zod@3.25.76)
       '@composio/vercel':
-        specifier: ^0.6.10
-        version: 0.6.10(@composio/core@0.6.10(ws@8.20.0(bufferutil@4.1.0))(zod@3.25.76))(ai@6.0.37(zod@3.25.76))
+        specifier: ^0.6.11
+        version: 0.6.11(@composio/core@0.6.11(ws@8.20.0(bufferutil@4.1.0))(zod@3.25.76))(ai@6.0.37(zod@3.25.76))
       '@daytonaio/sdk':
         specifier: ^0.155.0
         version: 0.155.0(ws@8.20.0(bufferutil@4.1.0))
@@ -903,8 +903,8 @@ packages:
   '@composio/client@0.1.0-alpha.66':
     resolution: {integrity: sha512-SDHcTWzz2dgdYAew/gQsRpjHpEzHKm6sW7KM4wCoJWNJuuMuey9Ahje91ZucNjfaqpI8CFW+pXY4nWkZf5LD7Q==}
 
-  '@composio/core@0.6.10':
-    resolution: {integrity: sha512-T/9MfYcmPs2EcSXhrJWvm0UFTfa79FcTo1L8vO13d5C5kX8/I4hLYLu+1wc4n7WGBSE9hq7o1g9L3FXJrOrlSQ==}
+  '@composio/core@0.6.11':
+    resolution: {integrity: sha512-0uNA1DhHF0l3d51GVRw4CA8oYgqsps+aGMW6J4jA6Ut53HfBHwHJ4JAa9HU/2Psho8tCoprM6NR5DxWGD50H+A==}
     peerDependencies:
       zod: ^3.25 || ^4
 
@@ -913,10 +913,10 @@ packages:
     peerDependencies:
       zod: '>=3.25.76 <5'
 
-  '@composio/vercel@0.6.10':
-    resolution: {integrity: sha512-qyrSod4cwfVxdiQIfk9pYfh2ymvwOWxUI3kn2L4a7bQSP6GIxResx8sEGWkgxZ/5Q4ta3QNKVP+DHSckHIYJXg==}
+  '@composio/vercel@0.6.11':
+    resolution: {integrity: sha512-sNxU8Xurc63FKhuV8QcPr+MLiqo6iZ1RtwXm8dyRbS4fjWKFw/DfYw4+d2ChoNK7l+6XHNXmK7ayzmmovFnZiQ==}
     peerDependencies:
-      '@composio/core': 0.6.10
+      '@composio/core': 0.6.11
       ai: ^5.0.0 || ^6.0.0
 
   '@connectrpc/connect-web@2.0.0-rc.3':
@@ -7905,7 +7905,7 @@ snapshots:
 
   '@composio/client@0.1.0-alpha.66': {}
 
-  '@composio/core@0.6.10(ws@8.20.0(bufferutil@4.1.0))(zod@3.25.76)':
+  '@composio/core@0.6.11(ws@8.20.0(bufferutil@4.1.0))(zod@3.25.76)':
     dependencies:
       '@composio/client': 0.1.0-alpha.66
       '@composio/json-schema-to-zod': 0.1.20(zod@3.25.76)
@@ -7923,9 +7923,9 @@ snapshots:
     dependencies:
       zod: 3.25.76
 
-  '@composio/vercel@0.6.10(@composio/core@0.6.10(ws@8.20.0(bufferutil@4.1.0))(zod@3.25.76))(ai@6.0.37(zod@3.25.76))':
+  '@composio/vercel@0.6.11(@composio/core@0.6.11(ws@8.20.0(bufferutil@4.1.0))(zod@3.25.76))(ai@6.0.37(zod@3.25.76))':
     dependencies:
-      '@composio/core': 0.6.10(ws@8.20.0(bufferutil@4.1.0))(zod@3.25.76)
+      '@composio/core': 0.6.11(ws@8.20.0(bufferutil@4.1.0))(zod@3.25.76)
       ai: 6.0.37(zod@3.25.76)
 
   '@connectrpc/connect-web@2.0.0-rc.3(@bufbuild/protobuf@2.11.0)(@connectrpc/connect@2.0.0-rc.3(@bufbuild/protobuf@2.11.0))':

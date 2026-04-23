@@ -224,3 +224,18 @@ export const agentTask = pgTable("AgentTask", {
 });
 
 export type AgentTask = InferSelectModel<typeof agentTask>;
+
+export const userSkill = pgTable("UserSkill", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  title: text("title").notNull(),
+  slug: varchar("slug", { length: 255 }).notNull(),
+  content: text("content").notNull(),
+  description: text("description"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});
+
+export type UserSkill = InferSelectModel<typeof userSkill>;

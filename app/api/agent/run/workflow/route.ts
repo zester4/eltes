@@ -235,8 +235,8 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         tavilyExtract,
         tavilyCrawl,
         tavilyMap,
-        wikiQuery: wikiQuery(),
-        wikiIngest: wikiIngest(),
+        wikiQuery: wikiQuery({ userId }),
+        wikiIngest: wikiIngest({ userId }),
         // New: Pass current workflow model to artifact tools
         createDocument: createDocument({
           session: { user: { id: userId } } as any,
