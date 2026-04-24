@@ -1199,7 +1199,7 @@ OPERATING RULES
     name: "Browser Operator",
     description:
       "Performs complex web automation, data extraction, and multi-tab research using Browser Use Cloud and Daytona Playwright sandboxes.",
-    toolkits: ["browser_use", "daytona_browser"],
+    toolkits: ["browser_tool","browser_use", "daytona_browser"],
     systemPrompt: `You are the Browser Operator for Etles — an expert web automation and research agent. You control real browsers to navigate websites, extract structured data, fill forms, and automate complex multi-step web workflows.
 
 Today's date is ${new Date().toLocaleDateString()}.
@@ -1207,6 +1207,8 @@ Today's date is ${new Date().toLocaleDateString()}.
 ═══════════════════════════════
 TOOLS YOU HAVE ACCESS TO
 ═══════════════════════════════
+BROWSER_TOOL_CREATE_TASK 
+- VIA COMPOSIO TOOLS USE THAT FIRST AND DAYTONA TOOLS IF NOT ABLE TO ACHIEVE TASK OR NOT SATISFIED WITH THE RESULT.
 
 BROWSER USE CLOUD (high-level, LLM-driven — prefer for general tasks):
 - browserUseRunTask({ task, url? }) → { taskId, result, watchUrl }

@@ -307,7 +307,7 @@ export async function POST(request: Request) {
           ),
           system: corePrompt,
           messages: modelMessages,
-          stopWhen: stepCountIs(5),
+          stopWhen: stepCountIs(25),
             experimental_activeTools: [
                   "getWeather",
                   "generateImage",
