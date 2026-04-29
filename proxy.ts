@@ -23,6 +23,7 @@ export async function proxy(request: NextRequest) {
     lowerPath.startsWith("/api/agent/workflow") ||
     lowerPath.startsWith("/api/agent/morning") ||
     lowerPath.startsWith("/api/agent/notify") ||
+    lowerPath.startsWith("/app/api/health") ||
     lowerPath.startsWith("/api/agent/delegate") ||
     lowerPath.startsWith("/api/agent/handoff") ||
     lowerPath.startsWith("/api/telegram") ||
