@@ -1,0 +1,30 @@
+name: Keep Render Service Alive
+
+on:
+  workflow_dispatch:   # run manually
+  push:
+    branches:
+      - main           # or whichever branch you deploy from
+
+jobs:
+  qstash-keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Install curl
+        run: sudo apt-get install -y curl
+
+      - name: Create/Update QStash schedule
+        env:
+          QSTASH_TOKEN: ${{ secrets.QSTASH_TOKEN }}
+        run: |
+          curl -X POST "https://qstash-us-east-1.upstash.io/v1/schedules" \
+            -H "Authorization: Bearer $QSTASH_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "cron": "*/14 * * * *",
+              "destination": "https://eltes.onrender.com/health",
+              "method": "GET"
+            }'
