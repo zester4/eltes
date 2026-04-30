@@ -79,6 +79,7 @@ import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
 import * as twilioTools from "@/lib/ai/tools/twilio";
+import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
 import { getMessagesByChatId, saveMessages, updateAgentTask } from "@/lib/db/queries";
 import { convertToUIMessages, generateUUID, getTextFromMessage } from "@/lib/utils";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
@@ -271,6 +272,18 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         twilioProvisionNumber: twilioTools.twilioProvisionNumber({ userId }),
         twilioReleaseNumber: twilioTools.twilioReleaseNumber({ userId }),
         twilioUpdateNumber: twilioTools.twilioUpdateNumber({ userId }),
+        // Twilio WhatsApp
+        twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({ userId }),
+        twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({ userId }),
+        twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({ userId }),
+        twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({ userId }),
+        twilioWhatsAppCreateTemplate: twilioWhatsApp.twilioWhatsAppCreateTemplate({ userId }),
+        twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates({ userId }),
+        twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({ userId }),
+        twilioWhatsAppDeleteTemplate: twilioWhatsApp.twilioWhatsAppDeleteTemplate({ userId }),
+        twilioWhatsAppSubmitApproval: twilioWhatsApp.twilioWhatsAppSubmitApproval({ userId }),
+        twilioWhatsAppGetApprovalStatus: twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId }),
+        twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({ userId }),
         // Persistent Sandbox
         ...getPersistentSandboxTools({ userId }),
         upsertKnowledgeEntity: upsertKnowledgeEntity({ userId }),

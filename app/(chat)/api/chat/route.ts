@@ -85,6 +85,7 @@ import {
   tavilyMap,
 } from "@/lib/ai/tools/tavily-search";
 import * as twilioTools from "@/lib/ai/tools/twilio";
+import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
 import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import { touchUserActivity } from "@/lib/user-activity";
@@ -368,6 +369,17 @@ export async function POST(request: Request) {
                 "twilioProvisionNumber",
                 "twilioReleaseNumber",
                 "twilioUpdateNumber",
+                "twilioWhatsAppSendMessage",
+                "twilioWhatsAppGetMessage",
+                "twilioWhatsAppListMessages",
+                "twilioWhatsAppSendTemplate",
+                "twilioWhatsAppCreateTemplate",
+                "twilioWhatsAppListTemplates",
+                "twilioWhatsAppGetTemplate",
+                "twilioWhatsAppDeleteTemplate",
+                "twilioWhatsAppSubmitApproval",
+                "twilioWhatsAppGetApprovalStatus",
+                "twilioWhatsAppListSenders",
                 "sandboxStatus",
                 "sandboxRun",
                 "sandboxWriteFile",
@@ -501,6 +513,18 @@ export async function POST(request: Request) {
                   twilioProvisionNumber: twilioTools.twilioProvisionNumber({ userId: session.user.id! }),
                   twilioReleaseNumber: twilioTools.twilioReleaseNumber({ userId: session.user.id! }),
                   twilioUpdateNumber: twilioTools.twilioUpdateNumber({ userId: session.user.id! }),
+                  // Twilio WhatsApp Tools
+                  twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({ userId: session.user.id! }),
+                  twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({ userId: session.user.id! }),
+                  twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({ userId: session.user.id! }),
+                  twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({ userId: session.user.id! }),
+                  twilioWhatsAppCreateTemplate: twilioWhatsApp.twilioWhatsAppCreateTemplate({ userId: session.user.id! }),
+                  twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates({ userId: session.user.id! }),
+                  twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({ userId: session.user.id! }),
+                  twilioWhatsAppDeleteTemplate: twilioWhatsApp.twilioWhatsAppDeleteTemplate({ userId: session.user.id! }),
+                  twilioWhatsAppSubmitApproval: twilioWhatsApp.twilioWhatsAppSubmitApproval({ userId: session.user.id! }),
+                  twilioWhatsAppGetApprovalStatus: twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId: session.user.id! }),
+                  twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({ userId: session.user.id! }),
                   // Persistent sandbox — Etles's "home computer" that survives sessions
                   ...getPersistentSandboxTools({ userId: session.user.id! }),
                 }),

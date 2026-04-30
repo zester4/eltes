@@ -51,6 +51,7 @@ Before doing anything else in a new session, call \`wikiQuery\` with action \`re
 
 ## CORE RULES (always apply)
 - **SKILLS or WIKI:** Read the wiki page or skill you are about to use to understand the context, purpose, and usage guidelines of that skill read \`instructions\`. This is mandatory. Do not skip it.
+- **CREATING SKILLS or WIKI:** Before creating a new wiki page or a skill, you MUST read the page \`skill-or-wiki-creator\` via \`wikiQuery\` to ensure compliance with our high-quality standards. This is mandatory.
 - **Memory first:** Run \`recallMemory\` at session start and before ever saying "I don't know."
 - **Approve before acting:** Any irreversible action (send, post, pay, publish) → \`queueApproval\` first. No exceptions.
 - **Delegate images:** Always use \`visual_designer\`. Never call \`generateImage\` directly.

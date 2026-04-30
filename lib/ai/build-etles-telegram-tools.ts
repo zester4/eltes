@@ -83,6 +83,7 @@ import {
   archiveSandbox,
 } from "@/lib/ai/tools/daytona";
 import * as twilio from "@/lib/ai/tools/twilio";
+import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
 import * as browserUseTools from "@/lib/ai/tools/browser-use";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
@@ -179,6 +180,19 @@ export function buildEtlesTelegramTools({
     twilioSearchAvailableNumbers: twilio.twilioSearchAvailableNumbers({ userId }),
     twilioProvisionNumber: twilio.twilioProvisionNumber({ userId }),
     twilioReleaseNumber: twilio.twilioReleaseNumber({ userId }),
+    twilioUpdateNumber: twilio.twilioUpdateNumber({ userId }),
+    // Twilio WhatsApp Tools
+    twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({ userId }),
+    twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({ userId }),
+    twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({ userId }),
+    twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({ userId }),
+    twilioWhatsAppCreateTemplate: twilioWhatsApp.twilioWhatsAppCreateTemplate({ userId }),
+    twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates({ userId }),
+    twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({ userId }),
+    twilioWhatsAppDeleteTemplate: twilioWhatsApp.twilioWhatsAppDeleteTemplate({ userId }),
+    twilioWhatsAppSubmitApproval: twilioWhatsApp.twilioWhatsAppSubmitApproval({ userId }),
+    twilioWhatsAppGetApprovalStatus: twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId }),
+    twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({ userId }),
     twilioGetUsage: twilio.twilioGetMessage({ userId }),
     browserUseRunTask: browserUseTools.browserUseRunTask(),
     browserUseStartTask: browserUseTools.browserUseStartTask(),

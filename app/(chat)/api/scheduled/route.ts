@@ -18,6 +18,7 @@ import {
   deleteMemory,
 } from "@/lib/ai/tools/memory";
 import { generateUUID } from "@/lib/utils";
+import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
 
 const composioStatus = new Composio({ provider: new VercelProvider() });
 
@@ -61,6 +62,18 @@ async function handler(req: NextRequest) {
       recallMemory: recallMemory({ userId }),
       updateMemory: updateMemory({ userId }),
       deleteMemory: deleteMemory({ userId }),
+      // Twilio WhatsApp Tools
+      twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({ userId }),
+      twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({ userId }),
+      twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({ userId }),
+      twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({ userId }),
+      twilioWhatsAppCreateTemplate: twilioWhatsApp.twilioWhatsAppCreateTemplate({ userId }),
+      twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates({ userId }),
+      twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({ userId }),
+      twilioWhatsAppDeleteTemplate: twilioWhatsApp.twilioWhatsAppDeleteTemplate({ userId }),
+      twilioWhatsAppSubmitApproval: twilioWhatsApp.twilioWhatsAppSubmitApproval({ userId }),
+      twilioWhatsAppGetApprovalStatus: twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId }),
+      twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({ userId }),
     };
 
     // 3. Run the proactive agent

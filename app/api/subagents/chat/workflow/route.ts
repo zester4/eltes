@@ -24,6 +24,8 @@ import {
 import * as daytonaTools from "@/lib/ai/tools/daytona";
 import * as browserUseTools from "@/lib/ai/tools/browser-use";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
+import * as twilio from "@/lib/ai/tools/twilio";
+import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
 import { updateAgentTask, saveMessages } from "@/lib/db/queries";
 import {
   getSubagentChatMessages,
@@ -125,6 +127,33 @@ function buildTools(userId: string, agentSlug: string, baseUrl: string) {
           }),
         }
       : {}),
+    // Twilio Voice & SMS
+    twilioMakeCall: twilio.twilioMakeCall({ userId }),
+    twilioGetCall: twilio.twilioGetCall({ userId }),
+    twilioListCalls: twilio.twilioListCalls({ userId }),
+    twilioModifyCall: twilio.twilioModifyCall({ userId }),
+    twilioSendSMS: twilio.twilioSendSMS({ userId }),
+    twilioGetMessage: twilio.twilioGetMessage({ userId }),
+    twilioListMessages: twilio.twilioListMessages({ userId }),
+    twilioListMyNumbers: twilio.twilioListMyNumbers({ userId }),
+    twilioSearchAvailableNumbers: twilio.twilioSearchAvailableNumbers({ userId }),
+    twilioProvisionNumber: twilio.twilioProvisionNumber({ userId }),
+    twilioReleaseNumber: twilio.twilioReleaseNumber({ userId }),
+    twilioUpdateNumber: twilio.twilioUpdateNumber({ userId }),
+
+    // Twilio WhatsApp
+    twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({ userId }),
+    twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({ userId }),
+    twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({ userId }),
+    twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({ userId }),
+    twilioWhatsAppCreateTemplate: twilioWhatsApp.twilioWhatsAppCreateTemplate({ userId }),
+    twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates({ userId }),
+    twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({ userId }),
+    twilioWhatsAppDeleteTemplate: twilioWhatsApp.twilioWhatsAppDeleteTemplate({ userId }),
+    twilioWhatsAppSubmitApproval: twilioWhatsApp.twilioWhatsAppSubmitApproval({ userId }),
+    twilioWhatsAppGetApprovalStatus: twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId }),
+    twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({ userId }),
+    twilioWhatsAppMarkMessageRead: twilioWhatsApp.twilioWhatsAppMarkMessageRead({ userId }),
   };
 }
 
