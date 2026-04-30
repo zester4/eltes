@@ -14,6 +14,7 @@ export function notifySubAgentHandoffToMainAgent(payload: {
   if (!payload.chatId) return;
   const rawBase =
     process.env.BASE_URL ||
+    process.env.RENDER_EXTERNAL_URL ||
     (process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : undefined) ||

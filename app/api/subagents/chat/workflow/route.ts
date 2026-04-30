@@ -174,6 +174,7 @@ export const { POST } = serve<SubagentChatWorkflowPayload>(async (context) => {
 
     const baseUrl =
       process.env.BASE_URL ||
+      process.env.RENDER_EXTERNAL_URL ||
       (process.env.VERCEL_PROJECT_PRODUCTION_URL
         ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
         : undefined) ||

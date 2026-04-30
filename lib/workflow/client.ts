@@ -17,6 +17,7 @@ import { Client } from "@upstash/workflow";
 const token = process.env.QSTASH_TOKEN;
 const appBaseUrl =
   process.env.BASE_URL ||
+  process.env.RENDER_EXTERNAL_URL ||
   (process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : undefined) ||

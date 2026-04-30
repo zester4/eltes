@@ -91,13 +91,21 @@ export async function POST(req: Request) {
   }
 
   const { toolkit }: { toolkit: string } = await req.json();
-  const origin = new URL(req.url).origin;
-  
   try {
+    const baseUrl =
+      process.env.BASE_URL ||
+      process.env.RENDER_EXTERNAL_URL ||
+      (process.env.VERCEL_PROJECT_PRODUCTION_URL
+        ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+        : undefined) ||
+      (process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : new URL(req.url).origin);
+
     const composioSession = await composio.create(session.user.id);
     
     const connectionRequest = await composioSession.authorize(toolkit, {
-      callbackUrl: `${origin}/settings/connections`,
+      callbackUrl: `${baseUrl}/settings/connections`,
     });
 
     return Response.json({ redirectUrl: connectionRequest.redirectUrl });
