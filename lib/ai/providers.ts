@@ -1,14 +1,15 @@
-//lib/ai/providers.ts
+// lib/ai/providers.ts
 import { gateway } from "@ai-sdk/gateway";
 import { google } from "@ai-sdk/google";
+import { anthropic } from "@ai-sdk/anthropic";
+import { openai } from "@ai-sdk/openai";
 import {
   customProvider,
   extractReasoningMiddleware,
   wrapLanguageModel,
+  type LanguageModelV1,
 } from "ai";
 import { isTestEnvironment } from "../constants";
-
-const THINKING_SUFFIX_REGEX = /-thinking$/;
 
 export const myProvider = isTestEnvironment
   ? (() => {
@@ -29,21 +30,41 @@ export const myProvider = isTestEnvironment
     })()
   : null;
 
-export function getLanguageModel(modelId: string) {
+export function getLanguageModel(modelId: string): LanguageModelV1 {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel(modelId);
   }
 
+  // Handle special "reasoning" group IDs from models.ts
+  if (modelId === "reasoning/claude-3-7-thinking") {
+    return wrapLanguageModel({
+      model: gateway.languageModel("anthropic/claude-3-7-sonnet-20250219", {
+        providerOptions: {
+          anthropic: {
+            thinking: { type: "enabled", budgetTokens: 12000 },
+          },
+        },
+      } as any),
+      middleware: extractReasoningMiddleware({ tagName: "thinking" }),
+    });
+  }
+
+  if (modelId === "reasoning/o1-thinking") {
+    return gateway.languageModel("openai/o1");
+  }
+
   const isReasoningModel =
     modelId.endsWith("-thinking") ||
-    (modelId.includes("reasoning") && !modelId.includes("non-reasoning"));
+    modelId.includes("reasoning") ||
+    modelId.includes("deepseek-reasoner") ||
+    modelId.startsWith("openai/o") ||
+    modelId.includes("o3-mini");
 
   // Diagnostic log for model selection
   console.log(`[AI SDK] Using model: ${modelId} (reasoning: ${isReasoningModel})`);
 
   if (isReasoningModel) {
     // We wrap with reasoning middleware to extract thinking blocks if present.
-    // We pass the FULL modelId to the gateway to ensure correct routing.
     return wrapLanguageModel({
       model: gateway.languageModel(modelId),
       middleware: extractReasoningMiddleware({ tagName: "thinking" }),
@@ -72,26 +93,11 @@ export function getTitleModel() {
   if (isTestEnvironment && myProvider) {
     return myProvider.languageModel("title-model");
   }
-  return gateway.languageModel("google/gemini-2.5-flash-lite");
+  return gateway.languageModel("google/gemini-2.0-flash-lite");
 }
 
 /**
  * Returns a model safe for structured output (streamObject / generateObject).
- *
- * IMPORTANT: We intentionally IGNORE the user's chat modelId here.
- * The reasons:
- * 1. Thinking/reasoning models (Gemini thinking, Claude extended thinking, DeepSeek
- *    thinking) are INCOMPATIBLE with streamObject structured output — they produce
- *    "Corrupted thought signature" and similar errors.
- * 2. OpenAI models with strict JSON schema validation reject `z.record()` with
- *    optional properties (the styles field), causing 400 errors.
- * 3. Artifact generation needs a fast, reliable, consistent model — not the most
- *    powerful one the user happens to have selected for chat.
- *
- * We always use Gemini 3 Flash Preview as the artifact model. It:
- * - Supports streamObject with complex schemas reliably
- * - Is fast and cost-efficient
- * - Does not have corrupted thinking mode issues
  */
 export function getArtifactModel(_modelId?: string) {
   if (isTestEnvironment && myProvider) {
@@ -99,6 +105,5 @@ export function getArtifactModel(_modelId?: string) {
   }
 
   // Always use the stable, structured-output-safe model for artifacts.
-  // Never inherit the user's chat model here.
-  return gateway.languageModel("google/gemini-3-flash-preview");
+  return gateway.languageModel("google/gemini-2.0-flash");
 }

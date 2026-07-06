@@ -170,7 +170,7 @@ export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
 
     const sessionTail = await getSessionTail(ownerUserId);
     const promptSignature = JSON.stringify({
-      selectedChatModel: "google/gemini-3-flash-preview",
+      selectedChatModel: "google/gemini-2.0-flash",
       skipArtifacts: true,
       surface: "telegram-workflow",
     });
@@ -183,7 +183,7 @@ export const { POST } = serve<TelegramWorkflowPayload>(async (context) => {
 
     if (!cachedPrompt) {
       cachedPrompt = systemPrompt({
-        selectedChatModel: "google/gemini-3-flash-preview",
+        selectedChatModel: "google/gemini-2.0-flash",
         requestHints: {
           latitude: undefined,
           longitude: undefined,

@@ -1,189 +1,162 @@
 // Curated list of top models from Vercel AI Gateway
-//lib/ai/models.ts
-export const DEFAULT_CHAT_MODEL = "google/gemini-3-flash-preview";
+// lib/ai/models.ts
+
+export const DEFAULT_CHAT_MODEL = "google/gemini-2.0-flash";
 
 export type ChatModel = {
   id: string;
   name: string;
   provider: string;
   description: string;
+  capabilities?: {
+    reasoning?: boolean;
+    vision?: boolean;
+    tools?: boolean;
+  };
 };
 
 export const chatModels: ChatModel[] = [
   // Anthropic
   {
-    id: "anthropic/claude-haiku-4.5",
-    name: "Claude Haiku 4.5",
+    id: "anthropic/claude-3-7-sonnet-20250219",
+    name: "Claude 3.7 Sonnet",
     provider: "anthropic",
-    description: "Fast and affordable, great for everyday tasks",
+    description: "Most intelligent model with hybrid reasoning capabilities",
+    capabilities: { reasoning: true, vision: true, tools: true },
+  },
+  {
+    id: "anthropic/claude-3-5-sonnet-latest",
+    name: "Claude 3.5 Sonnet",
+    provider: "anthropic",
+    description: "High performance and industry-leading intelligence",
+    capabilities: { vision: true, tools: true },
+  },
+  {
+    id: "anthropic/claude-3-5-haiku-latest",
+    name: "Claude 3.5 Haiku",
+    provider: "anthropic",
+    description: "Fastest model for near-instant responses",
+    capabilities: { tools: true },
   },
   // OpenAI
   {
-    id: "openai/gpt-4.1-mini",
-    name: "GPT-4.1 Mini",
+    id: "openai/o3-mini",
+    name: "o3-mini",
+    provider: "openai",
+    description: "Small, fast reasoning model",
+    capabilities: { reasoning: true, tools: true },
+  },
+  {
+    id: "openai/o1",
+    name: "o1",
+    provider: "openai",
+    description: "Advanced reasoning for complex problem solving",
+    capabilities: { reasoning: true, vision: true, tools: true },
+  },
+  {
+    id: "openai/gpt-4.5-preview",
+    name: "GPT-4.5 Preview",
+    provider: "openai",
+    description: "Latest frontier model from OpenAI",
+    capabilities: { vision: true, tools: true },
+  },
+  {
+    id: "openai/gpt-4o",
+    name: "GPT-4o",
+    provider: "openai",
+    description: "Omni model for text and vision",
+    capabilities: { vision: true, tools: true },
+  },
+  {
+    id: "openai/gpt-4o-mini",
+    name: "GPT-4o mini",
     provider: "openai",
     description: "Fast and cost-effective for simple tasks",
-  },
-  {
-    id: "openai/gpt-5-mini",
-    name: "GPT-5 Mini",
-    provider: "openai",
-    description: "Most capable OpenAI model",
-  },
-  {
-    id: "openai/gpt-5-nano",
-    name: "GPT-5 Nano",
-    provider: "openai",
-    description: "Ultra-compact high speed model",
-  },
-  {
-    id: "openai/gpt-oss-120b",
-    name: "GPT OSS 120B",
-    provider: "openai",
-    description: "Open source large scale model",
+    capabilities: { vision: true, tools: true },
   },
   // Google
   {
-    id: "google/gemini-3-flash-preview",
-    name: "Gemini 3 Flash",
+    id: "google/gemini-2.0-flash",
+    name: "Gemini 2.0 Flash",
     provider: "google",
-    description: "Ultra fast and affordable",
+    description: "Fast and extremely capable multimodal model",
+    capabilities: { vision: true, tools: true },
   },
   {
-    id: "google/gemini-3.1-flash-lite-preview",
-    name: "Gemini 3.1 Flash Lite",
+    id: "google/gemini-2.0-pro-exp-02-05",
+    name: "Gemini 2.0 Pro",
     provider: "google",
-    description: "Latest lightweight preview model",
-  },
-  {
-    id: "google/gemma-4-26b-a4b-it",
-    name: "Gemma 4 26B",
-    provider: "google",
-    description: "Gemma 4 open weights model",
+    description: "Most capable Google model for complex reasoning",
+    capabilities: { reasoning: true, vision: true, tools: true },
   },
   // DeepSeek
   {
-    id: "deepseek/deepseek-v3.2",
-    name: "DeepSeek V3.2",
+    id: "deepseek/deepseek-chat",
+    name: "DeepSeek V3",
     provider: "deepseek",
-    description: "Powerful open-source model",
-  },
-  // Perplexity
-  {
-    id: "perplexity/sonar",
-    name: "Sonar",
-    provider: "perplexity",
-    description: "Search-augmented model",
-  },
-  // NVIDIA
-  {
-    id: "nvidia/nemotron-3-nano-30b-a3b",
-    name: "Nemotron 3 Nano",
-    provider: "nvidia",
-    description: "Compact efficient model",
-  },
-  // MoonshotAI
-  {
-    id: "moonshotai/kimi-k2.5",
-    name: "Kimi K2.5",
-    provider: "moonshotai",
-    description: "Next generation Kimi model",
+    description: "Highly capable open-weights model",
+    capabilities: { tools: true },
   },
   {
-    id: "moonshotai/kimi-k2.6",
-    name: "Kimi K2.6",
-    provider: "moonshotai",
-    description: "Latest Kimi model",
-  },
-  // Minimax
-  {
-    id: "minimax/minimax-m2.5",
-    name: "Minimax M2.5",
-    provider: "minimax",
-    description: "Standard M2.5 performance",
-  },
-  {
-    id: "minimax/minimax-m2.5-highspeed",
-    name: "Minimax M2.5 Speed",
-    provider: "minimax",
-    description: "Optimized for extreme speed",
-  },
-  {
-    id: "minimax/minimax-m2.7",
-    name: "Minimax M2.7",
-    provider: "minimax",
-    description: "Advanced multi-modal capabilities",
-  },
-  // ZAI
-  {
-    id: "zai/glm-5",
-    name: "GLM-5",
-    provider: "zai",
-    description: "High performance GLM model",
-  },
-  {
-    id: "zai/glm-5.1",
-    name: "GLM-5.1",
-    provider: "zai",
-    description: "Enhanced GLM-5 model",
+    id: "deepseek/deepseek-reasoner",
+    name: "DeepSeek R1",
+    provider: "deepseek",
+    description: "Powerful reasoning model (R1)",
+    capabilities: { reasoning: true },
   },
   // xAI
   {
-    id: "xai/grok-4.1-fast-non-reasoning",
-    name: "Grok 4.1 Fast",
+    id: "xai/grok-3",
+    name: "Grok 3",
     provider: "xai",
-    description: "Fast with 30K context",
-  },
-  // Inception
-  {
-    id: "inception/mercury-2",
-    name: "Mercury 2",
-    provider: "inception",
-    description: "Advanced reasoning and capabilities",
-  },
-  // Alibaba
-  {
-    id: "alibaba/qwen3-coder",
-    name: "Qwen3 Coder",
-    provider: "alibaba",
-    description: "Specialized for code generation and analysis",
-  },
-  // Reasoning models (extended thinking)
-  {
-    id: "google/gemini-3.1-pro-preview",
-    name: "Gemini 3.1 Pro",
-    provider: "reasoning",
-    description: "Google reasoning preview",
+    description: "Latest Grok model with frontier intelligence",
+    capabilities: { reasoning: true, vision: true, tools: true },
   },
   {
-    id: "deepseek/deepseek-v3.2-thinking",
-    name: "DeepSeek V3.2 Thinking",
-    provider: "reasoning",
-    description: "DeepSeek extended thinking",
+    id: "xai/grok-2-1212",
+    name: "Grok 2",
+    provider: "xai",
+    description: "Stable Grok model with real-time knowledge",
+    capabilities: { tools: true },
   },
+  // Minimax
   {
-    id: "anthropic/claude-3.7-sonnet-thinking",
-    name: "Claude 3.7 Sonnet",
+    id: "minimax/minimax-01",
+    name: "Minimax-01",
+    provider: "minimax",
+    description: "Next generation high-performance model",
+    capabilities: { tools: true },
+  },
+  // ZAI / GLM
+  {
+    id: "zai/glm-4",
+    name: "GLM-4",
+    provider: "zai",
+    description: "High performance bilingual model",
+    capabilities: { vision: true, tools: true },
+  },
+  // Perplexity
+  {
+    id: "perplexity/sonar-reasoning",
+    name: "Sonar Reasoning",
+    provider: "perplexity",
+    description: "Search-augmented reasoning model",
+    capabilities: { reasoning: true },
+  },
+  // Reasoning models (extended thinking grouped for UI)
+  {
+    id: "reasoning/claude-3-7-thinking",
+    name: "Claude 3.7 (Thinking Mode)",
     provider: "reasoning",
     description: "Extended thinking for complex problems",
+    capabilities: { reasoning: true, vision: true, tools: true },
   },
   {
-    id: "moonshotai/kimi-k2-thinking",
-    name: "Kimi K2 Thinking",
+    id: "reasoning/o1-thinking",
+    name: "o1 (Full Reasoning)",
     provider: "reasoning",
-    description: "Moonshot reasoning model",
-  },
-  {
-    id: "xai/grok-code-fast-1-thinking",
-    name: "Grok Code Fast",
-    provider: "reasoning",
-    description: "Reasoning optimized for code",
-  },
-  {
-    id: "xai/grok-4.1-fast-reasoning",
-    name: "Grok 4.1 Reasoning",
-    provider: "reasoning",
-    description: "Reasoning-enabled Grok 4.1",
+    description: "OpenAI o1 with maximum reasoning depth",
+    capabilities: { reasoning: true, vision: true, tools: true },
   },
 ];
 

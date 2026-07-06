@@ -41,17 +41,19 @@ export const listSubAgents = () =>
   tool({
     description:
       "List all available sub-agents that Etles can delegate tasks to. " +
-      "Use this when the user asks what agents exist or what can be delegated.",
+      "Use this when the user asks what agents exist or what can be delegated. " +
+      "Shows agent hierarchy (Orchestrator, Specialist, Worker).",
     inputSchema: z.object({}),
     execute: () => {
       const agents = SUBAGENT_DEFINITIONS.map((a) => ({
         slug: a.slug,
         name: a.name,
+        tier: a.tier || "specialist",
         description: a.description,
       }));
       return {
         agents,
-        message: `Available agents: ${agents.map((a) => a.name).join(", ")}. Use delegateToSubAgent to spawn one.`,
+        message: `Available agents (hierarchical): ${agents.map((a) => `[${a.tier}] ${a.name} (${a.slug})`).join(", ")}. Use delegateToSubAgent to spawn one.`,
       };
     },
   });
@@ -139,7 +141,6 @@ export const delegateToSubAgent = ({
 
       const secret = process.env.AGENT_DELEGATE_SECRET ?? "dev-internal";
 
-      // Prefer QStash Workflow when enabled — durable, retries, survives restarts
       if (isWorkflowEnabled()) {
         try {
           const workflowResult = await triggerAgentWorkflow({
@@ -157,7 +158,6 @@ export const delegateToSubAgent = ({
                 workflowRunId: workflowResult.workflowRunId,
               });
             } catch {
-              // workflowRunId column may be missing — workflow still runs
             }
             return {
               success: true,
@@ -166,7 +166,6 @@ export const delegateToSubAgent = ({
             };
           }
         } catch {
-          // Fall through to HTTP delegate / inline run
         }
       }
 
@@ -208,8 +207,8 @@ export const delegateToSubAgent = ({
             success: runResult.success,
             taskId,
             message: runResult.success
-              ? `Delegated to ${definition.name} (ran inline — fix AGENT_DELEGATE_SECRET mismatch for async HTTP). ${runResult.text?.slice(0, 200) ?? "Done"}`
-              : `Delegation failed (auth on /api/agent/delegate): ${runResult.error}`,
+              ? `Delegated to ${definition.name} (ran inline). ${runResult.text?.slice(0, 200) ?? "Done"}`
+              : `Delegation failed: ${runResult.error}`,
             error: runResult.error,
           };
         }

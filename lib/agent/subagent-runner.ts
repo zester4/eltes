@@ -407,10 +407,19 @@ You now have the full capability to run truly multi-agent operations. Use this p
 Execute the task now. Summarize what you did in your final response.`;
 
   const subagentModel = process.env.SUBAGENT_MODEL?.trim();
+  // Tier-based model selection
+  let modelToUse = "google/gemini-2.0-flash";
+  if (definition.tier === "orchestrator") {
+    modelToUse = "google/gemini-2.0-pro-exp-02-05";
+  } else if (definition.tier === "specialist") {
+    modelToUse = "google/gemini-2.0-flash";
+  } else {
+    modelToUse = "google/gemini-2.0-flash-lite";
+  }
   const model =
     subagentModel && subagentModel.startsWith("google/")
-      ? getGoogleModel(subagentModel)
-      : getGoogleModel("google/gemini-3-flash-preview");
+      ? getGoogleModel(subagentModel || modelToUse)
+      : getGoogleModel(modelToUse);
 
   try {
     const userContent: any[] = [{ type: "text", text: `Task: ${promptTask}` }];

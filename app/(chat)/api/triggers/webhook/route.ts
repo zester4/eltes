@@ -37,7 +37,7 @@ import { generateUUID } from "@/lib/utils";
 // ─────────────────────────────────────────────────────────────────────────────
 
 const COMPOSIO_WEBHOOK_SECRET = process.env.COMPOSIO_WEBHOOK_SECRET ?? "";
-const MODEL = "google/gemini-3-flash";
+const MODEL = "google/gemini-2.0-flash";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Composio webhook payload shape

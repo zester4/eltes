@@ -240,7 +240,7 @@ async function handler(req: NextRequest): Promise<NextResponse> {
   });
 
   const result = await generateText({
-    model: getLanguageModel("google/gemini-3-flash"),
+    model: getLanguageModel("google/gemini-2.0-flash"),
     system: buildSystemPrompt(agent.systemPrompt, triggerName, memoryContext),
     prompt: taskPrompt,
     tools,

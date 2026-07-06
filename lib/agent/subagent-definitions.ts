@@ -46,7 +46,10 @@ export type AgentSlug =
   | "knowledge_librarian"
   | "travel_concierge";
 
+export type AgentTier = "orchestrator" | "specialist" | "worker";
+
 export interface SubAgentDefinition {
+  tier?: AgentTier;
   slug: AgentSlug;
   name: string;
   description: string;
@@ -137,6 +140,7 @@ function enrichToolkits(agent: SubAgentDefinition): SubAgentDefinition {
 const BASE_SUBAGENT_DEFINITIONS: SubAgentDefinition[] = [
   {
     slug: "inbox_operator",
+    tier: "specialist",
     name: "24/7 Inbox Operator",
     description: "Monitors and operates inboxes across Gmail, Outlook, Slack, WhatsApp, LinkedIn. Classifies, responds, routes sensitive items.",
     toolkits: ["gmail", "outlook", "slack", "whatsapp", "telegram", "linkedin"],
@@ -175,6 +179,7 @@ HARD RULES:
   },
   {
     slug: "sdr",
+    tier: "specialist",
     name: "Autonomous Sales Development Rep",
     description: "Runs outbound sales: lead sourcing, enrichment, personalized outreach, sequences, booking meetings.",
     toolkits: ["gmail", "hubspot", "salesforce", "pipedrive", "calendly", "googledrive", "linkedin"],
@@ -217,6 +222,7 @@ HARD RULES:
   },
   {
     slug: "chief_of_staff",
+    tier: "orchestrator",
     name: "Chief of Staff — Daily Briefing",
     description: "Prepares morning brief: overnight communications, calendar, commitments, pre-drafted actions.",
     toolkits: ["gmail", "googledrive", "notion", "jira", "asana", "slack"],
@@ -261,6 +267,7 @@ HARD RULES:
   },
   {
     slug: "project_manager",
+    tier: "orchestrator",
     name: "Autonomous Project Manager",
     description: "Creates tickets, tracks progress, chases blockers, updates stakeholders, manages timeline slippage.",
     toolkits: ["jira", "linear", "asana", "clickup", "slack", "gmail", "notion", "googledrive"],
@@ -1204,6 +1211,7 @@ HARD RULES:
   },
   {
     slug: "sandbox_specialist",
+    tier: "worker",
     name: "Sandbox Specialist",
     description:
       "Executes code, manages infrastructure, and runs secure computing environments using Daytona sandboxes.",
@@ -1286,6 +1294,7 @@ OPERATING RULES
   },
   {
     slug: "browser_operator",
+    tier: "worker",
     name: "Browser Operator",
     description:
       "Performs complex web automation, data extraction, and multi-tab research using Browser Use Cloud and Daytona Playwright sandboxes.",
@@ -1582,6 +1591,7 @@ Present the shot list to the user for approval before generating. This prevents 
   },
   {
     slug: "task_coordinator",
+    tier: "orchestrator",
     name: "Task Coordinator",
     description:
       "Orchestrates complex tasks that require multiple specialized agents working in parallel. " +
