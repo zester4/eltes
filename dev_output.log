@@ -1,0 +1,60 @@
+
+> etles@3.1.8 dev /app
+> concurrently -p none "serwist build --watch" "next dev --turbo"
+
+Using configuration from /app/serwist.config.js.
+(node:146057) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///app/serwist.config.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   ▲ Next.js 16.0.10 (Turbopack, Cache Components)
+   - Local:         http://localhost:3000
+   - Network:       http://192.168.0.2:3000
+   - Experiments (use with caution):
+     · serverActions
+
+ ✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 3.2s
+[Proxy] Request: GET /chat
+[Proxy] Request: GET /login
+[Proxy] Allowing public path: /login
+ ○ Compiling /login ...
+Error: Cannot apply unknown utility class `liquid-glass`
+    [2m[at onInvalidCandidate (/app/node_modules/.pnpm/tailwindcss@4.2.2/node_modules/tailwindcss/dist/lib.js:21:1511)][0m
+    [2m[at Ee (/app/node_modules/.pnpm/tailwindcss@4.2.2/node_modules/tailwindcss/dist/lib.js:16:36740)][0m
+    [2m[at /app/node_modules/.pnpm/tailwindcss@4.2.2/node_modules/tailwindcss/dist/lib.js:21:355][0m
+    [2m[at _r (/app/node_modules/.pnpm/tailwindcss@4.2.2/node_modules/tailwindcss/dist/lib.js:3:1733)][0m
+    [2m[at I (/app/node_modules/.pnpm/tailwindcss@4.2.2/node_modules/tailwindcss/dist/lib.js:3:1377)][0m
+    [2m[at Te (/app/node_modules/.pnpm/tailwindcss@4.2.2/node_modules/tailwindcss/dist/lib.js:21:172)][0m
+    [2m[at mn (/app/node_modules/.pnpm/tailwindcss@4.2.2/node_modules/tailwindcss/dist/lib.js:38:294)][0m
+    [2m[at async gn (/app/node_modules/.pnpm/tailwindcss@4.2.2/node_modules/tailwindcss/dist/lib.js:38:631)][0m
+    [2m[at async Xr (/app/node_modules/.pnpm/@tailwindcss+node@4.2.2/node_modules/@tailwindcss/node/dist/index.js:10:3416)][0m
+    [2m[at async N (/app/node_modules/.pnpm/@tailwindcss+postcss@4.2.2/node_modules/@tailwindcss/postcss/dist/index.js:10:3979)][0m
+ ⨯ ./app/globals.css
+Error evaluating Node.js code
+CssSyntaxError: tailwindcss: /app/app/globals.css:1:1: Cannot apply unknown utility class `liquid-glass`
+    [at Input.error (turbopack:///[project]/node_modules/.pnpm/postcss@8.5.8/node_modules/postcss/lib/input.js:135:16)]
+    [at Root.error (turbopack:///[project]/node_modules/.pnpm/postcss@8.5.8/node_modules/postcss/lib/node.js:146:32)]
+    [at Object.Once (/app/node_modules/.pnpm/@tailwindcss+postcss@4.2.2/node_modules/@tailwindcss/postcss/dist/index.js:10:6913)]
+    [at async LazyResult.runAsync (turbopack:///[project]/node_modules/.pnpm/postcss@8.5.8/node_modules/postcss/lib/lazy-result.js:293:11)]
+    [at async transform (turbopack:///[turbopack-node]/transforms/postcss.ts:70:34)]
+    [at async run (turbopack:///[turbopack-node]/ipc/evaluate.ts:92:23)]
+
+Import trace:
+  Client Component Browser:
+    ./app/globals.css [Client Component Browser]
+    ./app/layout.tsx [Server Component]
+
+
+ GET /login?redirectUrl=http%3A%2F%2Flocalhost%3A3000%2Fchat 500 in 12.7s (compile: 12.4s, proxy.ts: 9ms, render: 260ms)
+ ELIFECYCLE  Command failed.
+serwist build --watch exited with code SIGTERM
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[?25h
+next dev --turbo exited with code SIGTERM

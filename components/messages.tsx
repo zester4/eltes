@@ -123,7 +123,7 @@ function PureMessages({
         className="absolute inset-0 touch-pan-y overflow-y-auto"
         ref={messagesContainerRef}
       >
-        <div className="mx-auto flex min-w-0 max-w-4xl flex-col gap-3 px-2 py-5 md:gap-4 md:px-3 md:py-6">
+        <div className="mx-auto flex min-w-0 max-w-3xl flex-col gap-3 px-2 py-5 md:gap-4 md:px-3 md:py-6">
           {messages.length === 0 && <Greeting />}
 
           {messages.map((message, index) => (

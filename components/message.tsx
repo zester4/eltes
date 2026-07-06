@@ -259,9 +259,9 @@ const PurePreviewMessage = ({
                   {conversationalText.trim() && (
                     <MessageContent
                       className={cn({
-                        "ml-auto w-fit min-w-[32px] max-w-full break-words rounded-2xl rounded-br-md border border-primary/15 bg-foreground px-3.5 py-2.5 text-left text-[13px] text-background leading-relaxed shadow-sm":
+                        "chat-bubble-user":
                           message.role === "user",
-                        "w-full bg-transparent px-0 py-0 text-left text-[13px] leading-relaxed":
+                        "chat-bubble-ai":
                           message.role === "assistant",
                       })}
                       data-testid="message-content"

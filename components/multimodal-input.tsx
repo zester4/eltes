@@ -506,7 +506,7 @@ function PureMultimodalInput({
       />
 
       <PromptInput
-        className="panel-hairline rounded-2xl border border-border/70 bg-card/95 p-2 shadow-lg backdrop-blur-xl transition-all duration-200 hover:border-muted-foreground/40 focus-within:border-primary/50 focus-within:shadow-xl"
+        className="floating-island p-2 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary/20"
         onSubmit={(event) => {
           event.preventDefault();
           if (!input.trim() && attachments.length === 0) {
