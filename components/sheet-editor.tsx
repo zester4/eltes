@@ -4,8 +4,8 @@ import { useTheme } from "next-themes";
 import { parse, unparse } from "papaparse";
 import { memo, useEffect, useMemo, useState } from "react";
 import DataGrid, { type Column, textEditor } from "react-data-grid";
-import { cn } from "@/lib/utils";
 import { isSheetData, type SheetData } from "@/lib/ai/tools/sheet-types";
+import { cn } from "@/lib/utils";
 
 import "react-data-grid/lib/styles.css";
 
@@ -36,11 +36,11 @@ function colLettersToIndex(col: string): number {
 
 function evaluateFormula(
   formula: string,
-  getValue: (rowIdx: number, colIdx: number) => number,
+  getValue: (rowIdx: number, colIdx: number) => number
 ): number | string {
   const expression = formula.trim().replace(/^=/, "");
   const sumMatch = expression.match(
-    /^SUM\(\s*([A-Z]+)(\d+)\s*:\s*([A-Z]+)(\d+)\s*\)$/i,
+    /^SUM\(\s*([A-Z]+)(\d+)\s*:\s*([A-Z]+)(\d+)\s*\)$/i
   );
   if (sumMatch) {
     const startCol = colLettersToIndex(sumMatch[1]);
@@ -75,7 +75,9 @@ function evaluateFormula(
   try {
     // eslint-disable-next-line no-new-func
     const value = Function(`"use strict"; return (${replaced});`)();
-    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
     return "#ERR";
   } catch {
     return "#ERR";
@@ -99,7 +101,9 @@ const PureSpreadsheetEditor = ({
   const sheetData = useMemo<SheetData>(() => {
     try {
       const parsed = JSON.parse(content);
-      if (isSheetData(parsed)) return parsed;
+      if (isSheetData(parsed)) {
+        return parsed;
+      }
     } catch {}
 
     // Fallback for plain CSV or streaming JSON that hasn't closed yet
@@ -181,10 +185,16 @@ const PureSpreadsheetEditor = ({
   const columns = useMemo<Column<SheetRow>[]>(() => {
     const getNumericCellValue = (rowIdx: number, colIdx: number): number => {
       const row = localRows[rowIdx];
-      if (!row) return 0;
+      if (!row) {
+        return 0;
+      }
       const raw = row[colIdx.toString()];
-      if (typeof raw === "number") return raw;
-      if (typeof raw !== "string") return 0;
+      if (typeof raw === "number") {
+        return raw;
+      }
+      if (typeof raw !== "string") {
+        return 0;
+      }
       if (raw.trim().startsWith("=")) {
         const computed = evaluateFormula(raw, getNumericCellValue);
         return typeof computed === "number" ? computed : 0;
@@ -199,7 +209,8 @@ const PureSpreadsheetEditor = ({
       frozen: true,
       width: 50,
       renderCell: ({ rowIdx }: { rowIdx: number }) => rowIdx + 1,
-      cellClass: "border-t border-r bg-zinc-50 dark:bg-zinc-950 text-zinc-500 text-xs flex items-center justify-center",
+      cellClass:
+        "border-t border-r bg-zinc-50 dark:bg-zinc-950 text-zinc-500 text-xs flex items-center justify-center",
       headerCellClass: "border-t border-r bg-zinc-100 dark:bg-zinc-900",
     };
 
@@ -241,10 +252,14 @@ const PureSpreadsheetEditor = ({
       },
       width: 120,
       cellClass: (row: SheetRow) =>
-        cn("border-t border-l border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 p-0", {
-          "bg-blue-50/50 dark:bg-blue-900/20": row.rowNumber === 1,
-        }),
-      headerCellClass: "border-t border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-500 font-normal text-xs",
+        cn(
+          "border-t border-l border-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 p-0",
+          {
+            "bg-blue-50/50 dark:bg-blue-900/20": row.rowNumber === 1,
+          }
+        ),
+      headerCellClass:
+        "border-t border-l border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-500 font-normal text-xs",
     }));
 
     return [rowNumberColumn, ...dataColumns];
@@ -282,7 +297,9 @@ const PureSpreadsheetEditor = ({
           )}
         </div>
         <div className="flex items-center gap-2 text-xs text-zinc-500">
-          <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded">XLSX Mode</span>
+          <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded">
+            XLSX Mode
+          </span>
         </div>
       </div>
 
@@ -293,7 +310,6 @@ const PureSpreadsheetEditor = ({
             resolvedTheme === "dark" ? "rdg-dark" : "rdg-light",
             "h-full border-none text-sm"
           )}
-          style={{ height: "100%" }}
           columns={columns}
           defaultColumnOptions={{
             resizable: true,
@@ -307,6 +323,7 @@ const PureSpreadsheetEditor = ({
           }}
           onRowsChange={handleRowsChange}
           rows={localRows}
+          style={{ height: "100%" }}
         />
       </div>
 
@@ -314,28 +331,55 @@ const PureSpreadsheetEditor = ({
       <div className="h-10 border-t border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 flex items-center px-4 gap-1">
         <div className="flex items-center h-full mr-4 border-r border-zinc-200 dark:border-zinc-800 pr-4">
           <button className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-500">
-             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+            <svg
+              fill="none"
+              height="12"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              width="12"
+            >
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
           </button>
           <button className="p-1 hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded text-zinc-500">
-             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6"/></svg>
+            <svg
+              fill="none"
+              height="12"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+              width="12"
+            >
+              <path d="M9 18l6-6-6-6" />
+            </svg>
           </button>
         </div>
         {sheetData.sheets.map((sheet, idx) => (
           <button
-            key={idx}
-            onClick={() => setActiveSheetIndex(idx)}
             className={cn(
               "px-4 h-full flex items-center text-xs font-medium border-t-2 transition-colors",
               activeSheetIndex === idx
                 ? "bg-white dark:bg-zinc-950 border-blue-600 text-blue-600 dark:text-blue-400"
                 : "border-transparent text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             )}
+            key={idx}
+            onClick={() => setActiveSheetIndex(idx)}
           >
             {sheet.name}
           </button>
         ))}
         <button className="p-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14"/></svg>
+          <svg
+            fill="none"
+            height="14"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+            width="14"
+          >
+            <path d="M12 5v14M5 12h14" />
+          </svg>
         </button>
       </div>
     </div>

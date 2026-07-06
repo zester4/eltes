@@ -9,6 +9,9 @@ import {
   CartesianGrid,
   Cell,
   ComposedChart,
+  Funnel,
+  FunnelChart,
+  LabelList,
   Legend,
   Line,
   LineChart,
@@ -19,17 +22,14 @@ import {
   PolarRadiusAxis,
   Radar,
   RadarChart,
+  RadialBar,
+  RadialBarChart,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
   Tooltip,
   XAxis,
   YAxis,
-  RadialBarChart,
-  RadialBar,
-  FunnelChart,
-  Funnel,
-  LabelList,
 } from "recharts";
 import type { ChartToolPayload } from "@/lib/ai/tools/render-chart";
 import { cn } from "@/lib/utils";
@@ -37,20 +37,20 @@ import { cn } from "@/lib/utils";
 const DEFAULT_SERIES_COLORS = [
   "hsl(158 94% 30%)", // Emerald
   "hsl(262 83% 58%)", // Violet
-  "hsl(38 92% 50%)",  // Amber
+  "hsl(38 92% 50%)", // Amber
   "hsl(346 87% 43%)", // Rose
   "hsl(189 94% 43%)", // Cyan
   "hsl(239 84% 67%)", // Indigo
   "hsl(292 84% 61%)", // Fuchsia
-  "hsl(84 81% 44%)",  // Lime
+  "hsl(84 81% 44%)", // Lime
   "hsl(199 89% 48%)", // Sky
   "hsl(174 86% 29%)", // Teal
   "hsl(322 81% 54%)", // Pink
   "hsl(217 91% 60%)", // Blue-Grey
-  "hsl(31 97% 55%)",  // Orange
+  "hsl(31 97% 55%)", // Orange
   "hsl(271 91% 65%)", // Purple
   "hsl(142 71% 45%)", // Green
-  "hsl(11 80% 45%)",  // Crimson
+  "hsl(11 80% 45%)", // Crimson
 ] as const;
 
 type ChartDisplayProps = {
@@ -107,7 +107,7 @@ function buildPieData(spec: ChartToolPayload) {
   return spec.labels.map((name, i) => ({
     name,
     value: s0.data[i] ?? 0,
-    fill: pickSeriesColor(i, undefined, spec.colors)
+    fill: pickSeriesColor(i, undefined, spec.colors),
   }));
 }
 
@@ -116,19 +116,34 @@ function buildFunnelData(spec: ChartToolPayload) {
   return spec.labels.map((name, i) => ({
     name,
     value: s0.data[i] ?? 0,
-    fill: pickSeriesColor(i, undefined, spec.colors)
+    fill: pickSeriesColor(i, undefined, spec.colors),
   }));
 }
 
-const formatValue = (value: any, formatterType?: "currency" | "percent" | "compact" | "none") => {
-  if (typeof value !== "number") return value;
+const formatValue = (
+  value: any,
+  formatterType?: "currency" | "percent" | "compact" | "none"
+) => {
+  if (typeof value !== "number") {
+    return value;
+  }
   switch (formatterType) {
     case "currency":
-      return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(value);
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      }).format(value);
     case "percent":
-      return new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 }).format(value / 100);
+      return new Intl.NumberFormat("en-US", {
+        style: "percent",
+        maximumFractionDigits: 1,
+      }).format(value / 100);
     case "compact":
-      return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+      return new Intl.NumberFormat("en-US", {
+        notation: "compact",
+        maximumFractionDigits: 1,
+      }).format(value);
     default:
       return value.toLocaleString("en-US");
   }
@@ -209,7 +224,8 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
     width: isHorizontal ? 80 : 40,
     type: (isHorizontal ? "category" : "number") as "number" | "category",
     dataKey: isHorizontal ? "name" : undefined,
-    tickFormatter: (val: any) => formatValue(val, isHorizontal ? "none" : spec.valueFormatter),
+    tickFormatter: (val: any) =>
+      formatValue(val, isHorizontal ? "none" : spec.valueFormatter),
   };
 
   const chartInner = (() => {
@@ -217,37 +233,56 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
       case "line":
         return (
           <LineChart data={rows} layout={spec.layout} margin={commonMargin}>
-            <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" vertical={isHorizontal} horizontal={!isHorizontal} />
+            <CartesianGrid
+              horizontal={!isHorizontal}
+              stroke={colors.grid}
+              strokeDasharray="3 3"
+              vertical={isHorizontal}
+            />
             <XAxis {...xAxisProps} />
             <YAxis {...yAxisProps} />
-            <Tooltip 
-              contentStyle={tooltipContentStyle} 
-              formatter={(value: any) => formatValue(value, spec.valueFormatter)}
+            <Tooltip
+              contentStyle={tooltipContentStyle}
               cursor={{ stroke: colors.grid, strokeWidth: 1 }}
+              formatter={(value: any) =>
+                formatValue(value, spec.valueFormatter)
+              }
             />
             <Legend {...legendProps} />
             <defs>
               {spec.series.map((s, i) => {
                 const c = pickSeriesColor(i, s.color, spec.colors);
                 return (
-                  <linearGradient id={`lineGradient-${i}`} key={i} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={c} stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor={c} stopOpacity={0}/>
+                  <linearGradient
+                    id={`lineGradient-${i}`}
+                    key={i}
+                    x1="0"
+                    x2="0"
+                    y1="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor={c} stopOpacity={0.8} />
+                    <stop offset="95%" stopColor={c} stopOpacity={0} />
                   </linearGradient>
-                )
+                );
               })}
             </defs>
             {spec.series.map((s, i) => (
               <Line
-                dataKey={s.name}
-                dot={{ r: 3, fill: pickSeriesColor(i, s.color, spec.colors), strokeWidth: 2, stroke: "#000" }}
                 activeDot={{ r: 5, strokeWidth: 0 }}
+                animationDuration={1500}
+                dataKey={s.name}
+                dot={{
+                  r: 3,
+                  fill: pickSeriesColor(i, s.color, spec.colors),
+                  strokeWidth: 2,
+                  stroke: "#000",
+                }}
                 key={s.name}
                 stroke={pickSeriesColor(i, s.color, spec.colors)}
-                strokeWidth={3}
                 strokeDasharray={s.lineStyle === "dashed" ? "5 5" : undefined}
+                strokeWidth={3}
                 type="natural"
-                animationDuration={1500}
               />
             ))}
           </LineChart>
@@ -256,34 +291,48 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
       case "bar":
         return (
           <BarChart data={rows} layout={spec.layout} margin={commonMargin}>
-            <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" vertical={isHorizontal} horizontal={!isHorizontal} />
+            <CartesianGrid
+              horizontal={!isHorizontal}
+              stroke={colors.grid}
+              strokeDasharray="3 3"
+              vertical={isHorizontal}
+            />
             <XAxis {...xAxisProps} />
             <YAxis {...yAxisProps} />
-            <Tooltip 
-              contentStyle={tooltipContentStyle} 
-              formatter={(value: any) => formatValue(value, spec.valueFormatter)}
+            <Tooltip
+              contentStyle={tooltipContentStyle}
               cursor={{ fill: "rgba(255,255,255,0.03)" }}
+              formatter={(value: any) =>
+                formatValue(value, spec.valueFormatter)
+              }
             />
             <Legend {...legendProps} />
             <defs>
               {spec.series.map((s, i) => {
                 const c = pickSeriesColor(i, s.color, spec.colors);
                 return (
-                  <linearGradient id={`barGradient-${i}`} key={i} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={c} stopOpacity={1}/>
-                    <stop offset="100%" stopColor={c} stopOpacity={0.6}/>
+                  <linearGradient
+                    id={`barGradient-${i}`}
+                    key={i}
+                    x1="0"
+                    x2="0"
+                    y1="0"
+                    y2="1"
+                  >
+                    <stop offset="0%" stopColor={c} stopOpacity={1} />
+                    <stop offset="100%" stopColor={c} stopOpacity={0.6} />
                   </linearGradient>
-                )
+                );
               })}
             </defs>
             {spec.series.map((s, i) => (
               <Bar
+                animationDuration={1500}
                 dataKey={s.name}
                 fill={`url(#barGradient-${i})`}
                 key={s.name}
                 radius={isHorizontal ? [0, 6, 6, 0] : [6, 6, 0, 0]}
                 stackId={stacking}
-                animationDuration={1500}
               />
             ))}
           </BarChart>
@@ -292,38 +341,52 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
       case "area":
         return (
           <AreaChart data={rows} layout={spec.layout} margin={commonMargin}>
-            <CartesianGrid stroke={colors.grid} strokeDasharray="3 3" vertical={isHorizontal} horizontal={!isHorizontal} />
+            <CartesianGrid
+              horizontal={!isHorizontal}
+              stroke={colors.grid}
+              strokeDasharray="3 3"
+              vertical={isHorizontal}
+            />
             <XAxis {...xAxisProps} />
             <YAxis {...yAxisProps} />
-            <Tooltip 
+            <Tooltip
               contentStyle={tooltipContentStyle}
-              formatter={(value: any) => formatValue(value, spec.valueFormatter)}
               cursor={{ fill: "rgba(255,255,255,0.03)" }}
+              formatter={(value: any) =>
+                formatValue(value, spec.valueFormatter)
+              }
             />
             <Legend {...legendProps} />
             <defs>
               {spec.series.map((s, i) => {
                 const c = pickSeriesColor(i, s.color, spec.colors);
                 return (
-                  <linearGradient id={`areaGradient-${i}`} key={i} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={c} stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor={c} stopOpacity={0}/>
+                  <linearGradient
+                    id={`areaGradient-${i}`}
+                    key={i}
+                    x1="0"
+                    x2="0"
+                    y1="0"
+                    y2="1"
+                  >
+                    <stop offset="5%" stopColor={c} stopOpacity={0.4} />
+                    <stop offset="95%" stopColor={c} stopOpacity={0} />
                   </linearGradient>
-                )
+                );
               })}
             </defs>
             {spec.series.map((s, i) => {
               const c = pickSeriesColor(i, s.color, spec.colors);
               return (
                 <Area
+                  animationDuration={1500}
                   dataKey={s.name}
                   fill={`url(#areaGradient-${i})`}
                   key={s.name}
+                  stackId={stacking}
                   stroke={c}
                   strokeWidth={2}
-                  stackId={stacking}
                   type="natural"
-                  animationDuration={1500}
                 />
               );
             })}
@@ -354,7 +417,12 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
                 />
               ))}
             </Pie>
-            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
+            <Tooltip
+              contentStyle={tooltipContentStyle}
+              formatter={(value: any) =>
+                formatValue(value, spec.valueFormatter)
+              }
+            />
             <Legend {...legendProps} />
           </PieChart>
         );
@@ -374,7 +442,12 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
               stroke={colors.axis}
               tick={{ fill: colors.axis, fontSize: 9 }}
             />
-            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
+            <Tooltip
+              contentStyle={tooltipContentStyle}
+              formatter={(value: any) =>
+                formatValue(value, spec.valueFormatter)
+              }
+            />
             <Legend {...legendProps} />
             {spec.series.map((s, i) => (
               <Radar
@@ -406,7 +479,12 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
               tickMargin={4}
               width={40}
             />
-            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
+            <Tooltip
+              contentStyle={tooltipContentStyle}
+              formatter={(value: any) =>
+                formatValue(value, spec.valueFormatter)
+              }
+            />
             <Legend {...legendProps} />
             {scatterSeries.map((ss) => (
               <Scatter
@@ -438,7 +516,12 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
               tickMargin={4}
               width={40}
             />
-            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
+            <Tooltip
+              contentStyle={tooltipContentStyle}
+              formatter={(value: any) =>
+                formatValue(value, spec.valueFormatter)
+              }
+            />
             <Legend {...legendProps} />
             {spec.series.map((s, i) => {
               const c = pickSeriesColor(i, s.color, spec.colors);
@@ -482,30 +565,58 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
 
       case "radial":
         return (
-          <RadialBarChart cx="50%" cy="50%" innerRadius="20%" outerRadius="80%" barSize={16} data={radialData}>
-            <PolarAngleAxis type="number" domain={[0, 'dataMax']} angleAxisId={0} tick={false} />
+          <RadialBarChart
+            barSize={16}
+            cx="50%"
+            cy="50%"
+            data={radialData}
+            innerRadius="20%"
+            outerRadius="80%"
+          >
+            <PolarAngleAxis
+              angleAxisId={0}
+              domain={[0, "dataMax"]}
+              tick={false}
+              type="number"
+            />
             <RadialBar
               background={{ fill: colors.grid }}
-              dataKey="value"
               cornerRadius={8}
+              dataKey="value"
             >
               {radialData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
+                <Cell fill={entry.fill} key={`cell-${index}`} />
               ))}
             </RadialBar>
             <Legend {...legendProps} />
-            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
+            <Tooltip
+              contentStyle={tooltipContentStyle}
+              formatter={(value: any) =>
+                formatValue(value, spec.valueFormatter)
+              }
+            />
           </RadialBarChart>
         );
 
       case "funnel":
         return (
           <FunnelChart margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
-            <Tooltip contentStyle={tooltipContentStyle} formatter={(value: any) => formatValue(value, spec.valueFormatter)} />
-            <Funnel dataKey="value" data={funnelData} isAnimationActive>
-              <LabelList position="right" fill={colors.axis} stroke="none" dataKey="name" fontSize={12} />
+            <Tooltip
+              contentStyle={tooltipContentStyle}
+              formatter={(value: any) =>
+                formatValue(value, spec.valueFormatter)
+              }
+            />
+            <Funnel data={funnelData} dataKey="value" isAnimationActive>
+              <LabelList
+                dataKey="name"
+                fill={colors.axis}
+                fontSize={12}
+                position="right"
+                stroke="none"
+              />
               {funnelData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
+                <Cell fill={entry.fill} key={`cell-${index}`} />
               ))}
             </Funnel>
           </FunnelChart>
@@ -534,7 +645,12 @@ export function ChartDisplay({ spec, className }: ChartDisplayProps) {
         </p>
       ) : null}
       <div className="h-[260px] w-full overflow-hidden sm:h-[300px] md:h-[min(52vh,340px)] md:min-h-[280px]">
-        <ResponsiveContainer height="100%" width="100%" minWidth={1} minHeight={1}>
+        <ResponsiveContainer
+          height="100%"
+          minHeight={1}
+          minWidth={1}
+          width="100%"
+        >
           {chartInner}
         </ResponsiveContainer>
       </div>

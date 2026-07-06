@@ -16,10 +16,11 @@ const TWILIO_BASE = "https://api.twilio.com/2010-04-01";
 function twilioAuth() {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
-  if (!sid || !token)
+  if (!sid || !token) {
     throw new Error(
       "TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables must be set."
     );
+  }
   return { sid, basic: Buffer.from(`${sid}:${token}`).toString("base64") };
 }
 
@@ -41,7 +42,10 @@ async function twilioRequest<T>(
 
   // Filter out undefined values and stringify everything
   const filteredEntries = Object.entries(params ?? {})
-    .filter((entry): entry is [string, string | number | boolean] => entry[1] !== undefined)
+    .filter(
+      (entry): entry is [string, string | number | boolean] =>
+        entry[1] !== undefined
+    )
     .map(([k, v]): [string, string] => [k, String(v)]);
 
   let body: string | undefined;
@@ -60,7 +64,9 @@ async function twilioRequest<T>(
     throw new Error(`Twilio ${method} ${path} (${res.status}): ${errText}`);
   }
 
-  if (method === "DELETE") return {} as T;
+  if (method === "DELETE") {
+    return {} as T;
+  }
   return res.json() as Promise<T>;
 }
 
@@ -70,9 +76,20 @@ async function twilioRequest<T>(
 type TwiMLAction =
   | { type: "say"; text: string; voice?: string; language?: string }
   | { type: "play"; url: string }
-  | { type: "gather_digits"; prompt: string; action_url: string; num_digits?: number; timeout?: number }
+  | {
+      type: "gather_digits";
+      prompt: string;
+      action_url: string;
+      num_digits?: number;
+      timeout?: number;
+    }
   | { type: "connect_stream"; stream_url: string }
-  | { type: "record"; action_url: string; max_length?: number; transcribe?: boolean };
+  | {
+      type: "record";
+      action_url: string;
+      max_length?: number;
+      transcribe?: boolean;
+    };
 
 export function buildTwiML(action: TwiMLAction): string {
   switch (action.type) {
@@ -101,25 +118,29 @@ const makeCallSchema = z.object({
     .describe("Destination phone number in E.164 format, e.g. +14155551234."),
   from: z
     .string()
-    .describe("Your Twilio phone number or verified caller ID in E.164 format."),
+    .describe(
+      "Your Twilio phone number or verified caller ID in E.164 format."
+    ),
   twiml: z
     .string()
     .optional()
     .describe(
       "Inline TwiML XML controlling the call. Use buildTwiML() to generate this. " +
-      "Mutually exclusive with url."
+        "Mutually exclusive with url."
     ),
   url: z
     .string()
     .optional()
     .describe(
       "Publicly reachable URL Twilio fetches TwiML from when the call connects. " +
-      "Mutually exclusive with twiml."
+        "Mutually exclusive with twiml."
     ),
   application_sid: z
     .string()
     .optional()
-    .describe("SID of a TwiML App on your account. Takes precedence over url and twiml."),
+    .describe(
+      "SID of a TwiML App on your account. Takes precedence over url and twiml."
+    ),
   method: z
     .enum(["GET", "POST"])
     .optional()
@@ -128,11 +149,15 @@ const makeCallSchema = z.object({
   status_callback: z
     .string()
     .optional()
-    .describe("URL Twilio POSTs call status events to (initiated, ringing, answered, completed)."),
+    .describe(
+      "URL Twilio POSTs call status events to (initiated, ringing, answered, completed)."
+    ),
   status_callback_event: z
     .array(z.enum(["initiated", "ringing", "answered", "completed"]))
     .optional()
-    .describe("Which status events fire to status_callback. Defaults to completed."),
+    .describe(
+      "Which status events fire to status_callback. Defaults to completed."
+    ),
   record: z
     .boolean()
     .optional()
@@ -155,12 +180,14 @@ const makeCallSchema = z.object({
     .optional()
     .describe(
       "Answering machine detection. " +
-      "'Enable' detects on connect; 'DetectMessageEnd' waits for the beep."
+        "'Enable' detects on connect; 'DetectMessageEnd' waits for the beep."
     ),
   send_digits: z
     .string()
     .optional()
-    .describe("DTMF digits to send on connect, e.g. '1234#'. Useful for auto-navigating IVRs."),
+    .describe(
+      "DTMF digits to send on connect, e.g. '1234#'. Useful for auto-navigating IVRs."
+    ),
   time_limit: z
     .number()
     .int()
@@ -185,18 +212,39 @@ export const twilioMakeCall = ({ userId }: { userId: string }) =>
           Record: params.record,
           Timeout: params.timeout,
         };
-        if (params.twiml)                  body.Twiml               = params.twiml;
-        if (params.url)                    body.Url                 = params.url;
-        if (params.application_sid)        body.ApplicationSid      = params.application_sid;
-        if (params.status_callback)        body.StatusCallback      = params.status_callback;
-        if (params.status_callback_event?.length)
+        if (params.twiml) {
+          body.Twiml = params.twiml;
+        }
+        if (params.url) {
+          body.Url = params.url;
+        }
+        if (params.application_sid) {
+          body.ApplicationSid = params.application_sid;
+        }
+        if (params.status_callback) {
+          body.StatusCallback = params.status_callback;
+        }
+        if (params.status_callback_event?.length) {
           body.StatusCallbackEvent = params.status_callback_event.join(" ");
-        if (params.recording_channels)     body.RecordingChannels   = params.recording_channels;
-        if (params.machine_detection)      body.MachineDetection    = params.machine_detection;
-        if (params.send_digits)            body.SendDigits          = params.send_digits;
-        if (params.time_limit != null)     body.TimeLimit           = params.time_limit;
+        }
+        if (params.recording_channels) {
+          body.RecordingChannels = params.recording_channels;
+        }
+        if (params.machine_detection) {
+          body.MachineDetection = params.machine_detection;
+        }
+        if (params.send_digits) {
+          body.SendDigits = params.send_digits;
+        }
+        if (params.time_limit != null) {
+          body.TimeLimit = params.time_limit;
+        }
 
-        const data = await twilioRequest<Record<string, unknown>>("POST", "/Calls.json", body);
+        const data = await twilioRequest<Record<string, unknown>>(
+          "POST",
+          "/Calls.json",
+          body
+        );
         return {
           success: true,
           call_sid: data.sid,
@@ -205,7 +253,10 @@ export const twilioMakeCall = ({ userId }: { userId: string }) =>
           data,
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -215,7 +266,9 @@ export const twilioMakeCall = ({ userId }: { userId: string }) =>
 const getCallSchema = z.object({
   call_sid: z
     .string()
-    .describe("The Call SID (starts with CA) returned when the call was created."),
+    .describe(
+      "The Call SID (starts with CA) returned when the call was created."
+    ),
 });
 
 export const twilioGetCall = ({ userId }: { userId: string }) =>
@@ -226,10 +279,16 @@ export const twilioGetCall = ({ userId }: { userId: string }) =>
     inputSchema: getCallSchema,
     execute: async ({ call_sid }: z.infer<typeof getCallSchema>) => {
       try {
-        const data = await twilioRequest<Record<string, unknown>>("GET", `/Calls/${call_sid}.json`);
+        const data = await twilioRequest<Record<string, unknown>>(
+          "GET",
+          `/Calls/${call_sid}.json`
+        );
         return { success: true, data };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -237,14 +296,35 @@ export const twilioGetCall = ({ userId }: { userId: string }) =>
 // ─── 3. twilioListCalls ───────────────────────────────────────────────────────
 
 const listCallsSchema = z.object({
-  to: z.string().optional().describe("Filter by destination phone number in E.164 format."),
-  from: z.string().optional().describe("Filter by originating phone number in E.164 format."),
+  to: z
+    .string()
+    .optional()
+    .describe("Filter by destination phone number in E.164 format."),
+  from: z
+    .string()
+    .optional()
+    .describe("Filter by originating phone number in E.164 format."),
   status: z
-    .enum(["queued", "ringing", "in-progress", "canceled", "completed", "failed", "busy", "no-answer"])
+    .enum([
+      "queued",
+      "ringing",
+      "in-progress",
+      "canceled",
+      "completed",
+      "failed",
+      "busy",
+      "no-answer",
+    ])
     .optional()
     .describe("Filter calls by status."),
-  start_time_after: z.string().optional().describe("Return calls started on or after YYYY-MM-DD."),
-  start_time_before: z.string().optional().describe("Return calls started on or before YYYY-MM-DD."),
+  start_time_after: z
+    .string()
+    .optional()
+    .describe("Return calls started on or after YYYY-MM-DD."),
+  start_time_before: z
+    .string()
+    .optional()
+    .describe("Return calls started on or before YYYY-MM-DD."),
   page_size: z
     .number()
     .int()
@@ -264,16 +344,33 @@ export const twilioListCalls = ({ userId }: { userId: string }) =>
     execute: async (params: z.infer<typeof listCallsSchema>) => {
       try {
         const qs: TwilioParams = { PageSize: params.page_size };
-        if (params.to)                qs.To            = params.to;
-        if (params.from)              qs.From          = params.from;
-        if (params.status)            qs.Status        = params.status;
-        if (params.start_time_after)  qs["StartTime>"] = params.start_time_after;
-        if (params.start_time_before) qs["StartTime<"] = params.start_time_before;
+        if (params.to) {
+          qs.To = params.to;
+        }
+        if (params.from) {
+          qs.From = params.from;
+        }
+        if (params.status) {
+          qs.Status = params.status;
+        }
+        if (params.start_time_after) {
+          qs["StartTime>"] = params.start_time_after;
+        }
+        if (params.start_time_before) {
+          qs["StartTime<"] = params.start_time_before;
+        }
 
-        const data = await twilioRequest<Record<string, unknown>>("GET", "/Calls.json", qs);
+        const data = await twilioRequest<Record<string, unknown>>(
+          "GET",
+          "/Calls.json",
+          qs
+        );
         return { success: true, data };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -281,14 +378,27 @@ export const twilioListCalls = ({ userId }: { userId: string }) =>
 // ─── 4. twilioModifyCall ──────────────────────────────────────────────────────
 
 const modifyCallSchema = z.object({
-  call_sid: z.string().describe("SID of the active call to modify (starts with CA)."),
+  call_sid: z
+    .string()
+    .describe("SID of the active call to modify (starts with CA)."),
   status: z
     .enum(["canceled", "completed"])
     .optional()
-    .describe("'completed' hangs up an in-progress call. 'canceled' ends a queued/ringing call."),
-  url: z.string().optional().describe("Redirect the call to TwiML at this URL immediately."),
-  twiml: z.string().optional().describe("Inline TwiML to redirect the call to immediately."),
-  method: z.enum(["GET", "POST"]).optional().describe("HTTP method for fetching from url."),
+    .describe(
+      "'completed' hangs up an in-progress call. 'canceled' ends a queued/ringing call."
+    ),
+  url: z
+    .string()
+    .optional()
+    .describe("Redirect the call to TwiML at this URL immediately."),
+  twiml: z
+    .string()
+    .optional()
+    .describe("Inline TwiML to redirect the call to immediately."),
+  method: z
+    .enum(["GET", "POST"])
+    .optional()
+    .describe("HTTP method for fetching from url."),
 });
 
 export const twilioModifyCall = ({ userId }: { userId: string }) =>
@@ -300,10 +410,18 @@ export const twilioModifyCall = ({ userId }: { userId: string }) =>
     execute: async (params: z.infer<typeof modifyCallSchema>) => {
       try {
         const body: TwilioParams = {};
-        if (params.status) body.Status = params.status;
-        if (params.url)    body.Url    = params.url;
-        if (params.twiml)  body.Twiml  = params.twiml;
-        if (params.method) body.Method = params.method;
+        if (params.status) {
+          body.Status = params.status;
+        }
+        if (params.url) {
+          body.Url = params.url;
+        }
+        if (params.twiml) {
+          body.Twiml = params.twiml;
+        }
+        if (params.method) {
+          body.Method = params.method;
+        }
 
         const data = await twilioRequest<Record<string, unknown>>(
           "POST",
@@ -312,7 +430,10 @@ export const twilioModifyCall = ({ userId }: { userId: string }) =>
         );
         return { success: true, data };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -324,33 +445,35 @@ export const twilioModifyCall = ({ userId }: { userId: string }) =>
 // ─── 5. twilioSendSMS ─────────────────────────────────────────────────────────
 
 const sendSMSSchema = z.object({
-  to: z.string().describe("Recipient phone number in E.164 format, e.g. +14155551234."),
+  to: z
+    .string()
+    .describe("Recipient phone number in E.164 format, e.g. +14155551234."),
   from: z
     .string()
     .optional()
     .describe(
       "Your Twilio phone number or short code in E.164 format. " +
-      "Either from or messaging_service_sid is required."
+        "Either from or messaging_service_sid is required."
     ),
   messaging_service_sid: z
     .string()
     .optional()
     .describe(
       "SID of a Twilio Messaging Service. Twilio auto-selects the optimal sender. " +
-      "Either from or messaging_service_sid is required."
+        "Either from or messaging_service_sid is required."
     ),
   body: z
     .string()
     .describe(
       "Text content of the message. " +
-      "Messages over 160 GSM-7 chars are split into segments and billed per segment."
+        "Messages over 160 GSM-7 chars are split into segments and billed per segment."
     ),
   media_url: z
     .array(z.string())
     .optional()
     .describe(
       "Publicly accessible media URLs to attach (makes this an MMS). " +
-      "Twilio fetches and saves the media; URLs must not require authentication."
+        "Twilio fetches and saves the media; URLs must not require authentication."
     ),
   status_callback: z
     .string()
@@ -374,7 +497,7 @@ const sendSMSSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(14400)
+    .max(14_400)
     .optional()
     .describe("Seconds before an undelivered message expires (1–14400)."),
 });
@@ -389,23 +512,44 @@ export const twilioSendSMS = ({ userId }: { userId: string }) =>
     inputSchema: sendSMSSchema,
     execute: async (params: z.infer<typeof sendSMSSchema>) => {
       try {
-        if (!params.from && !params.messaging_service_sid)
-          throw new Error("Either 'from' or 'messaging_service_sid' is required.");
+        if (!params.from && !params.messaging_service_sid) {
+          throw new Error(
+            "Either 'from' or 'messaging_service_sid' is required."
+          );
+        }
 
         const body: TwilioParams = { To: params.to, Body: params.body };
-        if (params.from)                   body.From                = params.from;
-        if (params.messaging_service_sid)  body.MessagingServiceSid = params.messaging_service_sid;
-        if (params.media_url?.length)      body.MediaUrl            = params.media_url.join(",");
-        if (params.status_callback)        body.StatusCallback      = params.status_callback;
+        if (params.from) {
+          body.From = params.from;
+        }
+        if (params.messaging_service_sid) {
+          body.MessagingServiceSid = params.messaging_service_sid;
+        }
+        if (params.media_url?.length) {
+          body.MediaUrl = params.media_url.join(",");
+        }
+        if (params.status_callback) {
+          body.StatusCallback = params.status_callback;
+        }
         if (params.send_at) {
-          body.SendAt       = params.send_at;
+          body.SendAt = params.send_at;
           body.ScheduleType = "fixed";
         }
-        if (params.shorten_urls != null)   body.ShortenUrls         = params.shorten_urls;
-        if (params.max_price)              body.MaxPrice            = params.max_price;
-        if (params.validity_period != null) body.ValidityPeriod     = params.validity_period;
+        if (params.shorten_urls != null) {
+          body.ShortenUrls = params.shorten_urls;
+        }
+        if (params.max_price) {
+          body.MaxPrice = params.max_price;
+        }
+        if (params.validity_period != null) {
+          body.ValidityPeriod = params.validity_period;
+        }
 
-        const data = await twilioRequest<Record<string, unknown>>("POST", "/Messages.json", body);
+        const data = await twilioRequest<Record<string, unknown>>(
+          "POST",
+          "/Messages.json",
+          body
+        );
         return {
           success: true,
           message_sid: data.sid,
@@ -415,7 +559,10 @@ export const twilioSendSMS = ({ userId }: { userId: string }) =>
           data,
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -450,7 +597,10 @@ export const twilioGetMessage = ({ userId }: { userId: string }) =>
           data,
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -458,10 +608,22 @@ export const twilioGetMessage = ({ userId }: { userId: string }) =>
 // ─── 7. twilioListMessages ────────────────────────────────────────────────────
 
 const listMessagesSchema = z.object({
-  to: z.string().optional().describe("Filter messages sent to this phone number."),
-  from: z.string().optional().describe("Filter messages sent from this phone number or short code."),
-  date_sent_after: z.string().optional().describe("Return messages sent on or after YYYY-MM-DD."),
-  date_sent_before: z.string().optional().describe("Return messages sent on or before YYYY-MM-DD."),
+  to: z
+    .string()
+    .optional()
+    .describe("Filter messages sent to this phone number."),
+  from: z
+    .string()
+    .optional()
+    .describe("Filter messages sent from this phone number or short code."),
+  date_sent_after: z
+    .string()
+    .optional()
+    .describe("Return messages sent on or after YYYY-MM-DD."),
+  date_sent_before: z
+    .string()
+    .optional()
+    .describe("Return messages sent on or before YYYY-MM-DD."),
   page_size: z
     .number()
     .int()
@@ -481,15 +643,30 @@ export const twilioListMessages = ({ userId }: { userId: string }) =>
     execute: async (params: z.infer<typeof listMessagesSchema>) => {
       try {
         const qs: TwilioParams = { PageSize: params.page_size };
-        if (params.to)               qs.To           = params.to;
-        if (params.from)             qs.From         = params.from;
-        if (params.date_sent_after)  qs["DateSent>"] = params.date_sent_after;
-        if (params.date_sent_before) qs["DateSent<"] = params.date_sent_before;
+        if (params.to) {
+          qs.To = params.to;
+        }
+        if (params.from) {
+          qs.From = params.from;
+        }
+        if (params.date_sent_after) {
+          qs["DateSent>"] = params.date_sent_after;
+        }
+        if (params.date_sent_before) {
+          qs["DateSent<"] = params.date_sent_before;
+        }
 
-        const data = await twilioRequest<Record<string, unknown>>("GET", "/Messages.json", qs);
+        const data = await twilioRequest<Record<string, unknown>>(
+          "GET",
+          "/Messages.json",
+          qs
+        );
         return { success: true, data };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -518,7 +695,9 @@ const listMyNumbersSchema = z.object({
   origin: z
     .enum(["twilio", "hosted"])
     .optional()
-    .describe("Filter by origin: 'twilio' (purchased) or 'hosted' (ported in)."),
+    .describe(
+      "Filter by origin: 'twilio' (purchased) or 'hosted' (ported in)."
+    ),
   capabilities_voice: z
     .boolean()
     .optional()
@@ -552,13 +731,27 @@ export const twilioListMyNumbers = ({ userId }: { userId: string }) =>
     execute: async (params: z.infer<typeof listMyNumbersSchema>) => {
       try {
         const qs: TwilioParams = { PageSize: params.page_size };
-        if (params.phone_number != null)       qs.PhoneNumber  = params.phone_number;
-        if (params.friendly_name != null)      qs.FriendlyName = params.friendly_name;
-        if (params.beta != null)               qs.Beta         = params.beta;
-        if (params.origin != null)             qs.Origin       = params.origin;
-        if (params.capabilities_voice != null) qs.VoiceCapable = params.capabilities_voice;
-        if (params.capabilities_sms != null)   qs.SmsCapable   = params.capabilities_sms;
-        if (params.capabilities_mms != null)   qs.MmsCapable   = params.capabilities_mms;
+        if (params.phone_number != null) {
+          qs.PhoneNumber = params.phone_number;
+        }
+        if (params.friendly_name != null) {
+          qs.FriendlyName = params.friendly_name;
+        }
+        if (params.beta != null) {
+          qs.Beta = params.beta;
+        }
+        if (params.origin != null) {
+          qs.Origin = params.origin;
+        }
+        if (params.capabilities_voice != null) {
+          qs.VoiceCapable = params.capabilities_voice;
+        }
+        if (params.capabilities_sms != null) {
+          qs.SmsCapable = params.capabilities_sms;
+        }
+        if (params.capabilities_mms != null) {
+          qs.MmsCapable = params.capabilities_mms;
+        }
 
         const data = await twilioRequest<Record<string, unknown>>(
           "GET",
@@ -576,7 +769,8 @@ export const twilioListMyNumbers = ({ userId }: { userId: string }) =>
         };
 
         const numbers =
-          (data as { incoming_phone_numbers?: NumberEntry[] }).incoming_phone_numbers ?? [];
+          (data as { incoming_phone_numbers?: NumberEntry[] })
+            .incoming_phone_numbers ?? [];
 
         const summary = numbers.map((n) => ({
           sid: n.sid,
@@ -589,7 +783,10 @@ export const twilioListMyNumbers = ({ userId }: { userId: string }) =>
 
         return { success: true, total: numbers.length, numbers: summary };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -665,13 +862,25 @@ export const twilioSearchAvailableNumbers = ({ userId }: { userId: string }) =>
           VoiceEnabled: params.voice_enabled,
           MmsEnabled: params.mms_enabled,
         };
-        if (params.area_code != null) qs.AreaCode     = params.area_code;
-        if (params.contains)          qs.Contains     = params.contains;
-        if (params.in_region)         qs.InRegion     = params.in_region;
-        if (params.in_postal_code)    qs.InPostalCode = params.in_postal_code;
+        if (params.area_code != null) {
+          qs.AreaCode = params.area_code;
+        }
+        if (params.contains) {
+          qs.Contains = params.contains;
+        }
+        if (params.in_region) {
+          qs.InRegion = params.in_region;
+        }
+        if (params.in_postal_code) {
+          qs.InPostalCode = params.in_postal_code;
+        }
 
         const endpoint = `/AvailablePhoneNumbers/${params.country_code}/${params.type}.json`;
-        const data = await twilioRequest<Record<string, unknown>>("GET", endpoint, qs);
+        const data = await twilioRequest<Record<string, unknown>>(
+          "GET",
+          endpoint,
+          qs
+        );
 
         type AvailableNumber = {
           phone_number: string;
@@ -685,7 +894,8 @@ export const twilioSearchAvailableNumbers = ({ userId }: { userId: string }) =>
         };
 
         const numbers =
-          (data as { available_phone_numbers?: AvailableNumber[] }).available_phone_numbers ?? [];
+          (data as { available_phone_numbers?: AvailableNumber[] })
+            .available_phone_numbers ?? [];
 
         const summary = numbers.map((n) => ({
           phone_number: n.phone_number,
@@ -700,7 +910,10 @@ export const twilioSearchAvailableNumbers = ({ userId }: { userId: string }) =>
 
         return { success: true, total: numbers.length, numbers: summary };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -720,7 +933,9 @@ const provisionNumberSchema = z.object({
   voice_url: z
     .string()
     .optional()
-    .describe("URL Twilio fetches TwiML from when this number receives an inbound call."),
+    .describe(
+      "URL Twilio fetches TwiML from when this number receives an inbound call."
+    ),
   voice_method: z
     .enum(["GET", "POST"])
     .optional()
@@ -749,12 +964,24 @@ export const twilioProvisionNumber = ({ userId }: { userId: string }) =>
     execute: async (params: z.infer<typeof provisionNumberSchema>) => {
       try {
         const body: TwilioParams = { PhoneNumber: params.phone_number };
-        if (params.friendly_name)    body.FriendlyName  = params.friendly_name;
-        if (params.voice_url)        body.VoiceUrl      = params.voice_url;
-        if (params.voice_method)     body.VoiceMethod   = params.voice_method;
-        if (params.sms_url)          body.SmsUrl        = params.sms_url;
-        if (params.sms_method)       body.SmsMethod     = params.sms_method;
-        if (params.status_callback)  body.StatusCallback = params.status_callback;
+        if (params.friendly_name) {
+          body.FriendlyName = params.friendly_name;
+        }
+        if (params.voice_url) {
+          body.VoiceUrl = params.voice_url;
+        }
+        if (params.voice_method) {
+          body.VoiceMethod = params.voice_method;
+        }
+        if (params.sms_url) {
+          body.SmsUrl = params.sms_url;
+        }
+        if (params.sms_method) {
+          body.SmsMethod = params.sms_method;
+        }
+        if (params.status_callback) {
+          body.StatusCallback = params.status_callback;
+        }
 
         const data = await twilioRequest<Record<string, unknown>>(
           "POST",
@@ -771,7 +998,10 @@ export const twilioProvisionNumber = ({ userId }: { userId: string }) =>
           data,
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -783,7 +1013,7 @@ const releaseNumberSchema = z.object({
     .string()
     .describe(
       "SID of the IncomingPhoneNumber to release (starts with PN). " +
-      "Get this from twilioListMyNumbers."
+        "Get this from twilioListMyNumbers."
     ),
 });
 
@@ -794,12 +1024,23 @@ export const twilioReleaseNumber = ({ userId }: { userId: string }) =>
       "The number will no longer be billed or receive calls/SMS. " +
       "⚠️ Irreversible — the number returns to Twilio's inventory pool.",
     inputSchema: releaseNumberSchema,
-    execute: async ({ phone_number_sid }: z.infer<typeof releaseNumberSchema>) => {
+    execute: async ({
+      phone_number_sid,
+    }: z.infer<typeof releaseNumberSchema>) => {
       try {
-        await twilioRequest("DELETE", `/IncomingPhoneNumbers/${phone_number_sid}.json`);
-        return { success: true, message: `Number ${phone_number_sid} released successfully.` };
+        await twilioRequest(
+          "DELETE",
+          `/IncomingPhoneNumbers/${phone_number_sid}.json`
+        );
+        return {
+          success: true,
+          message: `Number ${phone_number_sid} released successfully.`,
+        };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -858,14 +1099,30 @@ export const twilioUpdateNumber = ({ userId }: { userId: string }) =>
     execute: async (params: z.infer<typeof updateNumberSchema>) => {
       try {
         const body: TwilioParams = {};
-        if (params.friendly_name)          body.FriendlyName        = params.friendly_name;
-        if (params.voice_url)              body.VoiceUrl            = params.voice_url;
-        if (params.voice_method)           body.VoiceMethod         = params.voice_method;
-        if (params.sms_url)                body.SmsUrl              = params.sms_url;
-        if (params.sms_method)             body.SmsMethod           = params.sms_method;
-        if (params.voice_application_sid)  body.VoiceApplicationSid = params.voice_application_sid;
-        if (params.sms_application_sid)    body.SmsApplicationSid   = params.sms_application_sid;
-        if (params.status_callback)        body.StatusCallback      = params.status_callback;
+        if (params.friendly_name) {
+          body.FriendlyName = params.friendly_name;
+        }
+        if (params.voice_url) {
+          body.VoiceUrl = params.voice_url;
+        }
+        if (params.voice_method) {
+          body.VoiceMethod = params.voice_method;
+        }
+        if (params.sms_url) {
+          body.SmsUrl = params.sms_url;
+        }
+        if (params.sms_method) {
+          body.SmsMethod = params.sms_method;
+        }
+        if (params.voice_application_sid) {
+          body.VoiceApplicationSid = params.voice_application_sid;
+        }
+        if (params.sms_application_sid) {
+          body.SmsApplicationSid = params.sms_application_sid;
+        }
+        if (params.status_callback) {
+          body.StatusCallback = params.status_callback;
+        }
 
         const data = await twilioRequest<Record<string, unknown>>(
           "POST",
@@ -874,7 +1131,10 @@ export const twilioUpdateNumber = ({ userId }: { userId: string }) =>
         );
         return { success: true, data };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });

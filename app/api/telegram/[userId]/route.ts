@@ -11,11 +11,14 @@
  *   configured (QSTASH_TOKEN missing).
  */
 
-import { after } from "next/server";
-import { generateText, stepCountIs } from "ai";
-import { Redis } from "@upstash/redis";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
+import { Redis } from "@upstash/redis";
+import { generateText, stepCountIs } from "ai";
+import { after } from "next/server";
+import { buildEtlesTelegramTools } from "@/lib/ai/build-etles-telegram-tools";
+import { systemPrompt } from "@/lib/ai/prompts";
+import { getGoogleModel } from "@/lib/ai/providers";
 import {
   getBotIntegration,
   getChatById,
@@ -23,26 +26,26 @@ import {
   saveChat,
   saveMessages,
 } from "@/lib/db/queries";
-import { getGoogleModel } from "@/lib/ai/providers";
-import { systemPrompt } from "@/lib/ai/prompts";
-import { buildEtlesTelegramTools } from "@/lib/ai/build-etles-telegram-tools";
-import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
-import { touchUserActivity } from "@/lib/user-activity";
-import { getCachedSystemPrompt, setCachedSystemPrompt } from "@/lib/prompt-cache";
-import { generateUUID } from "@/lib/utils";
+import type { DBMessage } from "@/lib/db/schema";
 import {
-  sendLongMessage,
-  sendTypingAction,
-  sendStatusMessage,
-  editMessageText,
+  getCachedSystemPrompt,
+  setCachedSystemPrompt,
+} from "@/lib/prompt-cache";
+import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
+import {
   deleteMessage,
+  editMessageText,
+  sendLongMessage,
+  sendStatusMessage,
+  sendTypingAction,
   startTypingHeartbeat,
 } from "@/lib/telegram/api";
+import { touchUserActivity } from "@/lib/user-activity";
+import { generateUUID } from "@/lib/utils";
 import {
   isWorkflowEnabled,
   triggerTelegramWorkflow,
 } from "@/lib/workflow/client";
-import type { DBMessage } from "@/lib/db/schema";
 
 const composio = new Composio({ provider: new VercelProvider() });
 
@@ -59,29 +62,29 @@ const redis =
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface TelegramUser {
-  id: number;
   first_name: string;
+  id: number;
   last_name?: string;
   username?: string;
 }
 
 interface TelegramMessage {
-  message_id: number;
-  from?: TelegramUser;
   chat: { id: number; type: string };
+  from?: TelegramUser;
+  message_id: number;
   text?: string;
 }
 
 interface TelegramUpdate {
-  update_id: number;
   message?: TelegramMessage;
+  update_id: number;
 }
 
 // ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ userId: string }> },
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   const { userId: ownerUserId } = await params;
 
@@ -112,7 +115,8 @@ export async function POST(
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-telegram-bot-api-secret-token": request.headers.get("x-telegram-bot-api-secret-token") || "",
+          "x-telegram-bot-api-secret-token":
+            request.headers.get("x-telegram-bot-api-secret-token") || "",
         },
         body: JSON.stringify(update),
       });
@@ -120,7 +124,9 @@ export async function POST(
     return new Response("OK", { status: 200 });
   }
 
-  if (!msg?.text) return new Response("OK", { status: 200 });
+  if (!msg?.text) {
+    return new Response("OK", { status: 200 });
+  }
 
   const telegramChatId = msg.chat.id;
   const senderName =
@@ -134,9 +140,7 @@ export async function POST(
     platform: "telegram",
   });
   if (!integration) {
-    console.error(
-      `[Telegram] No integration for owner ${ownerUserId}`,
-    );
+    console.error(`[Telegram] No integration for owner ${ownerUserId}`);
     return new Response("OK", { status: 200 });
   }
 
@@ -155,7 +159,7 @@ export async function POST(
         await sendLongMessage(
           botToken,
           telegramChatId,
-          "👋 Hi! I'm your AI assistant. Send me any message or task — I can handle both quick questions and long-running research.",
+          "👋 Hi! I'm your AI assistant. Send me any message or task — I can handle both quick questions and long-running research."
         );
         return;
       }
@@ -164,7 +168,7 @@ export async function POST(
         await sendLongMessage(
           botToken,
           telegramChatId,
-          "✅ **Integration status**\n\nBot is connected and responding. Your keys are stored correctly.\n\nIf you're not getting AI responses, check:\n• BASE_URL must be a public URL (not localhost)\n• Use ngrok for local development",
+          "✅ **Integration status**\n\nBot is connected and responding. Your keys are stored correctly.\n\nIf you're not getting AI responses, check:\n• BASE_URL must be a public URL (not localhost)\n• Use ngrok for local development"
         );
         return;
       }
@@ -174,38 +178,47 @@ export async function POST(
           botToken,
           telegramChatId,
           "🤖 **What I can do:**\n\n" +
-          "• Answer questions instantly\n" +
-          "• Remember things for you\n" +
-          "• Set reminders and recurring tasks\n" +
-          "• Research topics in depth\n" +
-          "• Perform multi-step tasks (even hours-long ones)\n" +
-          "• Ask for your approval before irreversible actions\n\n" +
-          "**Commands:**\n/start — Reset conversation\n/help — Show this message\n/status — Verify integration is working\n/automations — View scheduled tasks\n/goals — View memory goals",
+            "• Answer questions instantly\n" +
+            "• Remember things for you\n" +
+            "• Set reminders and recurring tasks\n" +
+            "• Research topics in depth\n" +
+            "• Perform multi-step tasks (even hours-long ones)\n" +
+            "• Ask for your approval before irreversible actions\n\n" +
+            "**Commands:**\n/start — Reset conversation\n/help — Show this message\n/status — Verify integration is working\n/automations — View scheduled tasks\n/goals — View memory goals"
         );
         return;
       }
 
       if (userText === "/automations" || userText === "/scheduled") {
-        const { getAgentStatus } = await import("@/lib/db/queries/agent-status");
+        const { getAgentStatus } = await import(
+          "@/lib/db/queries/agent-status"
+        );
         try {
           const status = await getAgentStatus(ownerUserId);
-          let msg = `⚙️ **Your Automations**\n\n`;
+          let msg = "⚙️ **Your Automations**\n\n";
           msg += `**Heartbeat:** ${status.heartbeat.status}\n`;
           msg += `**Connected Apps:** ${status.integrations.length}\n`;
-          
-          const crons = status.cronJobs.filter((j: any) => j.status === "active" || j.status === "pending" || j.cron);
+
+          const crons = status.cronJobs.filter(
+            (j: any) =>
+              j.status === "active" || j.status === "pending" || j.cron
+          );
           if (crons.length > 0) {
-            msg += `\n**Active/Recurring Jobs:**\n`;
+            msg += "\n**Active/Recurring Jobs:**\n";
             crons.forEach((job: any) => {
               msg += `• ${job.task}${job.cron ? ` (${job.cron})` : ""}\n`;
             });
           } else {
-             msg += `\nNo active jobs scheduled.`;
+            msg += "\nNo active jobs scheduled.";
           }
           await sendLongMessage(botToken, telegramChatId, msg);
         } catch (err) {
           console.error("Failed to fetch automations", err);
-          await sendLongMessage(botToken, telegramChatId, "Failed to load automations.");
+          await sendLongMessage(
+            botToken,
+            telegramChatId,
+            "Failed to load automations."
+          );
         }
         return;
       }
@@ -214,22 +227,39 @@ export async function POST(
         let goalsText = "🎯 **Your Memory Goals**\n\n";
         if (redis) {
           try {
-            const ids = await redis.smembers<string[]>(`goals:${ownerUserId}:ids`);
+            const ids = await redis.smembers<string[]>(
+              `goals:${ownerUserId}:ids`
+            );
             if (!ids || ids.length === 0) {
               goalsText += "You have no goals set.";
             } else {
               const goalsTextBlocks = [];
               for (const id of ids) {
-                const goalStr = await redis.get<string>(`goals:${ownerUserId}:item:${id}`);
+                const goalStr = await redis.get<string>(
+                  `goals:${ownerUserId}:item:${id}`
+                );
                 if (goalStr) {
-                  const goal = typeof goalStr === "string" ? JSON.parse(goalStr) : goalStr;
-                  const icon = goal.status === "completed" ? "✅" : goal.status === "paused" ? "⏸️" : goal.status === "archived" ? "🗄️" : "🚀";
-                  goalsTextBlocks.push(`${icon} **${goal.title}**\n  Priority: ${goal.priority} | Progress: ${goal.progress}%`);
+                  const goal =
+                    typeof goalStr === "string" ? JSON.parse(goalStr) : goalStr;
+                  const icon =
+                    goal.status === "completed"
+                      ? "✅"
+                      : goal.status === "paused"
+                        ? "⏸️"
+                        : goal.status === "archived"
+                          ? "🗄️"
+                          : "🚀";
+                  goalsTextBlocks.push(
+                    `${icon} **${goal.title}**\n  Priority: ${goal.priority} | Progress: ${goal.progress}%`
+                  );
                 }
               }
-              goalsText += goalsTextBlocks.length > 0 ? goalsTextBlocks.join("\n\n") : "No active goals found.";
+              goalsText +=
+                goalsTextBlocks.length > 0
+                  ? goalsTextBlocks.join("\n\n")
+                  : "No active goals found.";
             }
-          } catch(e) {
+          } catch (e) {
             console.error("Failed to fetch goals", e);
             goalsText += "Failed to load goals.";
           }
@@ -251,9 +281,14 @@ export async function POST(
             userText,
             baseUrl,
           });
-          if (triggered) return; // Workflow will handle the rest
+          if (triggered) {
+            return; // Workflow will handle the rest
+          }
         } catch (e) {
-          console.error("[Telegram] Failed to trigger workflow, falling back:", e);
+          console.error(
+            "[Telegram] Failed to trigger workflow, falling back:",
+            e
+          );
         }
       }
 
@@ -272,9 +307,11 @@ export async function POST(
         await sendLongMessage(
           botToken,
           telegramChatId,
-          "Sorry, something went wrong. Please try again.",
+          "Sorry, something went wrong. Please try again."
         );
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
   });
 
@@ -301,7 +338,7 @@ async function routeMessage({
   const statusMessageId = await sendStatusMessage(
     botToken,
     telegramChatId,
-    "🤖 <b>Etles is on it</b>\n\nUnderstanding your request...",
+    "🤖 <b>Etles is on it</b>\n\nUnderstanding your request..."
   );
   const chatId = await getOrCreateChat(ownerUserId, telegramChatId, senderName);
 
@@ -326,7 +363,7 @@ async function routeMessage({
       botToken,
       telegramChatId,
       statusMessageId,
-      "🧠 <b>Thinking</b>\n\nLoading context and memory...",
+      "🧠 <b>Thinking</b>\n\nLoading context and memory..."
     );
   }
 
@@ -335,15 +372,23 @@ async function routeMessage({
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => {
       const textPart = (m.parts as any[]).find((p: any) => p.type === "text");
-      return { role: m.role as "user" | "assistant", content: textPart?.text ?? "" };
+      return {
+        role: m.role as "user" | "assistant",
+        content: textPart?.text ?? "",
+      };
     })
     .filter((m) => m.content.length > 0);
 
-  const allMessages = [...history, { role: "user" as const, content: userText }];
+  const allMessages = [
+    ...history,
+    { role: "user" as const, content: userText },
+  ];
 
   let composioTools: Record<string, unknown> = {};
   try {
-    const session = await composio.create(ownerUserId, { manageConnections: true });
+    const session = await composio.create(ownerUserId, {
+      manageConnections: true,
+    });
     composioTools = await session.tools();
   } catch (e) {
     console.error("[Telegram] Failed to load Composio tools:", e);
@@ -397,7 +442,7 @@ async function routeMessage({
       botToken,
       telegramChatId,
       statusMessageId,
-      "🛠 <b>Working with tools</b>\n\nRunning actions and composing your answer...",
+      "🛠 <b>Working with tools</b>\n\nRunning actions and composing your answer..."
     );
   }
   const stopTyping = startTypingHeartbeat(botToken, telegramChatId);
@@ -439,7 +484,7 @@ async function routeMessage({
         botToken,
         telegramChatId,
         statusMessageId,
-        "✅ <b>Done</b>\n\nSending your response...",
+        "✅ <b>Done</b>\n\nSending your response..."
       );
     }
     await sendLongMessage(botToken, telegramChatId, aiText);
@@ -450,7 +495,7 @@ async function routeMessage({
     .slice(-5)
     .map((m) => {
       const textPart = (m.parts as { type: string; text?: string }[]).find(
-        (p) => p.type === "text",
+        (p) => p.type === "text"
       );
       return {
         role: m.role as "user" | "assistant",
@@ -473,14 +518,16 @@ function redisChatKey(ownerUserId: string, telegramChatId: number): string {
 async function getOrCreateChat(
   ownerUserId: string,
   telegramChatId: number,
-  senderName: string,
+  senderName: string
 ): Promise<string> {
   if (redis) {
     const key = redisChatKey(ownerUserId, telegramChatId);
     const cached = await redis.get<string>(key);
     if (cached) {
       const chat = await getChatById({ id: cached });
-      if (chat) return cached;
+      if (chat) {
+        return cached;
+      }
     }
   }
 

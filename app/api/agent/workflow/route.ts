@@ -9,10 +9,9 @@
  */
 
 import { serve } from "@upstash/workflow/nextjs";
-import { runSubAgent } from "@/lib/agent/subagent-runner";
-import { updateAgentTask } from "@/lib/db/queries";
-import type { WorkflowTriggerPayload } from "@/lib/workflow/client";
 import { notifyParentAgent } from "@/lib/agent/agent-bus";
+import { runSubAgent } from "@/lib/agent/subagent-runner";
+import type { WorkflowTriggerPayload } from "@/lib/workflow/client";
 
 export const maxDuration = 300;
 
@@ -48,7 +47,7 @@ export const { POST } = serve<WorkflowTriggerPayload>(async (context) => {
         },
         // No parent workflowRunId available here — Upstash lookback
         // handles the race condition via the eventId alone
-        undefined,
+        undefined
       );
     });
   }

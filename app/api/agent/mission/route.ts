@@ -2,7 +2,7 @@
 // NOTE: This MUST be a catch-all route for serveMany to work.
 // Create at: app/api/agent/mission/[...any]/route.ts
 
-import { WorkflowContext } from "@upstash/workflow";
+import type { WorkflowContext } from "@upstash/workflow";
 import { createWorkflow, serveMany } from "@upstash/workflow/nextjs";
 import { generateText } from "ai";
 import { getLanguageModel } from "@/lib/ai/providers";
@@ -143,12 +143,11 @@ Rules:
     });
 
     // Wait up to 3 days for reply — ZERO compute during wait
-    const { eventData: reply1, timeout: ghosted1 } =
-      await context.waitForEvent(
-        "await-reply-3d",
-        `lead-reply:${missionId}:${lead.email}`,
-        { timeout: "3d" }
-      );
+    const { eventData: reply1, timeout: ghosted1 } = await context.waitForEvent(
+      "await-reply-3d",
+      `lead-reply:${missionId}:${lead.email}`,
+      { timeout: "3d" }
+    );
 
     if (!ghosted1) {
       await context.run("handle-reply-1", async () => {
@@ -170,18 +169,14 @@ End with a DIFFERENT, lower-friction ask.
 3 sentences MAX.`,
       });
 
-      await postToChat(
-        chatId,
-        `📤 **Follow-up #1 → ${lead.name}**\n\n${text}`
-      );
+      await postToChat(chatId, `📤 **Follow-up #1 → ${lead.name}**\n\n${text}`);
     });
 
-    const { eventData: reply2, timeout: ghosted2 } =
-      await context.waitForEvent(
-        "await-reply-7d",
-        `lead-reply:${missionId}:${lead.email}`,
-        { timeout: "4d" }
-      );
+    const { eventData: reply2, timeout: ghosted2 } = await context.waitForEvent(
+      "await-reply-7d",
+      `lead-reply:${missionId}:${lead.email}`,
+      { timeout: "4d" }
+    );
 
     if (!ghosted2) {
       await context.run("handle-reply-2", async () => {
@@ -201,18 +196,14 @@ observation, or a counterintuitive take.
 1-2 sentences. Short enough to read in 5 seconds. No pitch.`,
       });
 
-      await postToChat(
-        chatId,
-        `📤 **Angle shift → ${lead.name}**\n\n${text}`
-      );
+      await postToChat(chatId, `📤 **Angle shift → ${lead.name}**\n\n${text}`);
     });
 
-    const { eventData: reply3, timeout: ghosted3 } =
-      await context.waitForEvent(
-        "await-reply-14d",
-        `lead-reply:${missionId}:${lead.email}`,
-        { timeout: "7d" }
-      );
+    const { eventData: reply3, timeout: ghosted3 } = await context.waitForEvent(
+      "await-reply-14d",
+      `lead-reply:${missionId}:${lead.email}`,
+      { timeout: "7d" }
+    );
 
     if (!ghosted3) {
       await context.run("handle-reply-3", async () => {
@@ -374,10 +365,20 @@ Include 15 leads and 5 communities minimum.`,
         return {
           productDescription: startupDescription.slice(0, 100),
           targetAudience: "startup founders",
-          icps: [{ title: "Founder", painPoint: goal, channels: ["LinkedIn", "email"] }],
+          icps: [
+            {
+              title: "Founder",
+              painPoint: goal,
+              channels: ["LinkedIn", "email"],
+            },
+          ],
           leads: [],
           communities: [
-            { name: "r/startups", platform: "Reddit", vibe: "founders community" },
+            {
+              name: "r/startups",
+              platform: "Reddit",
+              vibe: "founders community",
+            },
           ],
           dailyTargets: { outreach: 5, signups: 1 },
           campaignDuration: 14,

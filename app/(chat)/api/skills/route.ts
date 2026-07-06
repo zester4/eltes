@@ -1,8 +1,8 @@
-import { auth } from "@/app/(auth)/auth";
-import { getUserSkillsByUserId, saveUserSkill } from "@/lib/db/queries";
-import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { type NextRequest, NextResponse } from "next/server";
+import { auth } from "@/app/(auth)/auth";
+import { getUserSkillsByUserId, saveUserSkill } from "@/lib/db/queries";
 
 const WIKI_ROOT = path.join(process.cwd(), ".wiki");
 
@@ -15,25 +15,30 @@ async function listDefaultPages() {
           e.isFile() &&
           e.name.endsWith(".md") &&
           e.name !== "index.md" &&
-          e.name !== "instructions.md",
+          e.name !== "instructions.md"
       )
       .map((e) => e.name.replace(".md", ""));
-    
-    return await Promise.all(pages.map(async (slug) => {
-      const content = await fs.readFile(path.join(WIKI_ROOT, `${slug}.md`), "utf-8");
-      const titleMatch = content.match(/^#\s+(.*)/);
-      const title = titleMatch ? titleMatch[1] : slug;
-      const descriptionMatch = content.match(/\*(.*?)\*/); // First italicized block as description
-      const description = descriptionMatch ? descriptionMatch[1] : "";
-      
-      return {
-        id: `default-${slug}`,
-        slug,
-        title,
-        description,
-        isDefault: true,
-      };
-    }));
+
+    return await Promise.all(
+      pages.map(async (slug) => {
+        const content = await fs.readFile(
+          path.join(WIKI_ROOT, `${slug}.md`),
+          "utf-8"
+        );
+        const titleMatch = content.match(/^#\s+(.*)/);
+        const title = titleMatch ? titleMatch[1] : slug;
+        const descriptionMatch = content.match(/\*(.*?)\*/); // First italicized block as description
+        const description = descriptionMatch ? descriptionMatch[1] : "";
+
+        return {
+          id: `default-${slug}`,
+          slug,
+          title,
+          description,
+          isDefault: true,
+        };
+      })
+    );
   } catch {
     return [];
   }
@@ -62,7 +67,10 @@ export async function GET() {
 
     return NextResponse.json([...defaultPages, ...formattedUserSkills]);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch skills" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch skills" },
+      { status: 500 }
+    );
   }
 }
 
@@ -76,7 +84,10 @@ export async function POST(req: NextRequest) {
     const { title, slug, content, description } = await req.json();
 
     if (!title || !slug || !content) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     const result = await saveUserSkill({
@@ -89,6 +100,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result[0]);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to save skill" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to save skill" },
+      { status: 500 }
+    );
   }
 }

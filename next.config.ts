@@ -1,6 +1,6 @@
+import withSerwistInit from "@serwist/next";
 import { withBotId } from "botid/next/config";
 import type { NextConfig } from "next";
-import withSerwistInit from "@serwist/next";
 
 const withSerwist = withSerwistInit({
   swSrc: "app/sw.ts",

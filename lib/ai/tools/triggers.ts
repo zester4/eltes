@@ -1,6 +1,6 @@
-import { tool } from "ai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
+import { tool } from "ai";
 import { z } from "zod";
 
 const composio = new Composio({ provider: new VercelProvider() });
@@ -12,8 +12,16 @@ export const setupTrigger = ({ userId }: { userId: string }) =>
       "First, find the trigger you want to setup from the list of supported triggers. " +
       "Then provide the required configuration (e.g. owner and repo for GitHub).",
     inputSchema: z.object({
-      triggerSlug: z.string().describe("The slug of the trigger to setup, e.g. 'GITHUB_COMMIT_EVENT'"),
-      config: z.record(z.any()).describe("The configuration for the trigger, e.g. { owner: 'composio', repo: 'sdk' }"),
+      triggerSlug: z
+        .string()
+        .describe(
+          "The slug of the trigger to setup, e.g. 'GITHUB_COMMIT_EVENT'"
+        ),
+      config: z
+        .record(z.any())
+        .describe(
+          "The configuration for the trigger, e.g. { owner: 'composio', repo: 'sdk' }"
+        ),
     }),
     execute: async ({ triggerSlug, config }) => {
       try {
@@ -23,8 +31,8 @@ export const setupTrigger = ({ userId }: { userId: string }) =>
         });
 
         // Find the account matching the toolkit of the trigger
-        const toolkitHint = triggerSlug.split('_')[0].toLowerCase();
-        const targetAccount = userAccounts.items.find((acc: any) => 
+        const toolkitHint = triggerSlug.split("_")[0].toLowerCase();
+        const targetAccount = userAccounts.items.find((acc: any) =>
           (acc.appName || acc.appId || "").toLowerCase().includes(toolkitHint)
         );
 
@@ -49,7 +57,8 @@ export const setupTrigger = ({ userId }: { userId: string }) =>
 
 export const listActiveTriggers = ({ userId }: { userId: string }) =>
   tool({
-    description: "List all active event triggers currently monitoring your accounts.",
+    description:
+      "List all active event triggers currently monitoring your accounts.",
     inputSchema: z.object({}),
     execute: async () => {
       try {

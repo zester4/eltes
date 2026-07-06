@@ -1,16 +1,13 @@
 "use client";
-
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useActionState, useEffect, useState } from "react";
 import { AuthForm } from "@/components/auth-form";
+import { BlurText } from "@/components/blur-text";
 import { SubmitButton } from "@/components/submit-button";
 import { toast } from "@/components/toast";
 import { type RegisterActionState, register } from "../actions";
-import Image from "next/image";
-import { BlurText } from "@/components/blur-text";
-import { ArrowLeft } from "lucide-react";
 
 export default function Page() {
   const router = useRouter();
@@ -57,9 +54,9 @@ export default function Page() {
     <div className="flex min-h-screen w-full items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm flex flex-col gap-6">
         <div className="flex flex-col gap-2 text-center">
-          <BlurText 
-            text="Sign Up" 
-            className="text-2xl font-semibold tracking-tight" 
+          <BlurText
+            className="text-2xl font-semibold tracking-tight"
+            text="Sign Up"
           />
           <p className="text-sm text-muted-foreground">
             Create an account to get started
@@ -67,10 +64,14 @@ export default function Page() {
         </div>
 
         <AuthForm action={handleSubmit} defaultEmail={email} showLegal={true}>
-          <SubmitButton isSuccessful={isSuccessful}>Create Account</SubmitButton>
-          
+          <SubmitButton isSuccessful={isSuccessful}>
+            Create Account
+          </SubmitButton>
+
           <div className="mt-4 text-center text-sm">
-            <span className="text-muted-foreground">Already have an account? </span>
+            <span className="text-muted-foreground">
+              Already have an account?{" "}
+            </span>
             <Link
               className="underline underline-offset-4 hover:text-primary"
               href="/login"

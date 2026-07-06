@@ -1,11 +1,11 @@
 "use client";
 
-import Form from "next/form";
-import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import Form from "next/form";
+import Link from "next/link";
+import { useState } from "react";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import Link from "next/link";
 
 export function AuthForm({
   action,
@@ -25,10 +25,7 @@ export function AuthForm({
   return (
     <Form action={action} className="flex flex-col gap-4 w-full">
       <div className="flex flex-col gap-2">
-        <Label
-          className="text-muted-foreground"
-          htmlFor="email"
-        >
+        <Label className="text-muted-foreground" htmlFor="email">
           Email Address
         </Label>
 
@@ -46,10 +43,7 @@ export function AuthForm({
       </div>
 
       <div className="flex flex-col gap-2 relative">
-        <Label
-          className="text-muted-foreground"
-          htmlFor="password"
-        >
+        <Label className="text-muted-foreground" htmlFor="password">
           Password
         </Label>
 
@@ -62,9 +56,9 @@ export function AuthForm({
             type={showPassword ? "text" : "password"}
           />
           <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
             className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+            onClick={() => setShowPassword(!showPassword)}
+            type="button"
           >
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>
@@ -73,22 +67,39 @@ export function AuthForm({
 
       {showLegal && (
         <div className="flex items-start gap-2 px-1 mt-1">
-          <input 
-            type="checkbox" 
-            id="legal" 
-            name="legal" 
-            required 
+          <input
             className="mt-1"
+            id="legal"
+            name="legal"
+            required
+            type="checkbox"
           />
-          <label htmlFor="legal" className="text-xs text-muted-foreground leading-relaxed">
-            I agree to the <Link href="/terms" target="_blank" className="text-primary hover:underline">Terms of Service</Link> and <Link href="/privacy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>.
+          <label
+            className="text-xs text-muted-foreground leading-relaxed"
+            htmlFor="legal"
+          >
+            I agree to the{" "}
+            <Link
+              className="text-primary hover:underline"
+              href="/terms"
+              target="_blank"
+            >
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link
+              className="text-primary hover:underline"
+              href="/privacy"
+              target="_blank"
+            >
+              Privacy Policy
+            </Link>
+            .
           </label>
         </div>
       )}
 
-      <div className="pt-2">
-        {children}
-      </div>
+      <div className="pt-2">{children}</div>
     </Form>
   );
 }

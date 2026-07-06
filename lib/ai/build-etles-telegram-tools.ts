@@ -1,4 +1,4 @@
- /**
+/**
  * Tool set for Telegram AI paths (workflow + inline fallback).
  * Mirrors the web chat agent's core tools (memory, search, schedule, sandbox, etc.)
  * so behaviour stays consistent across surfaces.
@@ -6,31 +6,56 @@
  */
 
 import type { ToolSet } from "ai";
+import * as browserUseTools from "@/lib/ai/tools/browser-use";
+import {
+  archiveSandbox,
+  createDirectory,
+  createSandbox,
+  deleteSandbox,
+  executeCommand,
+  getPreviewLink,
+  gitBranch,
+  gitClone,
+  gitCommit,
+  gitPull,
+  gitPush,
+  gitStatus,
+  listFiles,
+  listSandboxes,
+  lspDiagnostics,
+  readFile,
+  replaceInFiles,
+  runBackgroundProcess,
+  runCode,
+  searchFiles,
+  writeFile,
+} from "@/lib/ai/tools/daytona";
+import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
-  saveMemory,
-  recallMemory,
-  updateMemory,
+  addGoal,
+  deleteGoal,
+  listGoals,
+  logGoalProgress,
+  updateGoal,
+} from "@/lib/ai/tools/goals";
+import {
+  addKnowledgeRelation,
+  deleteKnowledgeEntity,
+  deleteKnowledgeRelation,
+  getKnowledgeEntity,
+  searchKnowledgeGraph,
+  upsertKnowledgeEntity,
+} from "@/lib/ai/tools/knowledge-graph";
+import {
   deleteMemory,
+  recallMemory,
+  saveMemory,
+  updateMemory,
 } from "@/lib/ai/tools/memory";
-import { searchPastConversations } from "@/lib/ai/tools/search-history";
-import {
-  setReminder,
-  setCronJob,
-  listSchedules,
-  deleteSchedule,
-} from "@/lib/ai/tools/schedule";
-import {
-  setupTrigger,
-  listActiveTriggers,
-  removeTrigger,
-} from "@/lib/ai/tools/triggers";
-import {
-  delegateToSubAgent,
-  getSubAgentResult,
-  listSubAgents,
-} from "@/lib/ai/tools/subagents";
-import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
+import { getMissionStatus, launchMission } from "@/lib/ai/tools/missions";
+import { allOracleTools } from "@/lib/ai/tools/oracle-cloud";
+import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
 import {
   activateHeartbeat,
   getAgentSystemStatus,
@@ -38,56 +63,31 @@ import {
 } from "@/lib/ai/tools/proactive";
 import { queueApproval } from "@/lib/ai/tools/queue-approval";
 import {
-  upsertKnowledgeEntity,
-  addKnowledgeRelation,
-  getKnowledgeEntity,
-  searchKnowledgeGraph,
-  deleteKnowledgeEntity,
-  deleteKnowledgeRelation,
-} from "@/lib/ai/tools/knowledge-graph";
+  deleteSchedule,
+  listSchedules,
+  setCronJob,
+  setReminder,
+} from "@/lib/ai/tools/schedule";
+import { searchPastConversations } from "@/lib/ai/tools/search-history";
 import {
-  addGoal,
-  updateGoal,
-  logGoalProgress,
-  listGoals,
-  deleteGoal,
-} from "@/lib/ai/tools/goals";
+  delegateToSubAgent,
+  getSubAgentResult,
+  listSubAgents,
+} from "@/lib/ai/tools/subagents";
 import {
-  tavilySearch,
-  tavilyExtract,
   tavilyCrawl,
+  tavilyExtract,
   tavilyMap,
+  tavilySearch,
 } from "@/lib/ai/tools/tavily-search";
-import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
 import {
-  createSandbox,
-  listSandboxes,
-  deleteSandbox,
-  executeCommand,
-  runCode,
-  listFiles,
-  readFile,
-  writeFile,
-  createDirectory,
-  searchFiles,
-  replaceInFiles,
-  gitClone,
-  gitStatus,
-  gitCommit,
-  gitPush,
-  gitPull,
-  gitBranch,
-  getPreviewLink,
-  runBackgroundProcess,
-  lspDiagnostics,
-  archiveSandbox,
-} from "@/lib/ai/tools/daytona";
+  listActiveTriggers,
+  removeTrigger,
+  setupTrigger,
+} from "@/lib/ai/tools/triggers";
 import * as twilio from "@/lib/ai/tools/twilio";
 import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
-import * as browserUseTools from "@/lib/ai/tools/browser-use";
-import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
-import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
-import { allOracleTools } from "@/lib/ai/tools/oracle-cloud";
+import { wikiIngest, wikiQuery } from "@/lib/ai/tools/wiki";
 
 export type TelegramEtlesToolsParams = {
   userId: string;
@@ -178,22 +178,45 @@ export function buildEtlesTelegramTools({
     twilioGetMessage: twilio.twilioGetMessage({ userId }),
     twilioListMessages: twilio.twilioListMessages({ userId }),
     twilioListMyNumbers: twilio.twilioListMyNumbers({ userId }),
-    twilioSearchAvailableNumbers: twilio.twilioSearchAvailableNumbers({ userId }),
+    twilioSearchAvailableNumbers: twilio.twilioSearchAvailableNumbers({
+      userId,
+    }),
     twilioProvisionNumber: twilio.twilioProvisionNumber({ userId }),
     twilioReleaseNumber: twilio.twilioReleaseNumber({ userId }),
     twilioUpdateNumber: twilio.twilioUpdateNumber({ userId }),
     // Twilio WhatsApp Tools
-    twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({ userId }),
-    twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({ userId }),
-    twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({ userId }),
-    twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({ userId }),
-    twilioWhatsAppCreateTemplate: twilioWhatsApp.twilioWhatsAppCreateTemplate({ userId }),
-    twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates({ userId }),
-    twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({ userId }),
-    twilioWhatsAppDeleteTemplate: twilioWhatsApp.twilioWhatsAppDeleteTemplate({ userId }),
-    twilioWhatsAppSubmitApproval: twilioWhatsApp.twilioWhatsAppSubmitApproval({ userId }),
-    twilioWhatsAppGetApprovalStatus: twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId }),
-    twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({ userId }),
+    twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({
+      userId,
+    }),
+    twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({
+      userId,
+    }),
+    twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({
+      userId,
+    }),
+    twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({
+      userId,
+    }),
+    twilioWhatsAppCreateTemplate: twilioWhatsApp.twilioWhatsAppCreateTemplate({
+      userId,
+    }),
+    twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates({
+      userId,
+    }),
+    twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({
+      userId,
+    }),
+    twilioWhatsAppDeleteTemplate: twilioWhatsApp.twilioWhatsAppDeleteTemplate({
+      userId,
+    }),
+    twilioWhatsAppSubmitApproval: twilioWhatsApp.twilioWhatsAppSubmitApproval({
+      userId,
+    }),
+    twilioWhatsAppGetApprovalStatus:
+      twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId }),
+    twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({
+      userId,
+    }),
     twilioGetUsage: twilio.twilioGetMessage({ userId }),
     browserUseRunTask: browserUseTools.browserUseRunTask(),
     browserUseStartTask: browserUseTools.browserUseStartTask(),
@@ -210,7 +233,9 @@ export function buildEtlesTelegramTools({
     browserMultiTab: daytonaBrowserTools.browserMultiTab({ userId }),
     browserUploadFile: daytonaBrowserTools.browserUploadFile({ userId }),
     browserScreenshot: daytonaBrowserTools.browserScreenshot({ userId }),
-    browserVisualInteract: daytonaBrowserTools.browserVisualInteract({ userId }),
+    browserVisualInteract: daytonaBrowserTools.browserVisualInteract({
+      userId,
+    }),
     ...allOracleTools({ userId }),
   } as ToolSet;
 }

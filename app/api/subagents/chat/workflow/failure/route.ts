@@ -1,14 +1,14 @@
 // app/api/subagents/chat/workflow/failure/route.ts
 // Called by Upstash Workflow when all retries are exhausted.
 
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { updateAgentTask } from "@/lib/db/queries";
 import {
   getSubagentChatMessages,
   saveSubagentChatMessages,
 } from "@/lib/subagent-redis";
-import { generateUUID } from "@/lib/utils";
 import type { ChatMessage } from "@/lib/types";
+import { generateUUID } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   try {

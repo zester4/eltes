@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import {
-  getActiveAgentTasksByUserId,
   getActiveAgentTasksByChatId,
+  getActiveAgentTasksByUserId,
   getRecentAgentTasksByUserId,
 } from "@/lib/db/queries";
 
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   const all = searchParams.get("all") === "1";
   const limit = Math.min(
     200,
-    Math.max(1, Number.parseInt(searchParams.get("limit") ?? "80", 10)),
+    Math.max(1, Number.parseInt(searchParams.get("limit") ?? "80", 10))
   );
 
   try {
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     console.error("[Agent Tasks] Failed to list:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -31,8 +31,9 @@ function getRedis(): Redis | null {
   if (
     !process.env.UPSTASH_REDIS_REST_URL ||
     !process.env.UPSTASH_REDIS_REST_TOKEN
-  )
+  ) {
     return null;
+  }
   return new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -80,14 +81,14 @@ const COORDINATION_TTL = 60 * 10;
 export async function notifyParentAgent(
   parentEventId: string,
   result: AgentResult,
-  parentWorkflowRunId?: string,
+  parentWorkflowRunId?: string
 ): Promise<void> {
   // 1. Notify the Upstash Workflow event (wakes the waiting parent step)
   try {
     await notifyWorkflow(
       parentEventId,
       result as unknown as Record<string, unknown>,
-      parentWorkflowRunId,
+      parentWorkflowRunId
     );
   } catch (err) {
     console.error("[AgentBus] Failed to notify workflow event:", err);
@@ -111,10 +112,12 @@ export async function notifyParentAgent(
 export async function publishAgentResult(
   coordinationId: string,
   taskId: string,
-  result: AgentResult,
+  result: AgentResult
 ): Promise<void> {
   const redis = getRedis();
-  if (!redis) return;
+  if (!redis) {
+    return;
+  }
 
   const key = coordinationKey(coordinationId);
   try {
@@ -133,10 +136,12 @@ export async function publishAgentResult(
  */
 export async function initCoordination(
   coordinationId: string,
-  expectedCount: number,
+  expectedCount: number
 ): Promise<void> {
   const redis = getRedis();
-  if (!redis) return;
+  if (!redis) {
+    return;
+  }
 
   const key = coordinationKey(coordinationId);
   try {
@@ -168,7 +173,7 @@ export async function collectAgentResults(
   coordinationId: string,
   expectedTaskIds: string[],
   timeoutMs = 8 * 60 * 1000,
-  pollIntervalMs = 5000,
+  pollIntervalMs = 5000
 ): Promise<{
   results: Record<string, AgentResult>;
   timedOut: boolean;
@@ -185,7 +190,9 @@ export async function collectAgentResults(
 
   while (Date.now() < deadline) {
     const remaining = expectedTaskIds.filter((id) => !collected[id]);
-    if (remaining.length === 0) break;
+    if (remaining.length === 0) {
+      break;
+    }
 
     const raw = await redis.hgetall(key).catch(() => null);
     if (raw) {
@@ -201,7 +208,9 @@ export async function collectAgentResults(
       }
     }
 
-    if (Object.keys(collected).length >= expectedTaskIds.length) break;
+    if (Object.keys(collected).length >= expectedTaskIds.length) {
+      break;
+    }
     await new Promise((r) => setTimeout(r, pollIntervalMs));
   }
 
@@ -224,11 +233,15 @@ export async function getCoordinationStatus(coordinationId: string): Promise<{
   results: Record<string, AgentResult>;
 }> {
   const redis = getRedis();
-  if (!redis) return { received: 0, expected: null, results: {} };
+  if (!redis) {
+    return { received: 0, expected: null, results: {} };
+  }
 
   const key = coordinationKey(coordinationId);
   const raw = await redis.hgetall(key).catch(() => null);
-  if (!raw) return { received: 0, expected: null, results: {} };
+  if (!raw) {
+    return { received: 0, expected: null, results: {} };
+  }
 
   const results: Record<string, AgentResult> = {};
   let expected: number | null = null;
@@ -238,12 +251,16 @@ export async function getCoordinationStatus(coordinationId: string): Promise<{
       try {
         const meta = JSON.parse(val as string) as { expectedCount: number };
         expected = meta.expectedCount;
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       continue;
     }
     try {
       results[field] = JSON.parse(val as string) as AgentResult;
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   return { received: Object.keys(results).length, expected, results };

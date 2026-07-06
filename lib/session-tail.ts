@@ -1,5 +1,5 @@
-import { createClient } from "redis";
 import { Redis } from "@upstash/redis";
+import { createClient } from "redis";
 
 // Stores the last few messages of a user's session for cross-surface continuity.
 // Key: session-tail:{userId}
@@ -52,7 +52,9 @@ export async function getSessionTail(userId: string): Promise<TailMessage[]> {
   if (upstash) {
     try {
       const raw = await upstash.get<string>(tailKey(userId));
-      if (!raw) return [];
+      if (!raw) {
+        return [];
+      }
       if (typeof raw === "string") {
         return JSON.parse(raw) as TailMessage[];
       }
@@ -64,9 +66,13 @@ export async function getSessionTail(userId: string): Promise<TailMessage[]> {
 
   try {
     const redis = getLegacyClient();
-    if (!redis?.isReady) return [];
+    if (!redis?.isReady) {
+      return [];
+    }
     const raw = await redis.get(tailKey(userId));
-    if (!raw) return [];
+    if (!raw) {
+      return [];
+    }
     return JSON.parse(raw) as TailMessage[];
   } catch {
     return [];
@@ -79,7 +85,7 @@ export async function getSessionTail(userId: string): Promise<TailMessage[]> {
  */
 export async function saveSessionTail(
   userId: string,
-  messages: TailMessage[],
+  messages: TailMessage[]
 ): Promise<void> {
   const payload = JSON.stringify(messages.slice(-TAIL_SIZE));
   const upstash = getUpstash();
@@ -94,7 +100,9 @@ export async function saveSessionTail(
 
   try {
     const redis = getLegacyClient();
-    if (!redis?.isReady) return;
+    if (!redis?.isReady) {
+      return;
+    }
     await redis.set(tailKey(userId), payload, {
       EX: TTL_SECONDS,
     });

@@ -23,8 +23,8 @@ export function startTypingHeartbeat(token: string, chatId: number) {
 }
 
 export interface InlineKeyboardButton {
-  text: string;
   callback_data: string;
+  text: string;
 }
 
 export async function sendMessageWithInlineKeyboard(
@@ -93,7 +93,7 @@ export async function editMessageText(
 export async function deleteMessage(
   token: string,
   chatId: number,
-  messageId: number,
+  messageId: number
 ) {
   await fetch(`${TELEGRAM_API}/bot${token}/deleteMessage`, {
     method: "POST",
@@ -147,7 +147,7 @@ export async function sendMessage(
 export async function sendStatusMessage(
   token: string,
   chatId: number,
-  text: string,
+  text: string
 ): Promise<number | null> {
   const res = await fetch(`${TELEGRAM_API}/bot${token}/sendMessage`, {
     method: "POST",
@@ -159,7 +159,9 @@ export async function sendStatusMessage(
       disable_notification: true,
     }),
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    return null;
+  }
   const data = (await res.json()) as { result?: { message_id?: number } };
   return data.result?.message_id ?? null;
 }
@@ -209,13 +211,22 @@ export function stripEmailThreadHistory(text: string): string {
 
   for (const line of lines) {
     const trimmed = line.trimStart();
-    if (/^>{2,}/.test(trimmed)) continue;
-    if (/^>\s*$/.test(trimmed)) continue;
-    if (/^>?\s*On .+wrote:\s*$/.test(trimmed)) continue;
+    if (/^>{2,}/.test(trimmed)) {
+      continue;
+    }
+    if (/^>\s*$/.test(trimmed)) {
+      continue;
+    }
+    if (/^>?\s*On .+wrote:\s*$/.test(trimmed)) {
+      continue;
+    }
     result.push(line);
   }
 
-  return result.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return result
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -224,7 +235,9 @@ export function stripEmailThreadHistory(text: string): string {
 
 /** Split markdown on blank lines so each chunk converts to valid standalone HTML. */
 export function splitMarkdownIntoBlocks(source: string): string[] {
-  if (!source) return [];
+  if (!source) {
+    return [];
+  }
   return source
     .split(/\n{2,}/)
     .map((b) => b.trim())
@@ -246,16 +259,22 @@ export function packHtmlBlocksForTelegram(
       current = piece;
       continue;
     }
-    if (current) chunks.push(current);
+    if (current) {
+      chunks.push(current);
+    }
     if (block.length <= maxLen) {
       current = block;
       continue;
     }
-    for (const part of splitMessage(block, maxLen)) chunks.push(part);
+    for (const part of splitMessage(block, maxLen)) {
+      chunks.push(part);
+    }
     current = "";
   }
 
-  if (current) chunks.push(current);
+  if (current) {
+    chunks.push(current);
+  }
   return chunks;
 }
 
@@ -263,20 +282,28 @@ export function packHtmlBlocksForTelegram(
  * Splits a long message at paragraph or newline boundaries to stay under maxLen.
  */
 export function splitMessage(text: string, maxLen: number): string[] {
-  if (text.length <= maxLen) return [text];
+  if (text.length <= maxLen) {
+    return [text];
+  }
 
   const chunks: string[] = [];
   let remaining = text;
 
   while (remaining.length > maxLen) {
     let splitAt = remaining.lastIndexOf("\n\n", maxLen);
-    if (splitAt < 100) splitAt = remaining.lastIndexOf("\n", maxLen);
-    if (splitAt < 100) splitAt = maxLen;
+    if (splitAt < 100) {
+      splitAt = remaining.lastIndexOf("\n", maxLen);
+    }
+    if (splitAt < 100) {
+      splitAt = maxLen;
+    }
     chunks.push(remaining.slice(0, splitAt).trim());
     remaining = remaining.slice(splitAt).trim();
   }
 
-  if (remaining.length > 0) chunks.push(remaining);
+  if (remaining.length > 0) {
+    chunks.push(remaining);
+  }
   return chunks;
 }
 
@@ -378,8 +405,12 @@ export function markdownToTelegramHtml(text: string): string {
 
       while (i < lines.length) {
         const l = lines[i].trimStart();
-        const matchesPrefix = isExpandable ? /^>>>\s?/.test(l) : /^>\s?/.test(l) && !/^>>/.test(l);
-        if (!matchesPrefix) break;
+        const matchesPrefix = isExpandable
+          ? /^>>>\s?/.test(l)
+          : /^>\s?/.test(l) && !/^>>/.test(l);
+        if (!matchesPrefix) {
+          break;
+        }
         const stripped = lines[i].replace(prefix, "").trimEnd();
         if (stripped && !/^On .+wrote:\s*$/.test(stripped)) {
           bqLines.push(stripped);
@@ -390,7 +421,9 @@ export function markdownToTelegramHtml(text: string): string {
       if (bqLines.length > 0) {
         // Run inline transforms on the blockquote content
         const inner = inlineMarkdownToTelegramHtml(bqLines.join("\n"));
-        processedLines.push(`<${tag}>${inner}</${isExpandable ? "blockquote" : "blockquote"}>`);
+        processedLines.push(
+          `<${tag}>${inner}</${isExpandable ? "blockquote" : "blockquote"}>`
+        );
       }
       continue;
     }
@@ -405,7 +438,10 @@ export function markdownToTelegramHtml(text: string): string {
   s = inlineMarkdownToTelegramHtml(s);
 
   // ── Pass 4: restore code blocks ──────────────────────────────────────────
-  s = s.replace(/\x02CODE_BLOCK_(\d+)\x03/g, (_, idx) => codeBlocks[Number(idx)] ?? "");
+  s = s.replace(
+    /\x02CODE_BLOCK_(\d+)\x03/g,
+    (_, idx) => codeBlocks[Number(idx)] ?? ""
+  );
 
   return s;
 }

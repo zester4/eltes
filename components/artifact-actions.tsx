@@ -3,13 +3,13 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { artifactDefinitions, type UIArtifact } from "./artifact";
 import type { ArtifactActionContext } from "./create-artifact";
+import { Button } from "./ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Button } from "./ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 type ArtifactActionsProps = {
@@ -60,7 +60,9 @@ function PureArtifactActions({
             : action.isDisabled
               ? action.isDisabled(actionContext)
               : false;
-        const isActive = action.isActive ? action.isActive(actionContext) : false;
+        const isActive = action.isActive
+          ? action.isActive(actionContext)
+          : false;
 
         if (action.menuItems?.length) {
           return (

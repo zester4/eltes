@@ -21,77 +21,85 @@
  * replayed on retries, so subsequent steps never lose prior step data.
  */
 
-import { serve } from "@upstash/workflow/nextjs";
-import { convertToModelMessages, generateText, stepCountIs } from "ai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { Index } from "@upstash/vector";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { serve } from "@upstash/workflow/nextjs";
+import { convertToModelMessages, generateText, stepCountIs } from "ai";
+import {
+  completeStep,
+  failStep,
+  makeRunningStep,
+  type WorkflowStep,
+} from "@/lib/agent/workflow-progress";
+import { upsertWorkflowProgress } from "@/lib/agent/workflow-progress.server";
 import { regularPrompt, sessionTailPrompt } from "@/lib/ai/prompts";
+import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
-import { updateDocument } from "@/lib/ai/tools/update-document";
+import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
-  saveMemory,
-  recallMemory,
-  updateMemory,
+  addGoal,
+  deleteGoal,
+  listGoals,
+  logGoalProgress,
+  updateGoal,
+} from "@/lib/ai/tools/goals";
+import {
+  addKnowledgeRelation,
+  deleteKnowledgeEntity,
+  deleteKnowledgeRelation,
+  getKnowledgeEntity,
+  searchKnowledgeGraph,
+  upsertKnowledgeEntity,
+} from "@/lib/ai/tools/knowledge-graph";
+import {
   deleteMemory,
+  recallMemory,
+  saveMemory,
+  updateMemory,
 } from "@/lib/ai/tools/memory";
+import { getMissionStatus, launchMission } from "@/lib/ai/tools/missions";
+import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
 import {
-  setReminder,
-  setCronJob,
-  listSchedules,
   deleteSchedule,
+  listSchedules,
+  setCronJob,
+  setReminder,
 } from "@/lib/ai/tools/schedule";
-import {
-  setupTrigger,
-  listActiveTriggers,
-  removeTrigger,
-} from "@/lib/ai/tools/triggers";
 import {
   delegateToSubAgent,
   getSubAgentResult,
   listSubAgents,
 } from "@/lib/ai/tools/subagents";
 import {
-  upsertKnowledgeEntity,
-  addKnowledgeRelation,
-  getKnowledgeEntity,
-  searchKnowledgeGraph,
-  deleteKnowledgeEntity,
-  deleteKnowledgeRelation,
-} from "@/lib/ai/tools/knowledge-graph";
-import {
-  addGoal,
-  updateGoal,
-  logGoalProgress,
-  listGoals,
-  deleteGoal,
-} from "@/lib/ai/tools/goals";
-import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
-import {
-  tavilySearch,
-  tavilyExtract,
   tavilyCrawl,
+  tavilyExtract,
   tavilyMap,
+  tavilySearch,
 } from "@/lib/ai/tools/tavily-search";
-import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
-import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
-import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
+import {
+  listActiveTriggers,
+  removeTrigger,
+  setupTrigger,
+} from "@/lib/ai/tools/triggers";
 import * as twilioTools from "@/lib/ai/tools/twilio";
 import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
-import { getMessagesByChatId, saveMessages, updateAgentTask } from "@/lib/db/queries";
-import { convertToUIMessages, generateUUID, getTextFromMessage } from "@/lib/utils";
-import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
-import { upsertWorkflowProgress } from "@/lib/agent/workflow-progress.server";
+import { updateDocument } from "@/lib/ai/tools/update-document";
+import { wikiIngest, wikiQuery } from "@/lib/ai/tools/wiki";
 import {
-  makeRunningStep,
-  completeStep,
-  failStep,
-  type WorkflowStep,
-} from "@/lib/agent/workflow-progress";
-import type { AgentRunWorkflowPayload } from "@/lib/workflow/client";
+  getMessagesByChatId,
+  saveMessages,
+  updateAgentTask,
+} from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
+import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
+import {
+  convertToUIMessages,
+  generateUUID,
+  getTextFromMessage,
+} from "@/lib/utils";
+import type { AgentRunWorkflowPayload } from "@/lib/workflow/client";
 
 export const maxDuration = 300;
 
@@ -103,7 +111,9 @@ const BASE_URL =
   (process.env.VERCEL_PROJECT_PRODUCTION_URL
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : undefined) ||
-  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000");
 
 // ── Workflow ──────────────────────────────────────────────────────────────────
 
@@ -116,9 +126,16 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
   const { memoryContext, step1 } = await context.run(
     "recall-context",
     async (): Promise<{ memoryContext: string; step1: WorkflowStep }> => {
-      const s = makeRunningStep(0, "recall-context", "Recalling relevant context");
+      const s = makeRunningStep(
+        0,
+        "recall-context",
+        "Recalling relevant context"
+      );
       await upsertWorkflowProgress({
-        chatId, taskId, workflowRunId, task,
+        chatId,
+        taskId,
+        workflowRunId,
+        task,
         steps: [s],
         startedAt,
       });
@@ -149,25 +166,37 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
       }
 
       const done = completeStep(s, {
-        output: memory ? `${memory.split("\n").length} memories loaded` : "No memories found",
+        output: memory
+          ? `${memory.split("\n").length} memories loaded`
+          : "No memories found",
       });
       await upsertWorkflowProgress({
-        chatId, taskId, workflowRunId, task,
+        chatId,
+        taskId,
+        workflowRunId,
+        task,
         steps: [done],
         startedAt,
       });
 
       return { memoryContext: memory, step1: done };
-    },
+    }
   );
 
   // ── Step 2: execute ────────────────────────────────────────────────────────
   const { resultText, step2 } = await context.run(
     "execute",
     async (): Promise<{ resultText: string; step2: WorkflowStep }> => {
-      const s = makeRunningStep(1, "execute", "Executing with full tool access");
+      const s = makeRunningStep(
+        1,
+        "execute",
+        "Executing with full tool access"
+      );
       await upsertWorkflowProgress({
-        chatId, taskId, workflowRunId, task,
+        chatId,
+        taskId,
+        workflowRunId,
+        task,
         steps: [step1, s],
         startedAt,
       });
@@ -208,7 +237,9 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
       // Load Composio tools — optional, continue without if unavailable
       let composioTools: Record<string, unknown> = {};
       try {
-        const session = await composio.create(userId, { manageConnections: true });
+        const session = await composio.create(userId, {
+          manageConnections: true,
+        });
         composioTools = await session.tools();
       } catch (err) {
         console.error("[AgentRunWorkflow] Composio tools unavailable:", err);
@@ -228,7 +259,11 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         setupTrigger: setupTrigger({ userId }),
         listActiveTriggers: listActiveTriggers({ userId }),
         removeTrigger: removeTrigger(),
-        delegateToSubAgent: delegateToSubAgent({ userId, chatId, baseUrl: BASE_URL }),
+        delegateToSubAgent: delegateToSubAgent({
+          userId,
+          chatId,
+          baseUrl: BASE_URL,
+        }),
         getSubAgentResult: getSubAgentResult({ userId }),
         listSubAgents: listSubAgents(),
         launchMission: launchMission({ userId, chatId, baseUrl: BASE_URL }),
@@ -258,7 +293,9 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         browserMultiTab: daytonaBrowserTools.browserMultiTab({ userId }),
         browserUploadFile: daytonaBrowserTools.browserUploadFile({ userId }),
         browserScreenshot: daytonaBrowserTools.browserScreenshot({ userId }),
-        browserVisualInteract: daytonaBrowserTools.browserVisualInteract({ userId }),
+        browserVisualInteract: daytonaBrowserTools.browserVisualInteract({
+          userId,
+        }),
         // Twilio
         twilioMakeCall: twilioTools.twilioMakeCall({ userId }),
         twilioGetCall: twilioTools.twilioGetCall({ userId }),
@@ -268,22 +305,42 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         twilioGetMessage: twilioTools.twilioGetMessage({ userId }),
         twilioListMessages: twilioTools.twilioListMessages({ userId }),
         twilioListMyNumbers: twilioTools.twilioListMyNumbers({ userId }),
-        twilioSearchAvailableNumbers: twilioTools.twilioSearchAvailableNumbers({ userId }),
+        twilioSearchAvailableNumbers: twilioTools.twilioSearchAvailableNumbers({
+          userId,
+        }),
         twilioProvisionNumber: twilioTools.twilioProvisionNumber({ userId }),
         twilioReleaseNumber: twilioTools.twilioReleaseNumber({ userId }),
         twilioUpdateNumber: twilioTools.twilioUpdateNumber({ userId }),
         // Twilio WhatsApp
-        twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({ userId }),
-        twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({ userId }),
-        twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({ userId }),
-        twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({ userId }),
-        twilioWhatsAppCreateTemplate: twilioWhatsApp.twilioWhatsAppCreateTemplate({ userId }),
-        twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates({ userId }),
-        twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({ userId }),
-        twilioWhatsAppDeleteTemplate: twilioWhatsApp.twilioWhatsAppDeleteTemplate({ userId }),
-        twilioWhatsAppSubmitApproval: twilioWhatsApp.twilioWhatsAppSubmitApproval({ userId }),
-        twilioWhatsAppGetApprovalStatus: twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId }),
-        twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({ userId }),
+        twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({
+          userId,
+        }),
+        twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({
+          userId,
+        }),
+        twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({
+          userId,
+        }),
+        twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({
+          userId,
+        }),
+        twilioWhatsAppCreateTemplate:
+          twilioWhatsApp.twilioWhatsAppCreateTemplate({ userId }),
+        twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates(
+          { userId }
+        ),
+        twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({
+          userId,
+        }),
+        twilioWhatsAppDeleteTemplate:
+          twilioWhatsApp.twilioWhatsAppDeleteTemplate({ userId }),
+        twilioWhatsAppSubmitApproval:
+          twilioWhatsApp.twilioWhatsAppSubmitApproval({ userId }),
+        twilioWhatsAppGetApprovalStatus:
+          twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId }),
+        twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({
+          userId,
+        }),
         // Persistent Sandbox
         ...getPersistentSandboxTools({ userId }),
         upsertKnowledgeEntity: upsertKnowledgeEntity({ userId }),
@@ -340,11 +397,17 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
               // Fire-and-forget — upsert is idempotent so a failed write
               // on retry won't corrupt the card.
               void upsertWorkflowProgress({
-                chatId, taskId, workflowRunId, task,
+                chatId,
+                taskId,
+                workflowRunId,
+                task,
                 steps: [step1, currentStepSnapshot],
                 startedAt,
               }).catch((err) =>
-                console.error("[AgentRunWorkflow] onStepFinish upsert error:", err),
+                console.error(
+                  "[AgentRunWorkflow] onStepFinish upsert error:",
+                  err
+                )
               );
             }
           },
@@ -355,25 +418,36 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         console.error("[AgentRunWorkflow] generateText failed:", err);
         const failed = failStep(s, msg);
         await upsertWorkflowProgress({
-          chatId, taskId, workflowRunId, task,
+          chatId,
+          taskId,
+          workflowRunId,
+          task,
           steps: [step1, failed],
           overallStatus: "failed",
           startedAt,
         });
-        await updateAgentTask({ id: taskId, userId, status: "failed", result: { error: msg } });
+        await updateAgentTask({
+          id: taskId,
+          userId,
+          status: "failed",
+          result: { error: msg },
+        });
         throw err; // Let Upstash retry
       }
 
       const outputPreview = text.length > 280 ? `${text.slice(0, 280)}…` : text;
       const done = completeStep(s, { toolCallCount, output: outputPreview });
       await upsertWorkflowProgress({
-        chatId, taskId, workflowRunId, task,
+        chatId,
+        taskId,
+        workflowRunId,
+        task,
         steps: [step1, done],
         startedAt,
       });
 
       return { resultText: text, step2: done };
-    },
+    }
   );
 
   // ── Step 3: finalize ───────────────────────────────────────────────────────
@@ -390,7 +464,10 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
 
     // Mark workflow progress as done
     await upsertWorkflowProgress({
-      chatId, taskId, workflowRunId, task,
+      chatId,
+      taskId,
+      workflowRunId,
+      task,
       steps: [step1, step2, finalStep],
       overallStatus: "completed",
       startedAt,

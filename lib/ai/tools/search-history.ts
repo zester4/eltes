@@ -1,7 +1,7 @@
 import { tool } from "ai";
+import { endOfDay, startOfDay, subDays } from "date-fns";
 import { z } from "zod";
 import { searchUserMessages } from "@/lib/db/queries";
-import { subDays, startOfDay, endOfDay } from "date-fns";
 
 export const searchPastConversations = ({ userId }: { userId: string }) =>
   tool({
@@ -66,11 +66,15 @@ export const searchPastConversations = ({ userId }: { userId: string }) =>
           const formatParts = (parts: any[]) =>
             parts
               .map((p) => {
-                if (p.type === "text") return p.text;
-                if (p.type === "tool-invocation")
+                if (p.type === "text") {
+                  return p.text;
+                }
+                if (p.type === "tool-invocation") {
                   return `[Called Tool: ${p.toolName}]`;
-                if (p.type === "tool-result")
+                }
+                if (p.type === "tool-result") {
                   return `[Tool Result (${p.toolName}): ${JSON.stringify(p.result)}]`;
+                }
                 return "";
               })
               .join("\n");

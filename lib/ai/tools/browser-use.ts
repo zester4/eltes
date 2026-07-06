@@ -28,7 +28,9 @@ const BU_BASE = "https://api.browser-use.com/api/v2";
 
 function buHeaders(): Record<string, string> {
   const key = process.env.BROWSER_USE_API_KEY;
-  if (!key) throw new Error("BROWSER_USE_API_KEY env var is not set.");
+  if (!key) {
+    throw new Error("BROWSER_USE_API_KEY env var is not set.");
+  }
   return {
     "X-Browser-Use-API-Key": key,
     "Content-Type": "application/json",
@@ -65,7 +67,9 @@ async function pollUntilDone(
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     const task = await buFetch<BUTask>("GET", `/tasks/${taskId}`);
-    if (TERMINAL.has(task.status)) return task;
+    if (TERMINAL.has(task.status)) {
+      return task;
+    }
     await new Promise((r) => setTimeout(r, intervalMs));
   }
   // Return whatever state we're at — caller inspects status
@@ -75,37 +79,39 @@ async function pollUntilDone(
 // ── Types (from OpenAPI spec) ─────────────────────────────────────────────────
 
 interface BUTask {
-  id: string;
-  sessionId: string;
-  status: "started" | "paused" | "finished" | "stopped" | "failed";
-  task: string;
-  output: string | null;
-  steps: BUStep[];
-  liveUrl?: string | null;
   finishedAt?: string | null;
+  id: string;
+  liveUrl?: string | null;
+  output: string | null;
+  sessionId: string;
   startedAt?: string | null;
+  status: "started" | "paused" | "finished" | "stopped" | "failed";
+  steps: BUStep[];
+  task: string;
 }
 
 interface BUStep {
-  number: number;
-  url?: string | null;
-  memory?: string | null;
   evaluationPreviousGoal?: string | null;
+  memory?: string | null;
   nextGoal?: string | null;
+  number: number;
   screenshotUrl?: string | null;
+  url?: string | null;
 }
 
 interface BUSession {
   id: string;
-  status: string;
   liveUrl?: string | null;
   startedAt?: string | null;
+  status: string;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function getWatchUrl(liveUrl?: string | null): string | null {
-  if (!liveUrl) return null;
+  if (!liveUrl) {
+    return null;
+  }
   // Browser Use liveUrl is previews.browser-use.com/preview/{taskId}
   // We wrap it in our internal /browser-live route for embedding
   return `/browser-live?liveUrl=${encodeURIComponent(liveUrl)}`;
@@ -149,8 +155,8 @@ COST: ~$0.01 per task + per-step LLM cost. Check credits first with browserUseCh
         .string()
         .describe(
           "Natural language description of what to do. Be specific: include exact URLs, " +
-          "target data to extract, values to fill, buttons to click, and expected output format. " +
-          "Example: 'Go to https://news.ycombinator.com and return the top 5 post titles and URLs as JSON array.'"
+            "target data to extract, values to fill, buttons to click, and expected output format. " +
+            "Example: 'Go to https://news.ycombinator.com and return the top 5 post titles and URLs as JSON array.'"
         ),
 
       sessionId: z
@@ -159,7 +165,7 @@ COST: ~$0.01 per task + per-step LLM cost. Check credits first with browserUseCh
         .optional()
         .describe(
           "Reuse an existing browser session (preserves login state, cookies). " +
-          "Get one from browserUseCreateSession first for auth-required sites."
+            "Get one from browserUseCreateSession first for auth-required sites."
         ),
 
       startUrl: z
@@ -177,12 +183,12 @@ COST: ~$0.01 per task + per-step LLM cost. Check credits first with browserUseCh
         .default(50)
         .describe(
           "Max agent steps before stopping. More steps = more cost. " +
-          "Simple tasks: 10-20. Complex multi-site workflows: 50-100. Default: 50."
+            "Simple tasks: 10-20. Complex multi-site workflows: 50-100. Default: 50."
         ),
 
       model: z
         .enum([
-          "browser-use",   // Best — BU's own optimized model (fastest + cheapest)
+          "browser-use", // Best — BU's own optimized model (fastest + cheapest)
           "gpt-4o",
           "gpt-4o-mini",
           "claude-sonnet-4-6",
@@ -190,15 +196,17 @@ COST: ~$0.01 per task + per-step LLM cost. Check credits first with browserUseCh
         ])
         .optional()
         .default("browser-use")
-        .describe("LLM model powering the agent. Default: 'browser-use' (recommended — best accuracy/speed/cost)."),
+        .describe(
+          "LLM model powering the agent. Default: 'browser-use' (recommended — best accuracy/speed/cost)."
+        ),
 
       allowedDomains: z
         .array(z.string())
         .optional()
         .describe(
           "Restrict the agent to only visit these domains. " +
-          "Security best practice for tasks involving credentials. " +
-          "E.g. ['github.com', 'api.github.com']"
+            "Security best practice for tasks involving credentials. " +
+            "E.g. ['github.com', 'api.github.com']"
         ),
 
       structuredOutputSchema: z
@@ -206,8 +214,8 @@ COST: ~$0.01 per task + per-step LLM cost. Check credits first with browserUseCh
         .optional()
         .describe(
           "JSON Schema string describing the exact output shape you want. " +
-          "The agent will return data matching this schema. " +
-          "Example: '{\"results\": [{\"title\": \"string\", \"url\": \"string\", \"price\": \"number\"}]}'"
+            "The agent will return data matching this schema. " +
+            'Example: \'{"results": [{"title": "string", "url": "string", "price": "number"}]}\''
         ),
 
       waitTimeoutSeconds: z
@@ -219,7 +227,7 @@ COST: ~$0.01 per task + per-step LLM cost. Check credits first with browserUseCh
         .default(120)
         .describe(
           "How long to wait for the task to finish before returning (even if still running). " +
-          "If it exceeds this, use browserUseGetTask to poll later. Default: 120s."
+            "If it exceeds this, use browserUseGetTask to poll later. Default: 120s."
         ),
 
       saveBrowserData: z
@@ -228,7 +236,7 @@ COST: ~$0.01 per task + per-step LLM cost. Check credits first with browserUseCh
         .default(false)
         .describe(
           "Save cookies and auth state from this session for reuse in future tasks. " +
-          "Enable when doing login flows you want to persist."
+            "Enable when doing login flows you want to persist."
         ),
     }),
 
@@ -252,10 +260,18 @@ COST: ~$0.01 per task + per-step LLM cost. Check credits first with browserUseCh
           vision: true,
           saveBrowserData: saveBrowserData ?? false,
         };
-        if (sessionId) body.sessionId = sessionId;
-        if (startUrl) body.startUrl = startUrl;
-        if (allowedDomains?.length) body.allowedDomains = allowedDomains;
-        if (structuredOutputSchema) body.structuredOutput = structuredOutputSchema;
+        if (sessionId) {
+          body.sessionId = sessionId;
+        }
+        if (startUrl) {
+          body.startUrl = startUrl;
+        }
+        if (allowedDomains?.length) {
+          body.allowedDomains = allowedDomains;
+        }
+        if (structuredOutputSchema) {
+          body.structuredOutput = structuredOutputSchema;
+        }
 
         // Submit
         const created = await buFetch<{ id: string; sessionId: string }>(
@@ -322,14 +338,29 @@ export const browserUseStartTask = () =>
       startUrl: z.string().url().optional(),
       maxSteps: z.number().int().min(1).max(200).optional().default(100),
       model: z
-        .enum(["browser-use", "gpt-4o", "gpt-4o-mini", "claude-sonnet-4-6", "gemini-2.0-flash"])
+        .enum([
+          "browser-use",
+          "gpt-4o",
+          "gpt-4o-mini",
+          "claude-sonnet-4-6",
+          "gemini-2.0-flash",
+        ])
         .optional()
         .default("browser-use"),
       allowedDomains: z.array(z.string()).optional(),
       structuredOutputSchema: z.string().optional(),
       saveBrowserData: z.boolean().optional().default(false),
     }),
-    execute: async ({ task, sessionId, startUrl, maxSteps, model, allowedDomains, structuredOutputSchema, saveBrowserData }) => {
+    execute: async ({
+      task,
+      sessionId,
+      startUrl,
+      maxSteps,
+      model,
+      allowedDomains,
+      structuredOutputSchema,
+      saveBrowserData,
+    }) => {
       try {
         const body: Record<string, unknown> = {
           task,
@@ -338,17 +369,32 @@ export const browserUseStartTask = () =>
           vision: true,
           saveBrowserData: saveBrowserData ?? false,
         };
-        if (sessionId) body.sessionId = sessionId;
-        if (startUrl) body.startUrl = startUrl;
-        if (allowedDomains?.length) body.allowedDomains = allowedDomains;
-        if (structuredOutputSchema) body.structuredOutput = structuredOutputSchema;
+        if (sessionId) {
+          body.sessionId = sessionId;
+        }
+        if (startUrl) {
+          body.startUrl = startUrl;
+        }
+        if (allowedDomains?.length) {
+          body.allowedDomains = allowedDomains;
+        }
+        if (structuredOutputSchema) {
+          body.structuredOutput = structuredOutputSchema;
+        }
 
-        const created = await buFetch<{ id: string; sessionId: string }>("POST", "/tasks", body);
+        const created = await buFetch<{ id: string; sessionId: string }>(
+          "POST",
+          "/tasks",
+          body
+        );
 
         // Fetch session to get live URL immediately
         let liveUrl: string | null = null;
         try {
-          const session = await buFetch<BUSession>("GET", `/sessions/${created.sessionId}`);
+          const session = await buFetch<BUSession>(
+            "GET",
+            `/sessions/${created.sessionId}`
+          );
           liveUrl = session.liveUrl ?? null;
         } catch (_) {}
 
@@ -380,12 +426,17 @@ export const browserUseGetTask = () =>
       "Call after browserUseStartTask or when browserUseRunTask timed out. " +
       "Returns output when status is 'finished'. Includes step-by-step trace.",
     inputSchema: z.object({
-      taskId: z.string().uuid().describe("Task ID from browserUseRunTask or browserUseStartTask."),
+      taskId: z
+        .string()
+        .uuid()
+        .describe("Task ID from browserUseRunTask or browserUseStartTask."),
       includeSteps: z
         .boolean()
         .optional()
         .default(false)
-        .describe("Include full step trace (URL, goal at each step). Useful for debugging."),
+        .describe(
+          "Include full step trace (URL, goal at each step). Useful for debugging."
+        ),
     }),
     execute: async ({ taskId, includeSteps }) => {
       try {
@@ -408,9 +459,9 @@ export const browserUseGetTask = () =>
                 screenshot: s.screenshotUrl,
               }))
             : undefined,
-          tip: !isComplete
-            ? "Task still running. Call browserUseGetTask again in a few seconds."
-            : undefined,
+          tip: isComplete
+            ? undefined
+            : "Task still running. Call browserUseGetTask again in a few seconds.",
         };
       } catch (error: any) {
         return { success: false, error: error?.message ?? String(error) };
@@ -434,14 +485,16 @@ export const browserUseControlTask = () =>
         .enum(["pause", "resume", "stop", "stop_task_and_session"])
         .describe(
           "pause: freeze the agent mid-task. " +
-          "resume: continue from where it paused. " +
-          "stop: stop task but keep session alive. " +
-          "stop_task_and_session: stop everything (saves costs)."
+            "resume: continue from where it paused. " +
+            "stop: stop task but keep session alive. " +
+            "stop_task_and_session: stop everything (saves costs)."
         ),
     }),
     execute: async ({ taskId, action }) => {
       try {
-        const result = await buFetch<BUTask>("PATCH", `/tasks/${taskId}`, { action });
+        const result = await buFetch<BUTask>("PATCH", `/tasks/${taskId}`, {
+          action,
+        });
         return {
           success: true,
           taskId,
@@ -495,7 +548,9 @@ export const browserUseCreateSession = () =>
           browserScreenWidth: screenWidth ?? 1280,
           browserScreenHeight: screenHeight ?? 800,
         };
-        if (startUrl) body.startUrl = startUrl;
+        if (startUrl) {
+          body.startUrl = startUrl;
+        }
 
         const session = await buFetch<BUSession>("POST", "/sessions", body);
 
@@ -507,8 +562,10 @@ export const browserUseCreateSession = () =>
           watchUrl: getWatchUrl(session.liveUrl),
           message:
             `Session created (id: ${session.id}). Pass this sessionId to browserUseRunTask for authenticated browsing. ` +
-            (session.liveUrl ? `Watch live: ${getWatchUrl(session.liveUrl)}` : "") +
-            ` Cost: $0.05/hr. Stop when done.`,
+            (session.liveUrl
+              ? `Watch live: ${getWatchUrl(session.liveUrl)}`
+              : "") +
+            " Cost: $0.05/hr. Stop when done.",
         };
       } catch (error: any) {
         return { success: false, error: error?.message ?? String(error) };
@@ -530,11 +587,16 @@ export const browserUseGetLiveUrl = () =>
       sessionId: z
         .string()
         .uuid()
-        .describe("Session ID from browserUseCreateSession or the sessionId returned by browserUseRunTask."),
+        .describe(
+          "Session ID from browserUseCreateSession or the sessionId returned by browserUseRunTask."
+        ),
     }),
     execute: async ({ sessionId }) => {
       try {
-        const session = await buFetch<BUSession>("GET", `/sessions/${sessionId}`);
+        const session = await buFetch<BUSession>(
+          "GET",
+          `/sessions/${sessionId}`
+        );
         return {
           success: true,
           sessionId,
@@ -566,14 +628,22 @@ export const browserUseListTasks = () =>
         .enum(["started", "paused", "finished", "stopped"])
         .optional()
         .describe("Filter by status."),
-      sessionId: z.string().uuid().optional().describe("Filter to tasks from a specific session."),
+      sessionId: z
+        .string()
+        .uuid()
+        .optional()
+        .describe("Filter to tasks from a specific session."),
     }),
     execute: async ({ limit, status, sessionId }) => {
       try {
         const params = new URLSearchParams();
         params.set("pageSize", String(limit ?? 10));
-        if (status) params.set("filterBy", status);
-        if (sessionId) params.set("sessionId", sessionId);
+        if (status) {
+          params.set("filterBy", status);
+        }
+        if (sessionId) {
+          params.set("sessionId", sessionId);
+        }
 
         const data = await buFetch<{ items: BUTask[]; total: number }>(
           "GET",
@@ -589,7 +659,11 @@ export const browserUseListTasks = () =>
           finishedAt: t.finishedAt,
         }));
 
-        return { success: true, tasks: items, total: data.total ?? items.length };
+        return {
+          success: true,
+          tasks: items,
+          total: data.total ?? items.length,
+        };
       } catch (error: any) {
         return { success: false, error: error?.message ?? String(error) };
       }

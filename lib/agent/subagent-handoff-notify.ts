@@ -11,7 +11,9 @@ export function notifySubAgentHandoffToMainAgent(payload: {
   outcome: "completed" | "failed";
   summary: string;
 }): void {
-  if (!payload.chatId) return;
+  if (!payload.chatId) {
+    return;
+  }
   const rawBase =
     process.env.BASE_URL ||
     process.env.RENDER_EXTERNAL_URL ||
@@ -19,7 +21,7 @@ export function notifySubAgentHandoffToMainAgent(payload: {
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : undefined) ||
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
-  
+
   const base = rawBase?.replace(/\/+$/, "") ?? "";
   if (!base) {
     return;

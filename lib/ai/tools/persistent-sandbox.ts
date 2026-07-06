@@ -24,8 +24,8 @@ import { tool } from "ai";
 import { z } from "zod";
 import {
   getOrCreatePersistentSandbox,
-  resetPersistentSandbox,
   getPersistentSandboxId,
+  resetPersistentSandbox,
 } from "@/lib/persistent-sandbox/client";
 
 // ── Helper ────────────────────────────────────────────────────────────────────
@@ -37,9 +37,7 @@ import {
 async function withSandbox<T>(
   userId: string,
   fn: (
-    sandbox: Awaited<
-      ReturnType<typeof getOrCreatePersistentSandbox>
-    >["sandbox"]
+    sandbox: Awaited<ReturnType<typeof getOrCreatePersistentSandbox>>["sandbox"]
   ) => Promise<T>
 ): Promise<T> {
   const { sandbox } = await getOrCreatePersistentSandbox(userId);
@@ -88,7 +86,7 @@ const sandboxStatus = ({ userId }: { userId: string }) =>
           sandboxId,
           message:
             `Persistent sandbox ${sandboxId} exists. Use sandboxRun to wake it and ` +
-            `execute commands. All previous files and installed packages are preserved.`,
+            "execute commands. All previous files and installed packages are preserved.",
         };
       } catch (error: any) {
         return { exists: false, error: error?.message };
@@ -116,15 +114,15 @@ const sandboxRun = ({ userId }: { userId: string }) =>
         .string()
         .describe(
           "Shell command to execute. Runs as 'user' in the sandbox. " +
-          "Use full paths or cd to the right directory first. " +
-          "Example: 'cd ~/workspace && python3 analyze.py'"
+            "Use full paths or cd to the right directory first. " +
+            "Example: 'cd ~/workspace && python3 analyze.py'"
         ),
       workingDir: z
         .string()
         .optional()
         .describe(
           "Working directory for the command. Defaults to /home/user. " +
-          "Example: '/home/user/workspace/my-project'"
+            "Example: '/home/user/workspace/my-project'"
         ),
       timeoutSeconds: z
         .number()
@@ -148,8 +146,14 @@ const sandboxRun = ({ userId }: { userId: string }) =>
           return {
             success: result.exitCode === 0,
             exitCode: result.exitCode,
-            stdout: stdout.length > 8_000 ? stdout.slice(0, 8_000) + "\n[...truncated]" : stdout,
-            stderr: stderr.length > 2_000 ? stderr.slice(0, 2_000) + "\n[...truncated]" : stderr,
+            stdout:
+              stdout.length > 8000
+                ? stdout.slice(0, 8000) + "\n[...truncated]"
+                : stdout,
+            stderr:
+              stderr.length > 2000
+                ? stderr.slice(0, 2000) + "\n[...truncated]"
+                : stderr,
             ...(result.exitCode !== 0 && {
               error: `Command exited with code ${result.exitCode}`,
             }),
@@ -178,7 +182,7 @@ const sandboxWriteFile = ({ userId }: { userId: string }) =>
         .string()
         .describe(
           "Absolute path inside the sandbox. " +
-          "Example: '/home/user/workspace/scraper.py' or '~/projects/app/config.json'"
+            "Example: '/home/user/workspace/scraper.py' or '~/projects/app/config.json'"
         ),
       content: z.string().describe("Text content to write to the file."),
     }),
@@ -224,7 +228,7 @@ const sandboxReadFile = ({ userId }: { userId: string }) =>
         .string()
         .describe(
           "Path to the file inside the sandbox. " +
-          "Example: '/home/user/workspace/results.json' or '~/projects/app/main.py'"
+            "Example: '/home/user/workspace/results.json' or '~/projects/app/main.py'"
         ),
     }),
     execute: async ({ path }) => {
@@ -239,7 +243,9 @@ const sandboxReadFile = ({ userId }: { userId: string }) =>
               success: true,
               path: resolvedPath,
               content:
-                text.length > MAX ? `${text.slice(0, MAX)}\n[...truncated]` : text,
+                text.length > MAX
+                  ? `${text.slice(0, MAX)}\n[...truncated]`
+                  : text,
               bytes: text.length,
               truncated: text.length > MAX,
             };
@@ -275,8 +281,13 @@ const sandboxListFiles = ({ userId }: { userId: string }) =>
     execute: async ({ path }) => {
       try {
         return await withSandbox(userId, async (sandbox) => {
-          const resolvedPath = (path ?? "~/workspace").replace(/^~/, "/home/user");
-          const result = await sandbox.commands.run(`ls -la "${resolvedPath}" 2>&1`);
+          const resolvedPath = (path ?? "~/workspace").replace(
+            /^~/,
+            "/home/user"
+          );
+          const result = await sandbox.commands.run(
+            `ls -la "${resolvedPath}" 2>&1`
+          );
           return {
             success: result.exitCode === 0,
             path: resolvedPath,
@@ -306,12 +317,25 @@ const sandboxInstall = ({ userId }: { userId: string }) =>
     inputSchema: z.object({
       packages: z
         .array(z.string())
-        .describe("Package names to install. Example: ['playwright', 'dotenv']"),
+        .describe(
+          "Package names to install. Example: ['playwright', 'dotenv']"
+        ),
       manager: z
-        .enum(["npm", "pip", "pip3", "apt", "apt-get", "cargo", "uv", "yarn", "pnpm", "brew"])
+        .enum([
+          "npm",
+          "pip",
+          "pip3",
+          "apt",
+          "apt-get",
+          "cargo",
+          "uv",
+          "yarn",
+          "pnpm",
+          "brew",
+        ])
         .describe(
           "Package manager to use. 'uv' is recommended for Python (fastest). " +
-          "'npm' for Node.js. 'apt-get' for system packages."
+            "'npm' for Node.js. 'apt-get' for system packages."
         ),
       globalFlag: z
         .boolean()
@@ -349,10 +373,11 @@ const sandboxInstall = ({ userId }: { userId: string }) =>
             success: result.exitCode === 0,
             exitCode: result.exitCode,
             installed: packages,
-            output: (result.stdout + result.stderr).trim().slice(0, 3_000),
-            message: result.exitCode === 0
-              ? `Installed ${packageList} via ${manager}. These packages will persist across all future sessions.`
-              : `Installation failed — check output for details.`,
+            output: (result.stdout + result.stderr).trim().slice(0, 3000),
+            message:
+              result.exitCode === 0
+                ? `Installed ${packageList} via ${manager}. These packages will persist across all future sessions.`
+                : "Installation failed — check output for details.",
           };
         });
       } catch (error: any) {
@@ -387,7 +412,7 @@ const sandboxStartService = ({ userId }: { userId: string }) =>
         .number()
         .describe(
           "Port the service listens on. Example: 8000, 3000, 8888. " +
-          "This port will be exposed via a public URL."
+            "This port will be exposed via a public URL."
         ),
       workingDir: z
         .string()
@@ -399,12 +424,17 @@ const sandboxStartService = ({ userId }: { userId: string }) =>
         return await withSandbox(userId, async (sandbox) => {
           // Start as background process
           const sessionId = `service-${port}-${Date.now()}`;
-          
+
           // Write a start script for easy restart
           const startScript = `#!/bin/bash\n${workingDir ? `cd ${workingDir} && ` : ""}${command} &\necho "Service started on port ${port} (PID: $!)"\n`;
-          await sandbox.files.write("/home/user/.etles/start-service.sh", startScript);
-          await sandbox.commands.run("chmod +x /home/user/.etles/start-service.sh");
-          
+          await sandbox.files.write(
+            "/home/user/.etles/start-service.sh",
+            startScript
+          );
+          await sandbox.commands.run(
+            "chmod +x /home/user/.etles/start-service.sh"
+          );
+
           // Start the process in background
           const bgCommand = `nohup ${workingDir ? `cd ${workingDir} && ` : ""}${command} > /home/user/.etles/service-${port}.log 2>&1 &`;
           await sandbox.commands.run(bgCommand);
@@ -413,7 +443,9 @@ const sandboxStartService = ({ userId }: { userId: string }) =>
           await sandbox.commands.run("sleep 2");
 
           // Check if it's running
-          const check = await sandbox.commands.run(`lsof -i :${port} 2>/dev/null | head -5`);
+          const check = await sandbox.commands.run(
+            `lsof -i :${port} 2>/dev/null | head -5`
+          );
 
           // Get the public URL via E2B's host mapping
           const host = await sandbox.getHost(port);
@@ -424,7 +456,7 @@ const sandboxStartService = ({ userId }: { userId: string }) =>
             publicUrl: `https://${host}`,
             sessionId,
             logFile: `/home/user/.etles/service-${port}.log`,
-            restartCommand: `/home/user/.etles/start-service.sh`,
+            restartCommand: "/home/user/.etles/start-service.sh",
             running: check.exitCode === 0,
             message:
               `Service started on port ${port}. Public URL: https://${host}\n` +
@@ -460,7 +492,8 @@ const sandboxReset = ({ userId }: { userId: string }) =>
       if (confirm !== "RESET_CONFIRMED") {
         return {
           success: false,
-          error: "Confirmation not provided. Pass confirm: 'RESET_CONFIRMED' to proceed.",
+          error:
+            "Confirmation not provided. Pass confirm: 'RESET_CONFIRMED' to proceed.",
         };
       }
 

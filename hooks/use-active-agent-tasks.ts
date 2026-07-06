@@ -5,20 +5,22 @@ import useSWR from "swr";
 export type AgentTaskStatus = "pending" | "running" | "completed" | "failed";
 
 export interface AgentTask {
-  id: string;
-  userId: string;
-  chatId: string;
   agentType: string;
-  task: string;
-  status: AgentTaskStatus;
-  result: { text?: string; error?: string } | null;
+  chatId: string;
   createdAt: string;
+  id: string;
+  result: { text?: string; error?: string } | null;
+  status: AgentTaskStatus;
+  task: string;
   updatedAt: string;
+  userId: string;
 }
 
 async function fetcher(url: string) {
   const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch agent tasks");
+  if (!res.ok) {
+    throw new Error("Failed to fetch agent tasks");
+  }
   const data = await res.json();
   return data.tasks as AgentTask[];
 }
@@ -37,10 +39,10 @@ export function useActiveAgentTasksByChat(enabled = true) {
   const { data: tasks = [], mutate } = useSWR<AgentTask[]>(
     enabled ? "/api/agent/tasks" : null,
     fetcher,
-    { refreshInterval: 10000 },
+    { refreshInterval: 10_000 }
   );
   const chatIdsWithActiveTasks = new Set(
-    tasks.map((t) => t.chatId).filter(Boolean),
+    tasks.map((t) => t.chatId).filter(Boolean)
   );
   return { tasks, chatIdsWithActiveTasks, mutate };
 }

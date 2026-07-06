@@ -7,29 +7,33 @@
 // Flow: Composio fires → this handler → resolves user → resolves routes →
 //        runs matched sub-agents → saves results to the user's active chat.
 
-import { NextRequest, NextResponse } from "next/server";
-import { generateText, stepCountIs } from "ai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
-import { getLanguageModel } from "@/lib/ai/providers";
+import { generateText, stepCountIs } from "ai";
+import { type NextRequest, NextResponse } from "next/server";
 import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
-import { resolveRoutes, buildTaskPrompt, isTriggerRouted } from "@/lib/ai/trigger-routing";
-import { getChatsByUserId, saveMessages } from "@/lib/db/queries";
+import { getLanguageModel } from "@/lib/ai/providers";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
-  saveMemory,
-  recallMemory,
-  updateMemory,
   deleteMemory,
+  recallMemory,
+  saveMemory,
+  updateMemory,
 } from "@/lib/ai/tools/memory";
+import { setCronJob, setReminder } from "@/lib/ai/tools/schedule";
 import {
-  twilioMakeCall,
-  twilioSendSMS,
-  twilioListMyNumbers,
   twilioGetCall,
   twilioGetMessage,
+  twilioListMyNumbers,
+  twilioMakeCall,
+  twilioSendSMS,
 } from "@/lib/ai/tools/twilio";
-import { setReminder, setCronJob, listSchedules, deleteSchedule } from "@/lib/ai/tools/schedule";
+import {
+  buildTaskPrompt,
+  isTriggerRouted,
+  resolveRoutes,
+} from "@/lib/ai/trigger-routing";
+import { getChatsByUserId, saveMessages } from "@/lib/db/queries";
 import { generateUUID } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,29 +48,36 @@ const MODEL = "google/gemini-3-flash";
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface ComposioWebhookPayload {
-  /** e.g. "STRIPE_CHARGE_FAILED_TRIGGER" */
-  triggerName: string;
+  appName?: string;
   /** Composio connected account ID — used to resolve our internal userId */
   connectedAccountId: string;
   /** Raw event data from the upstream integration */
   data: Record<string, any>;
   /** Optional metadata */
   triggerId?: string;
-  appName?: string;
+  /** e.g. "STRIPE_CHARGE_FAILED_TRIGGER" */
+  triggerName: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Signature verification
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function verifySignature(req: NextRequest, rawBody: string): Promise<boolean> {
+async function verifySignature(
+  req: NextRequest,
+  rawBody: string
+): Promise<boolean> {
   if (!COMPOSIO_WEBHOOK_SECRET) {
-    console.warn("[Webhook] COMPOSIO_WEBHOOK_SECRET not set — skipping verification.");
+    console.warn(
+      "[Webhook] COMPOSIO_WEBHOOK_SECRET not set — skipping verification."
+    );
     return true;
   }
 
   const signature = req.headers.get("x-composio-signature") ?? "";
-  if (!signature) return false;
+  if (!signature) {
+    return false;
+  }
 
   const key = await crypto.subtle.importKey(
     "raw",
@@ -77,20 +88,32 @@ async function verifySignature(req: NextRequest, rawBody: string): Promise<boole
   );
 
   const sigBytes = Buffer.from(signature.replace(/^sha256=/, ""), "hex");
-  return crypto.subtle.verify("HMAC", key, sigBytes, new TextEncoder().encode(rawBody));
+  return crypto.subtle.verify(
+    "HMAC",
+    key,
+    sigBytes,
+    new TextEncoder().encode(rawBody)
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Resolve userId from connectedAccountId via Composio
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function resolveUserId(connectedAccountId: string): Promise<string | null> {
+async function resolveUserId(
+  connectedAccountId: string
+): Promise<string | null> {
   try {
     const composio = new Composio({ provider: new VercelProvider() });
     const account = await composio.connectedAccounts.get(connectedAccountId);
-    return (account as any)?.clientUniqueUserId ?? (account as any)?.entityId ?? null;
+    return (
+      (account as any)?.clientUniqueUserId ?? (account as any)?.entityId ?? null
+    );
   } catch (e) {
-    console.error("[Webhook] Failed to resolve userId from connectedAccountId:", e);
+    console.error(
+      "[Webhook] Failed to resolve userId from connectedAccountId:",
+      e
+    );
     return null;
   }
 }
@@ -113,7 +136,10 @@ async function resolveActiveChatId(userId: string): Promise<string | null> {
 // Execution context wrapper appended to every sub-agent system prompt
 // ─────────────────────────────────────────────────────────────────────────────
 
-function buildSystemPrompt(agentSystemPrompt: string, triggerName: string): string {
+function buildSystemPrompt(
+  agentSystemPrompt: string,
+  triggerName: string
+): string {
   return `${agentSystemPrompt}
 
 ═══════════════════════════════════════════
@@ -155,7 +181,10 @@ async function runAgentRoute(
     const session = await composio.create(userId, { manageConnections: true });
     composioTools = await session.tools();
   } catch (e) {
-    console.error(`[Webhook] Failed to load Composio tools for agent "${agentSlug}":`, e);
+    console.error(
+      `[Webhook] Failed to load Composio tools for agent "${agentSlug}":`,
+      e
+    );
   }
 
   const tools = {
@@ -174,7 +203,9 @@ async function runAgentRoute(
     setCronJob: setCronJob({ userId, baseUrl }),
   };
 
-  console.log(`[Webhook] Running agent "${agentSlug}" | trigger: ${triggerName} | user: ${userId}`);
+  console.log(
+    `[Webhook] Running agent "${agentSlug}" | trigger: ${triggerName} | user: ${userId}`
+  );
 
   const result = await generateText({
     model: getLanguageModel(MODEL),
@@ -193,7 +224,9 @@ async function runAgentRoute(
     id: generateUUID(),
     chatId,
     role: "user",
-    parts: [{ type: "text", text: `[Trigger: ${triggerName}]\n\n${taskPrompt}` }],
+    parts: [
+      { type: "text", text: `[Trigger: ${triggerName}]\n\n${taskPrompt}` },
+    ],
     attachments: [],
     createdAt: timestamp,
   });
@@ -206,7 +239,7 @@ async function runAgentRoute(
       role: "assistant",
       parts: [{ type: "text", text: result.text }],
       attachments: [],
-      createdAt: new Date(timestamp.getTime() + 1_000),
+      createdAt: new Date(timestamp.getTime() + 1000),
     });
   }
 
@@ -214,12 +247,16 @@ async function runAgentRoute(
   // tool-result are merged into a single assistant message per step.
   // The AI SDK UIMessage schema has no "tool" role.
   if (result.steps) {
-    let offset = 2_000;
+    let offset = 2000;
     for (const step of result.steps) {
-      if (!step.toolCalls?.length) continue;
+      if (!step.toolCalls?.length) {
+        continue;
+      }
       for (const call of step.toolCalls) {
         const toolCallId = call.toolCallId;
-        const toolResult = step.toolResults?.find((r: any) => r.toolCallId === toolCallId);
+        const toolResult = step.toolResults?.find(
+          (r: any) => r.toolCallId === toolCallId
+        );
 
         const parts: any[] = [
           {
@@ -248,7 +285,7 @@ async function runAgentRoute(
           createdAt: new Date(timestamp.getTime() + offset),
         });
 
-        offset += 1_000;
+        offset += 1000;
       }
     }
   }
@@ -257,8 +294,8 @@ async function runAgentRoute(
 
   console.log(
     `[Webhook] Agent "${agentSlug}" done — ` +
-    `tools used: ${result.toolCalls?.length ?? 0}, ` +
-    `response: ${result.text?.length ?? 0} chars`
+      `tools used: ${result.toolCalls?.length ?? 0}, ` +
+      `response: ${result.text?.length ?? 0} chars`
   );
 }
 
@@ -274,7 +311,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const isValid = await verifySignature(req, rawBody);
   if (!isValid) {
     console.warn("[Webhook] Signature verification failed — request rejected.");
-    return NextResponse.json({ ok: false, error: "Invalid signature" }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: "Invalid signature" },
+      { status: 401 }
+    );
   }
 
   // 3. Parse payload
@@ -282,7 +322,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     payload = JSON.parse(rawBody);
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Invalid JSON" },
+      { status: 400 }
+    );
   }
 
   const { triggerName, connectedAccountId, data } = payload;
@@ -298,14 +341,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   //    Return 200 so Composio doesn't retry an intentionally-unhandled event.
   if (!isTriggerRouted(triggerName)) {
     console.log(`[Webhook] No routes for "${triggerName}" — ignoring.`);
-    return NextResponse.json({ ok: true, message: "No routes registered for this trigger." });
+    return NextResponse.json({
+      ok: true,
+      message: "No routes registered for this trigger.",
+    });
   }
 
   // 5. Resolve user from the connected account
   const userId = await resolveUserId(connectedAccountId);
   if (!userId) {
-    console.warn(`[Webhook] Could not resolve userId for connectedAccountId "${connectedAccountId}".`);
-    return NextResponse.json({ ok: false, error: "User not found" }, { status: 404 });
+    console.warn(
+      `[Webhook] Could not resolve userId for connectedAccountId "${connectedAccountId}".`
+    );
+    return NextResponse.json(
+      { ok: false, error: "User not found" },
+      { status: 404 }
+    );
   }
 
   // 6. Resolve the user's active chat
@@ -313,13 +364,21 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
     const resolved = await resolveActiveChatId(userId);
     if (!resolved) {
-      console.warn(`[Webhook] No active chat for user ${userId}. Trigger "${triggerName}" dropped.`);
-      return NextResponse.json({ ok: false, error: "No active chat found for user" });
+      console.warn(
+        `[Webhook] No active chat for user ${userId}. Trigger "${triggerName}" dropped.`
+      );
+      return NextResponse.json({
+        ok: false,
+        error: "No active chat found for user",
+      });
     }
     chatId = resolved;
   } catch (e) {
     console.error("[Webhook] Failed to resolve chat:", e);
-    return NextResponse.json({ ok: false, error: "Chat resolution failed" }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: "Chat resolution failed" },
+      { status: 500 }
+    );
   }
 
   // 7. Extract baseUrl for scheduling tools
@@ -330,17 +389,35 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   const immediateRoutes = routes.filter((r) => r.priority === "immediate");
   const queuedRoutes = routes.filter((r) => r.priority === "queued");
 
-  const results: { agentSlug: string; status: "ok" | "error"; error?: string }[] = [];
+  const results: {
+    agentSlug: string;
+    status: "ok" | "error";
+    error?: string;
+  }[] = [];
 
   // Immediate routes run serially so tool calls don't race on shared resources
   for (const route of immediateRoutes) {
     const taskPrompt = buildTaskPrompt(route, data, triggerName);
     try {
-      await runAgentRoute(userId, chatId, route.agentSlug, taskPrompt, triggerName, baseUrl);
+      await runAgentRoute(
+        userId,
+        chatId,
+        route.agentSlug,
+        taskPrompt,
+        triggerName,
+        baseUrl
+      );
       results.push({ agentSlug: route.agentSlug, status: "ok" });
     } catch (e: any) {
-      console.error(`[Webhook] Immediate agent "${route.agentSlug}" failed:`, e);
-      results.push({ agentSlug: route.agentSlug, status: "error", error: e.message });
+      console.error(
+        `[Webhook] Immediate agent "${route.agentSlug}" failed:`,
+        e
+      );
+      results.push({
+        agentSlug: route.agentSlug,
+        status: "error",
+        error: e.message,
+      });
     }
   }
 
@@ -349,8 +426,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
   // dedicated worker route (same pattern as your /api/scheduled handler).
   for (const route of queuedRoutes) {
     const taskPrompt = buildTaskPrompt(route, data, triggerName);
-    const background = runAgentRoute(userId, chatId, route.agentSlug, taskPrompt, triggerName, baseUrl)
-      .catch((e) => console.error(`[Webhook] Queued agent "${route.agentSlug}" failed:`, e));
+    const background = runAgentRoute(
+      userId,
+      chatId,
+      route.agentSlug,
+      taskPrompt,
+      triggerName,
+      baseUrl
+    ).catch((e) =>
+      console.error(`[Webhook] Queued agent "${route.agentSlug}" failed:`, e)
+    );
 
     // Vercel / Next.js edge runtime — keep the process alive for the background task
     (req as any).context?.waitUntil?.(background);

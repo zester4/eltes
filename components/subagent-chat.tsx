@@ -1,20 +1,32 @@
-import { useState, useRef, useEffect, useCallback, ChangeEvent } from "react";
-import { ArrowUp, Terminal, Loader2, RefreshCw, X, Paperclip } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
+import {
+  ArrowUp,
+  Loader2,
+  Paperclip,
+  RefreshCw,
+  Terminal,
+  X,
+} from "lucide-react";
+import {
+  type ChangeEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { toast } from "sonner";
 import { Response } from "@/components/elements/response";
 import {
   Tool,
-  ToolHeader,
   ToolContent,
+  ToolHeader,
   ToolInput,
   ToolOutput,
 } from "@/components/elements/tool";
-import type { SubAgentDefinition } from "@/lib/agent/subagent-definitions";
-import { toast } from "sonner";
 import { SparklesIcon } from "@/components/icons";
-import type { ChatMessage, Attachment } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import type { SubAgentDefinition } from "@/lib/agent/subagent-definitions";
+import type { Attachment, ChatMessage } from "@/lib/types";
+import { cn, generateUUID } from "@/lib/utils";
 import { PreviewAttachment } from "./preview-attachment";
 
 interface SubAgentChatProps {
@@ -80,12 +92,12 @@ export function SubAgentChat({
     (taskId: string) => {
       const elapsed = Date.now() - pollStartTimeRef.current;
       const interval =
-        elapsed < 10000 ? POLL_INTERVAL_FAST : POLL_INTERVAL_SLOW;
+        elapsed < 10_000 ? POLL_INTERVAL_FAST : POLL_INTERVAL_SLOW;
 
       pollTimerRef.current = setTimeout(async () => {
         try {
           const res = await fetch(
-            `/api/subagents/chat?agentSlug=${agent.slug}&taskId=${taskId}`,
+            `/api/subagents/chat?agentSlug=${agent.slug}&taskId=${taskId}`
           );
           if (!res.ok) {
             console.error("[Poll] Non-OK response:", res.status);
@@ -118,7 +130,7 @@ export function SubAgentChat({
         }
       }, interval);
     },
-    [agent.slug],
+    [agent.slug]
   );
 
   // ── Set up file uploads ────────────────────────────────────────────────────
@@ -170,9 +182,17 @@ export function SubAgentChat({
   );
 
   // ── Send message ───────────────────────────────────────────────────────────
-  const handleInputSubmit = async (e: React.FormEvent | React.KeyboardEvent) => {
+  const handleInputSubmit = async (
+    e: React.FormEvent | React.KeyboardEvent
+  ) => {
     e.preventDefault();
-    if ((!input.trim() && attachments.length === 0) || isWorking || uploadQueue.length > 0) return;
+    if (
+      (!input.trim() && attachments.length === 0) ||
+      isWorking ||
+      uploadQueue.length > 0
+    ) {
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: generateUUID(),
@@ -184,15 +204,19 @@ export function SubAgentChat({
           name: attachment.name,
           mediaType: attachment.contentType,
         })),
-        { type: "text", text: input }
-      ].filter((part) => part.type === "file" || (part.type === "text" && part.text)),
+        { type: "text", text: input },
+      ].filter(
+        (part) => part.type === "file" || (part.type === "text" && part.text)
+      ),
     } as any;
 
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setInput("");
     setAttachments([]);
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
     setIsWorking(true);
 
     try {
@@ -207,7 +231,9 @@ export function SubAgentChat({
 
       if (!res.ok) {
         const errorText = await res.text();
-        throw new Error(errorText || `Request failed with status ${res.status}`);
+        throw new Error(
+          errorText || `Request failed with status ${res.status}`
+        );
       }
 
       const data = await res.json();
@@ -228,7 +254,7 @@ export function SubAgentChat({
       toast.error(
         err instanceof Error
           ? err.message
-          : "Failed to communicate with sub-agent",
+          : "Failed to communicate with sub-agent"
       );
     }
   };
@@ -248,7 +274,9 @@ export function SubAgentChat({
         method: "DELETE",
       });
       setMessages([]);
-      if (onClearChat) onClearChat();
+      if (onClearChat) {
+        onClearChat();
+      }
       toast.success("Chat history cleared");
     } catch (error) {
       toast.error("Failed to clear chat history");
@@ -263,10 +291,10 @@ export function SubAgentChat({
         <div className="flex items-center gap-3">
           {onClose && (
             <Button
-              variant="ghost"
-              size="icon"
               className="md:hidden shrink-0"
               onClick={onClose}
+              size="icon"
+              variant="ghost"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -279,14 +307,14 @@ export function SubAgentChat({
             <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5 sm:mt-1">
               <span className="relative flex h-2 w-2">
                 {isWorking && (
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                 )}
                 <span
                   className={cn(
                     "relative inline-flex rounded-full h-2 w-2",
-                    isWorking ? "bg-primary" : "bg-muted-foreground/50",
+                    isWorking ? "bg-primary" : "bg-muted-foreground/50"
                   )}
-                ></span>
+                />
               </span>
               <span className="text-[10px] sm:text-xs text-muted-foreground">
                 {isWorking ? "Running tasks..." : "Idle"}
@@ -296,10 +324,10 @@ export function SubAgentChat({
         </div>
         <div className="flex gap-2">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={handleClear}
             className="h-7 sm:h-8 px-2 sm:px-3 text-[10px] sm:text-xs"
+            onClick={handleClear}
+            size="sm"
+            variant="outline"
           >
             <RefreshCw className="w-3 h-3 mr-1.5" />
             <span className="hidden sm:inline">Reset</span>
@@ -331,147 +359,148 @@ export function SubAgentChat({
         ) : (
           <div className="space-y-6 sm:space-y-8 w-full">
             {messages.map((message) => {
-              const attachmentsFromMessage = message.parts?.filter((part) => part.type === "file") || [];
+              const attachmentsFromMessage =
+                message.parts?.filter((part) => part.type === "file") || [];
 
               return (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex w-full",
-                  message.role === "user" ? "justify-end" : "justify-start",
-                )}
-              >
                 <div
                   className={cn(
-                    "flex flex-col gap-2 sm:gap-3 w-full",
-                    message.role === "user"
-                      ? "max-w-[85%] sm:max-w-xl items-end mt-2"
-                      : "max-w-full lg:max-w-3xl",
+                    "flex w-full",
+                    message.role === "user" ? "justify-end" : "justify-start"
                   )}
+                  key={message.id}
                 >
-                  <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground ml-1 flex items-center gap-2 uppercase tracking-wide">
-                    {message.role === "user" ? "You" : agent.name}
-                  </div>
-
-                  {attachmentsFromMessage.length > 0 && (
-                    <div className="flex flex-row flex-wrap justify-end gap-2 mb-1">
-                      {attachmentsFromMessage.map((part: any, index) => (
-                        <PreviewAttachment
-                          key={part.url || index}
-                          attachment={{
-                            name: part.name || part.filename || "file",
-                            url: part.url,
-                            contentType: part.mediaType || part.contentType,
-                          }}
-                        />
-                      ))}
+                  <div
+                    className={cn(
+                      "flex flex-col gap-2 sm:gap-3 w-full",
+                      message.role === "user"
+                        ? "max-w-[85%] sm:max-w-xl items-end mt-2"
+                        : "max-w-full lg:max-w-3xl"
+                    )}
+                  >
+                    <div className="text-[10px] sm:text-xs font-semibold text-muted-foreground ml-1 flex items-center gap-2 uppercase tracking-wide">
+                      {message.role === "user" ? "You" : agent.name}
                     </div>
-                  )}
 
-                  {/* Render parts: Text and Tool Invocations */}
-                  {message.parts &&
-                    message.parts.map((part, index) => {
-                      const key = `${message.id}-part-${index}`;
+                    {attachmentsFromMessage.length > 0 && (
+                      <div className="flex flex-row flex-wrap justify-end gap-2 mb-1">
+                        {attachmentsFromMessage.map((part: any, index) => (
+                          <PreviewAttachment
+                            attachment={{
+                              name: part.name || part.filename || "file",
+                              url: part.url,
+                              contentType: part.mediaType || part.contentType,
+                            }}
+                            key={part.url || index}
+                          />
+                        ))}
+                      </div>
+                    )}
 
-                      if (part.type === "text" && part.text) {
-                        return (
-                          <div
-                            key={key}
-                            className={cn(
-                              "text-[13px] leading-relaxed",
-                              message.role === "user"
-                                ? "bg-primary text-primary-foreground px-2.5 py-2 rounded-2xl rounded-tr-[4px] shadow-sm"
-                                : "bg-transparent w-full text-[13px]",
-                            )}
-                          >
-                            {message.role === "user" ? (
-                              <span className="whitespace-pre-wrap">
-                                {part.text}
-                              </span>
-                            ) : (
-                              <Response>{part.text}</Response>
-                            )}
-                          </div>
-                        );
-                      }
+                    {/* Render parts: Text and Tool Invocations */}
+                    {message.parts &&
+                      message.parts.map((part, index) => {
+                        const key = `${message.id}-part-${index}`;
 
-                      if (
-                        part.type.startsWith("tool-") &&
-                        "toolCallId" in part &&
-                        "state" in part
-                      ) {
-                        const { toolCallId, state, toolName } = part as any;
-                        const isOutputAvailable =
-                          state === "output-available" || state === "result";
-
-                        const redirectUrl =
-                          "output" in part &&
-                          part.output &&
-                          typeof part.output === "object"
-                            ? (part.output as any).url ||
-                              (part.output as any).redirectUrl
-                            : undefined;
-
-                        return (
-                          <div
-                            key={toolCallId || key}
-                            className="w-full sm:w-[min(100%,500px)]"
-                          >
-                            <Tool
-                              defaultOpen={!isOutputAvailable}
-                              className="w-full"
+                        if (part.type === "text" && part.text) {
+                          return (
+                            <div
+                              className={cn(
+                                "text-[13px] leading-relaxed",
+                                message.role === "user"
+                                  ? "bg-primary text-primary-foreground px-2.5 py-2 rounded-2xl rounded-tr-[4px] shadow-sm"
+                                  : "bg-transparent w-full text-[13px]"
+                              )}
+                              key={key}
                             >
-                              <ToolHeader
-                                state={
-                                  isOutputAvailable
-                                    ? "output-available"
-                                    : "input-available"
-                                }
-                                type={toolName}
-                              />
-                              <ToolContent>
-                                {"input" in part && part.input && (
-                                  <ToolInput input={part.input} />
-                                )}
+                              {message.role === "user" ? (
+                                <span className="whitespace-pre-wrap">
+                                  {part.text}
+                                </span>
+                              ) : (
+                                <Response>{part.text}</Response>
+                              )}
+                            </div>
+                          );
+                        }
 
-                                {isOutputAvailable && redirectUrl && (
-                                  <div className="px-4 pb-3">
-                                    <Button
-                                      asChild
-                                      className="w-full gap-2"
-                                      size="sm"
-                                    >
-                                      <a
-                                        href={redirectUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                        if (
+                          part.type.startsWith("tool-") &&
+                          "toolCallId" in part &&
+                          "state" in part
+                        ) {
+                          const { toolCallId, state, toolName } = part as any;
+                          const isOutputAvailable =
+                            state === "output-available" || state === "result";
+
+                          const redirectUrl =
+                            "output" in part &&
+                            part.output &&
+                            typeof part.output === "object"
+                              ? (part.output as any).url ||
+                                (part.output as any).redirectUrl
+                              : undefined;
+
+                          return (
+                            <div
+                              className="w-full sm:w-[min(100%,500px)]"
+                              key={toolCallId || key}
+                            >
+                              <Tool
+                                className="w-full"
+                                defaultOpen={!isOutputAvailable}
+                              >
+                                <ToolHeader
+                                  state={
+                                    isOutputAvailable
+                                      ? "output-available"
+                                      : "input-available"
+                                  }
+                                  type={toolName}
+                                />
+                                <ToolContent>
+                                  {"input" in part && part.input && (
+                                    <ToolInput input={part.input} />
+                                  )}
+
+                                  {isOutputAvailable && redirectUrl && (
+                                    <div className="px-4 pb-3">
+                                      <Button
+                                        asChild
+                                        className="w-full gap-2"
+                                        size="sm"
                                       >
-                                        Connect Account
-                                      </a>
-                                    </Button>
-                                  </div>
-                                )}
-
-                                {isOutputAvailable &&
-                                  "result" in part &&
-                                  part.result && (
-                                    <ToolOutput output={part.result as any} />
+                                        <a
+                                          href={redirectUrl}
+                                          rel="noopener noreferrer"
+                                          target="_blank"
+                                        >
+                                          Connect Account
+                                        </a>
+                                      </Button>
+                                    </div>
                                   )}
-                                {isOutputAvailable &&
-                                  "output" in part &&
-                                  part.output && (
-                                    <ToolOutput output={part.output as any} />
-                                  )}
-                              </ToolContent>
-                            </Tool>
-                          </div>
-                        );
-                      }
 
-                      return null;
-                    })}
+                                  {isOutputAvailable &&
+                                    "result" in part &&
+                                    part.result && (
+                                      <ToolOutput output={part.result as any} />
+                                    )}
+                                  {isOutputAvailable &&
+                                    "output" in part &&
+                                    part.output && (
+                                      <ToolOutput output={part.output as any} />
+                                    )}
+                                </ToolContent>
+                              </Tool>
+                            </div>
+                          );
+                        }
+
+                        return null;
+                      })}
+                  </div>
                 </div>
-              </div>
               );
             })}
 
@@ -492,7 +521,7 @@ export function SubAgentChat({
               </div>
             )}
 
-            <div ref={messagesEndRef} className="h-4 sm:h-8" />
+            <div className="h-4 sm:h-8" ref={messagesEndRef} />
           </div>
         )}
       </div>
@@ -500,8 +529,8 @@ export function SubAgentChat({
       {/* Input Area */}
       <div className="flex-none p-3 sm:p-4 bg-background/80 border-t w-full">
         <form
-          onSubmit={handleInputSubmit}
           className="flex flex-col relative w-full bg-muted/50 border border-muted rounded-2xl focus-within:ring-1 focus-within:ring-primary shadow-sm transition-all overflow-hidden"
+          onSubmit={handleInputSubmit}
         >
           <input
             className="pointer-events-none fixed -top-4 -left-4 size-0.5 opacity-0"
@@ -541,21 +570,22 @@ export function SubAgentChat({
 
           <div className="flex items-end w-full p-1 relative">
             <Button
-              type="button"
-              variant="ghost"
-              size="icon"
+              className="absolute left-1 sm:left-2 bottom-1.5 sm:bottom-2 h-8 w-8 text-muted-foreground hover:bg-muted/80 rounded-full"
               disabled={isWorking || isFetchingInitial}
               onClick={(e) => {
                 e.preventDefault();
                 fileInputRef.current?.click();
               }}
-              className="absolute left-1 sm:left-2 bottom-1.5 sm:bottom-2 h-8 w-8 text-muted-foreground hover:bg-muted/80 rounded-full"
+              size="icon"
+              type="button"
+              variant="ghost"
             >
               <Paperclip className="h-4 w-4" />
             </Button>
 
             <textarea
-              value={input}
+              className="w-full min-h-[50px] max-h-[200px] resize-none overflow-y-auto bg-transparent border-0 px-4 py-3 pl-11 pr-12 focus:outline-none focus:ring-0 text-xs sm:text-[13px] leading-relaxed"
+              disabled={isWorking || isFetchingInitial}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -564,16 +594,20 @@ export function SubAgentChat({
                 }
               }}
               placeholder={`Message ${agent.name}...`}
-              className="w-full min-h-[50px] max-h-[200px] resize-none overflow-y-auto bg-transparent border-0 px-4 py-3 pl-11 pr-12 focus:outline-none focus:ring-0 text-xs sm:text-[13px] leading-relaxed"
-              disabled={isWorking || isFetchingInitial}
               rows={1}
+              value={input}
             />
 
             <Button
-              type="submit"
-              size="icon"
-              disabled={(!input.trim() && attachments.length === 0) || isWorking || uploadQueue.length > 0 || isFetchingInitial}
               className="absolute right-1.5 bottom-1.5 sm:right-2 sm:bottom-2 h-8 w-8 sm:h-9 sm:w-9 rounded-full shrink-0 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              disabled={
+                (!input.trim() && attachments.length === 0) ||
+                isWorking ||
+                uploadQueue.length > 0 ||
+                isFetchingInitial
+              }
+              size="icon"
+              type="submit"
             >
               {isWorking ? (
                 <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />

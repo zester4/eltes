@@ -1,10 +1,7 @@
 "use client";
 
 import type { ToolUIPart } from "ai";
-import {
-  ChevronDownIcon,
-  ZapIcon,
-} from "lucide-react";
+import { ChevronDownIcon, ZapIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 import { isValidElement } from "react";
 import {
@@ -69,16 +66,30 @@ const KNOWN_APP_PREFIXES: Record<string, string> = {
 };
 
 export const formatToolName = (type: string | undefined | null): string => {
-  if (!type) return "Tool";
+  if (!type) {
+    return "Tool";
+  }
   const raw = type.replace(/^tool-/, "");
 
-  if (META_TOOL_NAMES[raw]) return META_TOOL_NAMES[raw];
+  if (META_TOOL_NAMES[raw]) {
+    return META_TOOL_NAMES[raw];
+  }
 
-  if (raw === "getWeather") return "Get Weather";
-  if (raw === "renderChart") return "Render Chart";
-  if (raw === "createDocument") return "Create Document";
-  if (raw === "updateDocument") return "Update Document";
-  if (raw === "requestSuggestions") return "Request Suggestions";
+  if (raw === "getWeather") {
+    return "Get Weather";
+  }
+  if (raw === "renderChart") {
+    return "Render Chart";
+  }
+  if (raw === "createDocument") {
+    return "Create Document";
+  }
+  if (raw === "updateDocument") {
+    return "Update Document";
+  }
+  if (raw === "requestSuggestions") {
+    return "Request Suggestions";
+  }
 
   // Match known app prefix: GMAIL_FETCH_EMAILS → "Gmail — Fetch Emails"
   for (const [prefix, appName] of Object.entries(KNOWN_APP_PREFIXES)) {
@@ -203,8 +214,9 @@ export type ToolOutputProps = ComponentProps<"div"> & {
 
 const safeRenderOutput = (output: unknown) => {
   // Never render plain objects — always stringify them
-  const containerClass = "max-h-[280px] overflow-y-auto overflow-x-auto p-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/30 transition-colors";
-  
+  const containerClass =
+    "max-h-[280px] overflow-y-auto overflow-x-auto p-2 scrollbar-thin scrollbar-thumb-muted-foreground/20 scrollbar-track-transparent hover:scrollbar-thumb-muted-foreground/30 transition-colors";
+
   if (
     output !== null &&
     output !== undefined &&
@@ -212,14 +224,24 @@ const safeRenderOutput = (output: unknown) => {
     !isValidElement(output)
   ) {
     return (
-      <pre className={cn(containerClass, "font-mono text-xs text-foreground/80 leading-relaxed")}>
+      <pre
+        className={cn(
+          containerClass,
+          "font-mono text-xs text-foreground/80 leading-relaxed"
+        )}
+      >
         {JSON.stringify(output, null, 2)}
       </pre>
     );
   }
   if (typeof output === "string") {
     return (
-      <pre className={cn(containerClass, "font-mono text-xs text-foreground/80 leading-relaxed")}>
+      <pre
+        className={cn(
+          containerClass,
+          "font-mono text-xs text-foreground/80 leading-relaxed"
+        )}
+      >
         {output}
       </pre>
     );
@@ -229,7 +251,12 @@ const safeRenderOutput = (output: unknown) => {
   }
   if (output !== null && output !== undefined) {
     return (
-      <pre className={cn(containerClass, "font-mono text-xs text-foreground/80 leading-relaxed")}>
+      <pre
+        className={cn(
+          containerClass,
+          "font-mono text-xs text-foreground/80 leading-relaxed"
+        )}
+      >
         {String(output)}
       </pre>
     );

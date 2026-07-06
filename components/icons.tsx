@@ -288,7 +288,6 @@ export const LoaderIcon = ({
   size = 16,
   ...props
 }: { size?: number } & React.SVGProps<SVGSVGElement>) => {
-
   return (
     <svg
       height={size}

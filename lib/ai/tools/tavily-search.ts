@@ -16,14 +16,19 @@ const TAVILY_BASE = "https://api.tavily.com";
 
 function tavilyHeaders() {
   const key = process.env.TAVILY_API_KEY;
-  if (!key) throw new Error("TAVILY_API_KEY environment variable is not set.");
+  if (!key) {
+    throw new Error("TAVILY_API_KEY environment variable is not set.");
+  }
   return {
     "Content-Type": "application/json",
     Authorization: `Bearer ${key}`,
   };
 }
 
-async function tavilyPost<T>(endpoint: string, body: Record<string, unknown>): Promise<T> {
+async function tavilyPost<T>(
+  endpoint: string,
+  body: Record<string, unknown>
+): Promise<T> {
   const res = await fetch(`${TAVILY_BASE}${endpoint}`, {
     method: "POST",
     headers: tavilyHeaders(),
@@ -48,9 +53,7 @@ export const tavilySearch = tool({
     "Supports domain filtering, time ranges, image results, and raw page content.",
 
   inputSchema: z.object({
-    query: z
-      .string()
-      .describe("The search query to run."),
+    query: z.string().describe("The search query to run."),
 
     search_depth: z
       .enum(["basic", "advanced"])
@@ -58,7 +61,7 @@ export const tavilySearch = tool({
       .default("basic")
       .describe(
         "'basic' (1 credit) returns generic snippets. " +
-        "'advanced' (2 credits) uses AI to surface the most relevant content."
+          "'advanced' (2 credits) uses AI to surface the most relevant content."
       ),
 
     topic: z
@@ -67,7 +70,7 @@ export const tavilySearch = tool({
       .default("general")
       .describe(
         "Search category. 'news' unlocks publishedDate per result and the 'days' filter. " +
-        "'finance' targets financial data sources."
+          "'finance' targets financial data sources."
       ),
 
     max_results: z
@@ -92,7 +95,9 @@ export const tavilySearch = tool({
     end_date: z
       .string()
       .optional()
-      .describe("Return results published on or before this date (YYYY-MM-DD)."),
+      .describe(
+        "Return results published on or before this date (YYYY-MM-DD)."
+      ),
 
     days: z
       .number()
@@ -111,7 +116,7 @@ export const tavilySearch = tool({
       .optional()
       .describe(
         "Number of content chunks (≤500 chars each) per source. " +
-        "Only available when search_depth='advanced'."
+          "Only available when search_depth='advanced'."
       ),
 
     include_answer: z
@@ -128,7 +133,7 @@ export const tavilySearch = tool({
       .default(false)
       .describe(
         "Include cleaned full-page content in each result. " +
-        "true/'markdown' returns Markdown; 'text' returns plain text (slower)."
+          "true/'markdown' returns Markdown; 'text' returns plain text (slower)."
       ),
 
     include_images: z
@@ -158,7 +163,7 @@ export const tavilySearch = tool({
       .optional()
       .describe(
         "Boost results from a specific country (ISO 3166-1 alpha-2, e.g. 'us'). " +
-        "Only applies when topic='general'."
+          "Only applies when topic='general'."
       ),
 
     exact_match: z
@@ -198,14 +203,30 @@ export const tavilySearch = tool({
         exact_match: params.exact_match,
       };
 
-      if (params.time_range)    body.time_range    = params.time_range;
-      if (params.start_date)    body.start_date    = params.start_date;
-      if (params.end_date)      body.end_date      = params.end_date;
-      if (params.days != null)  body.days          = params.days;
-      if (params.chunks_per_source != null) body.chunks_per_source = params.chunks_per_source;
-      if (params.include_domains?.length)   body.include_domains   = params.include_domains;
-      if (params.exclude_domains?.length)   body.exclude_domains   = params.exclude_domains;
-      if (params.country)       body.country       = params.country;
+      if (params.time_range) {
+        body.time_range = params.time_range;
+      }
+      if (params.start_date) {
+        body.start_date = params.start_date;
+      }
+      if (params.end_date) {
+        body.end_date = params.end_date;
+      }
+      if (params.days != null) {
+        body.days = params.days;
+      }
+      if (params.chunks_per_source != null) {
+        body.chunks_per_source = params.chunks_per_source;
+      }
+      if (params.include_domains?.length) {
+        body.include_domains = params.include_domains;
+      }
+      if (params.exclude_domains?.length) {
+        body.exclude_domains = params.exclude_domains;
+      }
+      if (params.country) {
+        body.country = params.country;
+      }
 
       const data = await tavilyPost<Record<string, unknown>>("/search", body);
       return { success: true, data };
@@ -237,7 +258,7 @@ export const tavilyExtract = tool({
       .default("basic")
       .describe(
         "'basic' (1 credit/5 URLs) is fast. " +
-        "'advanced' (2 credits/5 URLs) retrieves tables and embedded content with higher success."
+          "'advanced' (2 credits/5 URLs) retrieves tables and embedded content with higher success."
       ),
 
     format: z
@@ -263,7 +284,7 @@ export const tavilyExtract = tool({
       .optional()
       .describe(
         "Max content chunks (≤500 chars each) returned per URL. " +
-        "Only available when 'query' is also provided (1–5)."
+          "Only available when 'query' is also provided (1–5)."
       ),
 
     include_images: z
@@ -285,7 +306,7 @@ export const tavilyExtract = tool({
       .optional()
       .describe(
         "Per-URL timeout in seconds (1–60). " +
-        "Defaults to 10s for basic and 30s for advanced extraction."
+          "Defaults to 10s for basic and 30s for advanced extraction."
       ),
 
     include_usage: z
@@ -306,9 +327,15 @@ export const tavilyExtract = tool({
         include_usage: params.include_usage,
       };
 
-      if (params.query)                    body.query              = params.query;
-      if (params.chunks_per_source != null) body.chunks_per_source = params.chunks_per_source;
-      if (params.timeout != null)          body.timeout            = params.timeout;
+      if (params.query) {
+        body.query = params.query;
+      }
+      if (params.chunks_per_source != null) {
+        body.chunks_per_source = params.chunks_per_source;
+      }
+      if (params.timeout != null) {
+        body.timeout = params.timeout;
+      }
 
       const data = await tavilyPost<Record<string, unknown>>("/extract", body);
       return { success: true, data };
@@ -329,16 +356,14 @@ export const tavilyCrawl = tool({
     "Supports natural-language instructions to guide which pages to surface.",
 
   inputSchema: z.object({
-    url: z
-      .string()
-      .describe("The root URL to start crawling from."),
+    url: z.string().describe("The root URL to start crawling from."),
 
     instructions: z
       .string()
       .optional()
       .describe(
         "Natural-language guidance for the crawler, e.g. 'Find all pages about the Python SDK'. " +
-        "Increases cost to 2 credits/10 pages."
+          "Increases cost to 2 credits/10 pages."
       ),
 
     max_depth: z
@@ -372,7 +397,7 @@ export const tavilyCrawl = tool({
       .optional()
       .describe(
         "Regex patterns to INCLUDE only URLs matching these path patterns, " +
-        "e.g. ['/docs/.*', '/api/v1.*']."
+          "e.g. ['/docs/.*', '/api/v1.*']."
       ),
 
     select_domains: z
@@ -380,7 +405,7 @@ export const tavilyCrawl = tool({
       .optional()
       .describe(
         "Regex patterns to restrict crawling to specific (sub)domains, " +
-        "e.g. ['^docs\\.example\\.com$']."
+          "e.g. ['^docs\\.example\\.com$']."
       ),
 
     exclude_paths: z
@@ -388,7 +413,7 @@ export const tavilyCrawl = tool({
       .optional()
       .describe(
         "Regex patterns to EXCLUDE URLs matching these path patterns, " +
-        "e.g. ['/private/.*', '/admin/.*']."
+          "e.g. ['/private/.*', '/admin/.*']."
       ),
 
     exclude_domains: z
@@ -396,7 +421,7 @@ export const tavilyCrawl = tool({
       .optional()
       .describe(
         "Regex patterns to exclude specific (sub)domains from crawling, " +
-        "e.g. ['^private\\.example\\.com$']."
+          "e.g. ['^private\\.example\\.com$']."
       ),
 
     allow_external: z
@@ -439,7 +464,7 @@ export const tavilyCrawl = tool({
       .optional()
       .describe(
         "Max content chunks (≤500 chars each) per page. " +
-        "Only available when 'instructions' is provided (1–5). Default 3."
+          "Only available when 'instructions' is provided (1–5). Default 3."
       ),
 
     timeout: z
@@ -473,12 +498,24 @@ export const tavilyCrawl = tool({
         include_usage: params.include_usage,
       };
 
-      if (params.instructions)           body.instructions       = params.instructions;
-      if (params.chunks_per_source != null) body.chunks_per_source = params.chunks_per_source;
-      if (params.select_paths?.length)   body.select_paths       = params.select_paths;
-      if (params.select_domains?.length) body.select_domains     = params.select_domains;
-      if (params.exclude_paths?.length)  body.exclude_paths      = params.exclude_paths;
-      if (params.exclude_domains?.length) body.exclude_domains   = params.exclude_domains;
+      if (params.instructions) {
+        body.instructions = params.instructions;
+      }
+      if (params.chunks_per_source != null) {
+        body.chunks_per_source = params.chunks_per_source;
+      }
+      if (params.select_paths?.length) {
+        body.select_paths = params.select_paths;
+      }
+      if (params.select_domains?.length) {
+        body.select_domains = params.select_domains;
+      }
+      if (params.exclude_paths?.length) {
+        body.exclude_paths = params.exclude_paths;
+      }
+      if (params.exclude_domains?.length) {
+        body.exclude_domains = params.exclude_domains;
+      }
 
       const data = await tavilyPost<Record<string, unknown>>("/crawl", body);
       return { success: true, data };
@@ -498,16 +535,14 @@ export const tavilyMap = tool({
     "or when you only need a URL inventory rather than full content.",
 
   inputSchema: z.object({
-    url: z
-      .string()
-      .describe("The root URL to begin site mapping from."),
+    url: z.string().describe("The root URL to begin site mapping from."),
 
     instructions: z
       .string()
       .optional()
       .describe(
         "Natural-language guidance to surface specific pages, " +
-        "e.g. 'Find all changelog pages'. Increases cost to 2 credits/10 pages."
+          "e.g. 'Find all changelog pages'. Increases cost to 2 credits/10 pages."
       ),
 
     max_depth: z
@@ -546,9 +581,7 @@ export const tavilyMap = tool({
     select_domains: z
       .array(z.string())
       .optional()
-      .describe(
-        "Regex patterns to restrict mapping to specific (sub)domains."
-      ),
+      .describe("Regex patterns to restrict mapping to specific (sub)domains."),
 
     exclude_paths: z
       .array(z.string())
@@ -558,7 +591,9 @@ export const tavilyMap = tool({
     exclude_domains: z
       .array(z.string())
       .optional()
-      .describe("Regex patterns to exclude specific (sub)domains from the map."),
+      .describe(
+        "Regex patterns to exclude specific (sub)domains from the map."
+      ),
 
     allow_external: z
       .boolean()
@@ -593,11 +628,21 @@ export const tavilyMap = tool({
         include_usage: params.include_usage,
       };
 
-      if (params.instructions)           body.instructions   = params.instructions;
-      if (params.select_paths?.length)   body.select_paths   = params.select_paths;
-      if (params.select_domains?.length) body.select_domains = params.select_domains;
-      if (params.exclude_paths?.length)  body.exclude_paths  = params.exclude_paths;
-      if (params.exclude_domains?.length) body.exclude_domains = params.exclude_domains;
+      if (params.instructions) {
+        body.instructions = params.instructions;
+      }
+      if (params.select_paths?.length) {
+        body.select_paths = params.select_paths;
+      }
+      if (params.select_domains?.length) {
+        body.select_domains = params.select_domains;
+      }
+      if (params.exclude_paths?.length) {
+        body.exclude_paths = params.exclude_paths;
+      }
+      if (params.exclude_domains?.length) {
+        body.exclude_domains = params.exclude_domains;
+      }
 
       const data = await tavilyPost<Record<string, unknown>>("/map", body);
       return { success: true, data };

@@ -59,8 +59,11 @@ const blobToBase64 = (blob: Blob): Promise<string> => {
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64data = reader.result?.toString().split(",")[1];
-      if (base64data) resolve(base64data);
-      else reject(new Error("Failed to convert blob to base64"));
+      if (base64data) {
+        resolve(base64data);
+      } else {
+        reject(new Error("Failed to convert blob to base64"));
+      }
     };
     reader.onerror = reject;
     reader.readAsDataURL(blob);
@@ -162,11 +165,15 @@ function PureMultimodalInput({
   const triggerAgent = useCallback(
     async (taskText: string) => {
       const trimmed = taskText.trim();
-      if (!trimmed) return;
+      if (!trimmed) {
+        return;
+      }
 
       const isSlashCommand = trimmed.toLowerCase().startsWith("/agent ");
       const task = isSlashCommand ? trimmed.slice(7).trim() : trimmed;
-      if (!task) return;
+      if (!task) {
+        return;
+      }
 
       const displayMessage = isSlashCommand ? trimmed : `/agent ${trimmed}`;
 
@@ -174,7 +181,9 @@ function PureMultimodalInput({
       setInput("");
       setLocalStorageInput("");
       resetHeight();
-      if (width && width > 768) textareaRef.current?.focus();
+      if (width && width > 768) {
+        textareaRef.current?.focus();
+      }
 
       // Optimistically add the user message to the local UI state.
       // The server will persist it via upsertMessages; the IDs match so
@@ -209,7 +218,9 @@ function PureMultimodalInput({
         });
 
         if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: "Unknown error" }));
+          const err = await res
+            .json()
+            .catch(() => ({ error: "Unknown error" }));
           toast.error(
             `Agent run failed: ${
               (err as { error?: string }).error ?? res.statusText
@@ -223,7 +234,9 @@ function PureMultimodalInput({
         // messages every 4 seconds. No extra wiring needed here.
       } catch (err) {
         console.error("[AgentRun] Fetch failed:", err);
-        toast.error("Could not reach the agent service. Check your connection.");
+        toast.error(
+          "Could not reach the agent service. Check your connection."
+        );
         setMessages((prev) => prev.filter((m) => m.id !== userMessageId));
       }
     },
@@ -410,13 +423,13 @@ function PureMultimodalInput({
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate: 16000,
+          sampleRate: 16_000,
           channelCount: 1,
         },
       });
       // Try to use a lower bitrate if supported to speed up upload
       const options = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-        ? { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 16000 }
+        ? { mimeType: "audio/webm;codecs=opus", audioBitsPerSecond: 16_000 }
         : undefined;
       const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
@@ -424,8 +437,12 @@ function PureMultimodalInput({
       isStoppingRef.current = false;
 
       mediaRecorder.ondataavailable = async (event) => {
-        if (event.data.size === 0) return;
-        if (isStoppingRef.current) return;
+        if (event.data.size === 0) {
+          return;
+        }
+        if (isStoppingRef.current) {
+          return;
+        }
 
         audioChunksRef.current.push(event.data);
 
@@ -512,10 +529,10 @@ function PureMultimodalInput({
           if (!input.trim() && attachments.length === 0) {
             return;
           }
-          if (status !== "ready") {
-            toast.error("Please wait for the model to finish its response!");
-          } else {
+          if (status === "ready") {
             submitForm();
+          } else {
+            toast.error("Please wait for the model to finish its response!");
           }
         }}
       >
@@ -617,13 +634,13 @@ function PureMultimodalInput({
               <StopButton setMessages={setMessages} stop={stop} />
             ) : (
               <PromptInputSubmit
-              className="size-8 rounded-lg bg-primary text-primary-foreground shadow-sm transition-colors duration-200 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
-              data-testid="send-button"
-              disabled={!input.trim() || uploadQueue.length > 0}
-              status={status}
-            >
-              <ArrowUpIcon size={14} />
-            </PromptInputSubmit>
+                className="size-8 rounded-lg bg-primary text-primary-foreground shadow-sm transition-colors duration-200 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                data-testid="send-button"
+                disabled={!input.trim() || uploadQueue.length > 0}
+                status={status}
+              >
+                <ArrowUpIcon size={14} />
+              </PromptInputSubmit>
             )}
           </div>
         </PromptInputToolbar>
@@ -668,8 +685,8 @@ function PureAttachmentsButton({
     selectedModelId.includes("reasoning") || selectedModelId.includes("think");
 
   return (
-            <Button
-              className="aspect-square h-8 rounded-lg p-1 transition-colors hover:bg-accent"
+    <Button
+      className="aspect-square h-8 rounded-lg p-1 transition-colors hover:bg-accent"
       data-testid="attachments-button"
       disabled={status !== "ready" || isReasoningModel}
       onClick={(event) => {
@@ -712,7 +729,10 @@ function PureModelSelectorCompact({
   return (
     <ModelSelector onOpenChange={setOpen} open={open}>
       <ModelSelectorTrigger asChild>
-        <Button className="h-8 w-auto max-w-[190px] gap-1.5 rounded-lg px-2.5 text-xs" variant="ghost">
+        <Button
+          className="h-8 w-auto max-w-[190px] gap-1.5 rounded-lg px-2.5 text-xs"
+          variant="ghost"
+        >
           {provider && <ModelSelectorLogo provider={provider} />}
           <ModelSelectorName>{selectedModel.name}</ModelSelectorName>
         </Button>

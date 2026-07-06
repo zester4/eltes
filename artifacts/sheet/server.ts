@@ -19,13 +19,18 @@ export const sheetDocumentHandler = createDocumentHandler<"sheet">({
           z.object({
             name: z.string().describe("Sheet name"),
             csv: z.string().describe("CSV data"),
-            styles: z.record(z.object({
-              backgroundColor: z.string().optional(),
-              color: z.string().optional(),
-              bold: z.boolean().optional(),
-              textAlign: z.enum(["left", "center", "right"]).optional(),
-            })).optional().describe("Cell styles mapped by coordinate like A1, B2"),
-          }),
+            styles: z
+              .record(
+                z.object({
+                  backgroundColor: z.string().optional(),
+                  color: z.string().optional(),
+                  bold: z.boolean().optional(),
+                  textAlign: z.enum(["left", "center", "right"]).optional(),
+                })
+              )
+              .optional()
+              .describe("Cell styles mapped by coordinate like A1, B2"),
+          })
         ),
       }),
     });
@@ -62,13 +67,18 @@ export const sheetDocumentHandler = createDocumentHandler<"sheet">({
           z.object({
             name: z.string().describe("Sheet name"),
             csv: z.string().describe("CSV data"),
-            styles: z.record(z.object({
-              backgroundColor: z.string().optional(),
-              color: z.string().optional(),
-              bold: z.boolean().optional(),
-              textAlign: z.enum(["left", "center", "right"]).optional(),
-            })).optional().describe("Cell styles mapped by coordinate like A1, B2"),
-          }),
+            styles: z
+              .record(
+                z.object({
+                  backgroundColor: z.string().optional(),
+                  color: z.string().optional(),
+                  bold: z.boolean().optional(),
+                  textAlign: z.enum(["left", "center", "right"]).optional(),
+                })
+              )
+              .optional()
+              .describe("Cell styles mapped by coordinate like A1, B2"),
+          })
         ),
       }),
     });

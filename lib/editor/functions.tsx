@@ -2,8 +2,8 @@
 
 import { marked } from "marked";
 import {
-  MarkdownSerializer,
   defaultMarkdownSerializer,
+  MarkdownSerializer,
 } from "prosemirror-markdown";
 import { DOMParser, type Node } from "prosemirror-model";
 import { Decoration, DecorationSet, type EditorView } from "prosemirror-view";
@@ -21,7 +21,9 @@ const customSerializer = new MarkdownSerializer(
         if (i === 0) {
           state.write("| ");
           row.forEach((_, __, j) => {
-            if (j > 0) state.write(" | ");
+            if (j > 0) {
+              state.write(" | ");
+            }
             state.write("---");
           });
           state.write(" |\n");
@@ -32,7 +34,9 @@ const customSerializer = new MarkdownSerializer(
     table_row(state, node) {
       state.write("| ");
       node.forEach((cell, _, i) => {
-        if (i > 0) state.write(" | ");
+        if (i > 0) {
+          state.write(" | ");
+        }
         state.render(cell, node, i);
       });
       state.write(" |\n");

@@ -2,7 +2,12 @@
 
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { motion } from "framer-motion";
-import { Bell, FolderKanban, MessageCircleMore, NotebookPen } from "lucide-react";
+import {
+  Bell,
+  FolderKanban,
+  MessageCircleMore,
+  NotebookPen,
+} from "lucide-react";
 import { memo } from "react";
 import type { ChatMessage } from "@/lib/types";
 import { Suggestion } from "./elements/suggestion";

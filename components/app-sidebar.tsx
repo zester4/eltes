@@ -1,5 +1,6 @@
 "use client";
 
+import { BookText, Bot } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { User } from "next-auth";
@@ -7,29 +8,22 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
-import {
-  ActivityIcon,
-  PlusIcon,
-  TrashIcon,
-} from "@/components/icons";
-import { BookText, Bot } from "lucide-react";
+import { ActivityIcon, PlusIcon, TrashIcon } from "@/components/icons";
 import {
   getChatHistoryPaginationKey,
   SidebarHistory,
 } from "@/components/sidebar-history";
 import { SidebarUserNav } from "@/components/sidebar-user-nav";
-import { PanelLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarHeader,
   SidebarMenu,
-  SidebarMenuItem,
   SidebarMenuButton,
+  SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
 import {
@@ -93,7 +87,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
             <SidebarGroupContent>
               <SidebarMenu className="gap-1.5">
                 <SidebarMenuItem>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     className="h-9 rounded-lg"
                     onClick={() => {
                       setOpenMobile(false);
@@ -106,7 +100,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     className="h-9 rounded-lg"
                     onClick={() => {
                       setOpenMobile(false);
@@ -118,12 +112,12 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton 
-                     className="h-9 rounded-lg"
-                     onClick={() => {
-                       setOpenMobile(false);
-                       router.push("/agent-status");
-                     }}
+                  <SidebarMenuButton
+                    className="h-9 rounded-lg"
+                    onClick={() => {
+                      setOpenMobile(false);
+                      router.push("/agent-status");
+                    }}
                   >
                     <ActivityIcon />
                     <span>Agent Status</span>
@@ -143,7 +137,10 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 </SidebarMenuItem>
                 {user && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton className="h-9 rounded-lg text-muted-foreground hover:text-destructive" onClick={() => setShowDeleteAllDialog(true)}>
+                    <SidebarMenuButton
+                      className="h-9 rounded-lg text-muted-foreground hover:text-destructive"
+                      onClick={() => setShowDeleteAllDialog(true)}
+                    >
                       <TrashIcon />
                       <span>Clear History</span>
                     </SidebarMenuButton>

@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { cn } from "@/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface ExpandableContentProps {
   children: React.ReactNode;
-  maxLines?: number;
   className?: string;
+  maxLines?: number;
 }
 
 export function ExpandableContent({
@@ -42,16 +42,17 @@ export function ExpandableContent({
   return (
     <div className={cn("relative flex flex-col gap-2", className)}>
       <div
-        ref={contentRef}
         className={cn("relative transition-all duration-300 ease-in-out", {
           "overflow-hidden": !isExpanded && shouldTruncate,
         })}
+        ref={contentRef}
         style={{
-          maxHeight: !isExpanded && shouldTruncate ? `${maxLines * 1.5}rem` : "none",
+          maxHeight:
+            !isExpanded && shouldTruncate ? `${maxLines * 1.5}rem` : "none",
         }}
       >
         {children}
-        
+
         {!isExpanded && shouldTruncate && (
           <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background/90 via-background/40 to-transparent pointer-events-none" />
         )}
@@ -59,8 +60,8 @@ export function ExpandableContent({
 
       {shouldTruncate && (
         <button
-          onClick={() => setIsExpanded(!isExpanded)}
           className="flex w-fit items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors py-1 group"
+          onClick={() => setIsExpanded(!isExpanded)}
         >
           {isExpanded ? (
             <>

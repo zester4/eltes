@@ -22,10 +22,7 @@ function getClient() {
   return client;
 }
 
-export async function checkIpRateLimit(
-  ip: string | undefined,
-  isGuest = true
-) {
+export async function checkIpRateLimit(ip: string | undefined, isGuest = true) {
   if (!isProductionEnvironment || !ip) {
     return;
   }

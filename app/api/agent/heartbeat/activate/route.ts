@@ -16,10 +16,10 @@
  * calling POST twice is safe, the second call is a no-op.
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/app/(auth)/auth";
 import { Client } from "@upstash/qstash";
 import { Redis } from "@upstash/redis";
+import { type NextRequest, NextResponse } from "next/server";
+import { auth } from "@/app/(auth)/auth";
 
 const HOURLY_CRON = "0 * * * *"; // every hour
 const SYNTHESIS_CRON = "0 8 * * 1"; // Mondays at 8am UTC
@@ -36,7 +36,9 @@ function scheduleIds(userId: string) {
 }
 
 function getQStash() {
-  if (!process.env.QSTASH_TOKEN) return null;
+  if (!process.env.QSTASH_TOKEN) {
+    return null;
+  }
   return new Client({ token: process.env.QSTASH_TOKEN });
 }
 
@@ -44,8 +46,9 @@ function getRedis() {
   if (
     !process.env.UPSTASH_REDIS_REST_URL ||
     !process.env.UPSTASH_REDIS_REST_TOKEN
-  )
+  ) {
     return null;
+  }
   return new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -63,7 +66,9 @@ function getBaseUrl(req: NextRequest) {
     (process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : undefined) ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : undefined) ||
     new URL(req.url).origin
   );
 }
@@ -72,16 +77,25 @@ function getBaseUrl(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   const session = await auth();
-  const agentSecret = req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
-  const validSecret = process.env.AGENT_DELEGATE_SECRET || process.env.AUTH_SECRET || "dev-internal";
+  const agentSecret =
+    req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
+  const validSecret =
+    process.env.AGENT_DELEGATE_SECRET ||
+    process.env.AUTH_SECRET ||
+    "dev-internal";
   const isAgent = agentSecret === validSecret;
   const userId = isAgent ? req.headers.get("x-user-id") : session?.user?.id;
 
   if (!userId) {
-    return NextResponse.json({ 
-      error: "Unauthorized",
-      message: isAgent ? "Missing x-user-id header" : "No active session and secret mismatch"
-    }, { status: 401 });
+    return NextResponse.json(
+      {
+        error: "Unauthorized",
+        message: isAgent
+          ? "Missing x-user-id header"
+          : "No active session and secret mismatch",
+      },
+      { status: 401 }
+    );
   }
 
   const redis = getRedis();
@@ -102,23 +116,35 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  const agentSecret = req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
-  const validSecret = process.env.AGENT_DELEGATE_SECRET || process.env.AUTH_SECRET || "dev-internal";
+  const agentSecret =
+    req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
+  const validSecret =
+    process.env.AGENT_DELEGATE_SECRET ||
+    process.env.AUTH_SECRET ||
+    "dev-internal";
   const isAgent = agentSecret === validSecret;
   const userId = isAgent ? req.headers.get("x-user-id") : session?.user?.id;
 
   if (!userId) {
-    return NextResponse.json({ 
-      error: "Unauthorized",
-      message: isAgent ? "Missing x-user-id header" : "No active session and secret mismatch"
-    }, { status: 401 });
+    return NextResponse.json(
+      {
+        error: "Unauthorized",
+        message: isAgent
+          ? "Missing x-user-id header"
+          : "No active session and secret mismatch",
+      },
+      { status: 401 }
+    );
   }
 
   const qstash = getQStash();
   if (!qstash) {
     return NextResponse.json(
-      { error: "QSTASH_TOKEN not configured. Add it to enable background intelligence." },
-      { status: 503 },
+      {
+        error:
+          "QSTASH_TOKEN not configured. Add it to enable background intelligence.",
+      },
+      { status: 503 }
     );
   }
 
@@ -126,7 +152,7 @@ export async function POST(req: NextRequest) {
   if (!baseUrl) {
     return NextResponse.json(
       { error: "BASE_URL not set. Required for heartbeat callbacks." },
-      { status: 503 },
+      { status: 503 }
     );
   }
 
@@ -159,7 +185,10 @@ export async function POST(req: NextRequest) {
     });
     results.heartbeatScheduleId = heartbeat.scheduleId;
   } catch (err: any) {
-    console.error("[Heartbeat Activate] Failed to create heartbeat schedule:", err?.message);
+    console.error(
+      "[Heartbeat Activate] Failed to create heartbeat schedule:",
+      err?.message
+    );
     // Don't fail the whole activation — log and continue
   }
 
@@ -178,7 +207,10 @@ export async function POST(req: NextRequest) {
     });
     results.synthesisScheduleId = synthesis.scheduleId;
   } catch (err: any) {
-    console.error("[Heartbeat Activate] Failed to create synthesis schedule:", err?.message);
+    console.error(
+      "[Heartbeat Activate] Failed to create synthesis schedule:",
+      err?.message
+    );
   }
 
   // ── 3. Morning briefing schedule ──────────────────────────────────────────
@@ -197,7 +229,10 @@ export async function POST(req: NextRequest) {
     results.morningScheduleId = morning.scheduleId;
     results.morningCron = morningCron;
   } catch (err: any) {
-    console.error("[Heartbeat Activate] Failed to create morning schedule:", err?.message);
+    console.error(
+      "[Heartbeat Activate] Failed to create morning schedule:",
+      err?.message
+    );
   }
 
   // ── 4. Sandbox keep-alive schedule ──────────────────────────────────────────
@@ -217,7 +252,7 @@ export async function POST(req: NextRequest) {
   } catch (err: any) {
     console.error(
       "[Heartbeat Activate] Failed to create sandbox keep-alive schedule:",
-      err?.message,
+      err?.message
     );
   }
 
@@ -244,23 +279,35 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const session = await auth();
-  const agentSecret = req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
-  const validSecret = process.env.AGENT_DELEGATE_SECRET || process.env.AUTH_SECRET || "dev-internal";
+  const agentSecret =
+    req.headers.get("x-agent-secret") || req.headers.get("x-heartbeat-secret");
+  const validSecret =
+    process.env.AGENT_DELEGATE_SECRET ||
+    process.env.AUTH_SECRET ||
+    "dev-internal";
   const isAgent = agentSecret === validSecret;
   const userId = isAgent ? req.headers.get("x-user-id") : session?.user?.id;
 
   if (!userId) {
-    return NextResponse.json({ 
-      error: "Unauthorized",
-      message: isAgent ? "Missing x-user-id header" : "No active session and secret mismatch"
-    }, { status: 401 });
+    return NextResponse.json(
+      {
+        error: "Unauthorized",
+        message: isAgent
+          ? "Missing x-user-id header"
+          : "No active session and secret mismatch",
+      },
+      { status: 401 }
+    );
   }
 
   const qstash = getQStash();
   const redis = getRedis();
 
   if (!qstash) {
-    return NextResponse.json({ error: "QStash not configured" }, { status: 503 });
+    return NextResponse.json(
+      { error: "QStash not configured" },
+      { status: 503 }
+    );
   }
 
   // Load stored schedule IDs
@@ -273,7 +320,9 @@ export async function DELETE(req: NextRequest) {
 
   if (stored) {
     for (const [key, scheduleId] of Object.entries(stored)) {
-      if (!key.endsWith("ScheduleId")) continue;
+      if (!key.endsWith("ScheduleId")) {
+        continue;
+      }
       try {
         await qstash.schedules.delete(scheduleId);
         deleted.push(scheduleId);

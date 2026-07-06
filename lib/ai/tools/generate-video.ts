@@ -1,8 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
-import { tool, type UIMessageStreamWriter } from "ai";
-import { z } from "zod";
-import type { ChatMessage } from "@/lib/types";
 import { put } from "@vercel/blob";
+import { tool } from "ai";
+import { z } from "zod";
 import { generateUUID } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -175,17 +174,24 @@ Resolution note: 4k is not available for Veo 3.1 Lite. Video extension is limite
 
         // First frame (image-to-video)
         if (startFrameBase64) {
-          payload.image = toImagePayload(startFrameBase64, startFrameMimeType ?? "image/png");
+          payload.image = toImagePayload(
+            startFrameBase64,
+            startFrameMimeType ?? "image/png"
+          );
         }
 
         // Last frame — only meaningful when a first frame is also set
         if (endFrameBase64) {
           if (!startFrameBase64) {
             return {
-              error: "endFrameBase64 requires startFrameBase64 to also be provided.",
+              error:
+                "endFrameBase64 requires startFrameBase64 to also be provided.",
             };
           }
-          payload.lastFrame = toImagePayload(endFrameBase64, endFrameMimeType ?? "image/png");
+          payload.lastFrame = toImagePayload(
+            endFrameBase64,
+            endFrameMimeType ?? "image/png"
+          );
         }
 
         // Reference images — up to 3, Veo 3.1 full only
@@ -219,9 +225,9 @@ Resolution note: 4k is not available for Veo 3.1 Lite. Video extension is limite
         }
 
         // Collect all generated video URIs (Veo can return multiple)
-        const rawVideoUris: string[] = generatedVideos.map(
-          (v: any) => v.video?.uri ?? v.video?.url
-        ).filter(Boolean);
+        const rawVideoUris: string[] = generatedVideos
+          .map((v: any) => v.video?.uri ?? v.video?.url)
+          .filter(Boolean);
 
         if (rawVideoUris.length === 0) {
           throw new Error("Generated videos contained no accessible URIs.");
@@ -229,7 +235,7 @@ Resolution note: 4k is not available for Veo 3.1 Lite. Video extension is limite
 
         // Upload each video to Vercel Blob for persistence
         const videoUris: string[] = [];
-        
+
         for (const rawUri of rawVideoUris) {
           try {
             console.log(`Fetching video from Veo URI: ${rawUri}`);
@@ -253,9 +259,10 @@ Resolution note: 4k is not available for Veo 3.1 Lite. Video extension is limite
               continue;
             }
 
-            const contentType = videoRes.headers.get("content-type") || "video/mp4";
+            const contentType =
+              videoRes.headers.get("content-type") || "video/mp4";
             const extension = contentType.split("/")[1] || "mp4";
-            
+
             const filename = `gemini-videos/${generateUUID()}.${extension}`;
             const blobData = await put(filename, Buffer.from(videoBuffer), {
               access: "public",
@@ -271,7 +278,9 @@ Resolution note: 4k is not available for Veo 3.1 Lite. Video extension is limite
         }
 
         if (videoUris.length === 0) {
-          throw new Error("Failed to persist any generated videos to Blob storage. Check logs for fetch/put errors.");
+          throw new Error(
+            "Failed to persist any generated videos to Blob storage. Check logs for fetch/put errors."
+          );
         }
 
         // ── Return persistent metadata to the model ──────────────────────────────
@@ -284,11 +293,16 @@ Resolution note: 4k is not available for Veo 3.1 Lite. Video extension is limite
           aspectRatio,
           resolution: payload.config.resolution ?? resolution,
           videoCount: videoUris.length,
-          ...(startFrameBase64 && { mode: endFrameBase64 ? "first-and-last-frame" : "image-to-video" }),
-          ...(referenceImages && { referenceImageCount: referenceImages.length }),
+          ...(startFrameBase64 && {
+            mode: endFrameBase64 ? "first-and-last-frame" : "image-to-video",
+          }),
+          ...(referenceImages && {
+            referenceImageCount: referenceImages.length,
+          }),
           ...(videoToExtendUri && { mode: "video-extension" }),
-          ...(!startFrameBase64 && !videoToExtendUri && { mode: "text-to-video" }),
-          markdown: videoUris.map(uri => `![Video](${uri})`).join("\n\n")
+          ...(!startFrameBase64 &&
+            !videoToExtendUri && { mode: "text-to-video" }),
+          markdown: videoUris.map((uri) => `![Video](${uri})`).join("\n\n"),
         };
       } catch (error) {
         console.error("Video generation failed:", error);

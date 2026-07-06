@@ -208,8 +208,7 @@ export const agentTask = pgTable("AgentTask", {
   userId: uuid("userId")
     .notNull()
     .references(() => user.id),
-  chatId: uuid("chatId")
-    .references(() => chat.id),
+  chatId: uuid("chatId").references(() => chat.id),
   agentType: varchar("agentType", { length: 64 }).notNull(),
   task: text("task").notNull(),
   status: varchar("status", {

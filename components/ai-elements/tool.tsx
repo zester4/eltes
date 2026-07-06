@@ -1,10 +1,7 @@
 "use client";
 
 import type { ToolUIPart } from "ai";
-import {
-  ChevronDownIcon,
-  ZapIcon,
-} from "lucide-react";
+import { ChevronDownIcon, ZapIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { isValidElement } from "react";
 import {
@@ -69,13 +66,23 @@ export const formatToolName = (type: string): string => {
   const raw = type.replace(/^tool-/, "");
 
   // Handle known meta-tools
-  if (META_TOOL_NAMES[raw]) return META_TOOL_NAMES[raw];
+  if (META_TOOL_NAMES[raw]) {
+    return META_TOOL_NAMES[raw];
+  }
 
   // Handle built-in tools
-  if (raw === "getWeather") return "Get Weather";
-  if (raw === "createDocument") return "Create Document";
-  if (raw === "updateDocument") return "Update Document";
-  if (raw === "requestSuggestions") return "Request Suggestions";
+  if (raw === "getWeather") {
+    return "Get Weather";
+  }
+  if (raw === "createDocument") {
+    return "Create Document";
+  }
+  if (raw === "updateDocument") {
+    return "Update Document";
+  }
+  if (raw === "requestSuggestions") {
+    return "Request Suggestions";
+  }
 
   // For Composio tool actions like GMAIL_FETCH_EMAILS → "Gmail - Fetch Emails"
   // Try to match a known app prefix first

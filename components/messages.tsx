@@ -47,7 +47,7 @@ function PureMessages({
   });
 
   const highlightFailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
+    null
   );
 
   useEffect(() => {
@@ -91,7 +91,7 @@ function PureMessages({
       "ring-2",
       "ring-primary",
       "ring-offset-2",
-      "ring-offset-background",
+      "ring-offset-background"
     );
 
     const clearRing = window.setTimeout(() => {
@@ -99,7 +99,7 @@ function PureMessages({
         "ring-2",
         "ring-primary",
         "ring-offset-2",
-        "ring-offset-background",
+        "ring-offset-background"
       );
       onHighlightConsumed?.();
     }, 3200);
@@ -110,7 +110,7 @@ function PureMessages({
         "ring-2",
         "ring-primary",
         "ring-offset-2",
-        "ring-offset-background",
+        "ring-offset-background"
       );
     };
   }, [highlightTaskId, messages, onHighlightConsumed]);

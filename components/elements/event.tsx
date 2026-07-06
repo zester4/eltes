@@ -1,20 +1,18 @@
 "use client";
 
-import { useState } from "react";
-import { 
-  Github, 
-  Mail, 
-  Slack, 
-  Activity, 
-  ChevronDown, 
-  ChevronUp, 
-  Info,
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Activity,
+  ChevronDown,
   Clock,
-  ExternalLink
+  Github,
+  Info,
+  Mail,
+  Slack,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export type EventData = {
   slug: string;
@@ -25,7 +23,9 @@ export type EventData = {
 };
 
 export const parseEventMessage = (text: string): EventData | null => {
-  if (!text.startsWith("###EVENT_TRIGGERED###")) return null;
+  if (!text.startsWith("###EVENT_TRIGGERED###")) {
+    return null;
+  }
   try {
     return JSON.parse(text.replace("###EVENT_TRIGGERED###", ""));
   } catch (e) {
@@ -38,35 +38,42 @@ export const EventCard = ({ event }: { event: EventData }) => {
 
   const getAppIcon = (app?: string, size = 20) => {
     switch (app?.toLowerCase()) {
-      case "github": return <Github size={size} className="text-zinc-100" />;
-      case "slack": return <Slack size={size} className="text-[#E01E5A]" />;
-      case "gmail": return <Mail size={size} className="text-[#EA4335]" />;
-      default: return <Activity size={size} className="text-primary" />;
+      case "github":
+        return <Github className="text-zinc-100" size={size} />;
+      case "slack":
+        return <Slack className="text-[#E01E5A]" size={size} />;
+      case "gmail":
+        return <Mail className="text-[#EA4335]" size={size} />;
+      default:
+        return <Activity className="text-primary" size={size} />;
     }
   };
 
   return (
     <div className="not-prose my-4 w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl transition-all hover:bg-white/[0.05]">
-      <div 
+      <div
         className="flex cursor-pointer items-center gap-4 p-4 select-none"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/40 shadow-inner group-hover:bg-black/60">
           {getAppIcon(event.app, 20)}
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-0.5">
             <h4 className="font-bold text-sm tracking-tight text-white/90">
               {event.summary || event.slug}
             </h4>
-            <Badge variant="outline" className="w-fit text-[9px] px-1.5 py-0 rounded-md border-white/10 bg-white/5 text-white/60 font-medium tracking-wide font-mono">
+            <Badge
+              className="w-fit text-[9px] px-1.5 py-0 rounded-md border-white/10 bg-white/5 text-white/60 font-medium tracking-wide font-mono"
+              variant="outline"
+            >
               EVENT
             </Badge>
           </div>
           <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-medium">
             <span className="flex items-center gap-1">
-              <Clock size={12} className="opacity-50" />
+              <Clock className="opacity-50" size={12} />
               {event.timestamp || "Just now"}
             </span>
             <span className="size-1 rounded-full bg-zinc-700" />
@@ -74,10 +81,12 @@ export const EventCard = ({ event }: { event: EventData }) => {
           </div>
         </div>
 
-        <div className={cn(
-          "flex size-7 items-center justify-center rounded-full bg-white/5 text-zinc-500 transition-all",
-          isExpanded && "bg-primary/20 text-primary rotate-180"
-        )}>
+        <div
+          className={cn(
+            "flex size-7 items-center justify-center rounded-full bg-white/5 text-zinc-500 transition-all",
+            isExpanded && "bg-primary/20 text-primary rotate-180"
+          )}
+        >
           <ChevronDown size={14} />
         </div>
       </div>
@@ -85,11 +94,11 @@ export const EventCard = ({ event }: { event: EventData }) => {
       <AnimatePresence>
         {isExpanded && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeInOut" }}
             className="overflow-hidden border-t border-white/5 bg-black/60"
+            exit={{ height: 0, opacity: 0 }}
+            initial={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
           >
             <div className="p-4 space-y-3">
               <div className="flex items-center justify-between">
@@ -97,7 +106,10 @@ export const EventCard = ({ event }: { event: EventData }) => {
                   <Info size={12} />
                   Payload Inspection
                 </h5>
-                <Badge variant="outline" className="text-[9px] h-5 px-2 bg-white/5 hover:bg-white/10 text-zinc-400 gap-1 opacity-60">
+                <Badge
+                  className="text-[9px] h-5 px-2 bg-white/5 hover:bg-white/10 text-zinc-400 gap-1 opacity-60"
+                  variant="outline"
+                >
                   <Activity size={10} />
                   Live Data
                 </Badge>

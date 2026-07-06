@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
-import {
-  getChatById,
-  getRecentMessagesForChat,
-  saveMessages,
-} from "@/lib/db/queries";
+import { type NextRequest, NextResponse } from "next/server";
 import {
   buildSubAgentHandoffMarker,
   messagePartsContainHandoffForTask,
 } from "@/lib/agent/sub-agent-handoff-markers";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { getLanguageModel } from "@/lib/ai/providers";
+import {
+  getChatById,
+  getRecentMessagesForChat,
+  saveMessages,
+} from "@/lib/db/queries";
 import { generateUUID } from "@/lib/utils";
 
 export const maxDuration = 120;
@@ -30,14 +30,20 @@ export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-agent-secret");
   const expected = process.env.AGENT_DELEGATE_SECRET ?? "dev-internal";
   if (secret !== expected) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: "Unauthorized" },
+      { status: 401 }
+    );
   }
 
   let body: HandoffBody;
   try {
     body = (await req.json()) as HandoffBody;
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Invalid JSON" },
+      { status: 400 }
+    );
   }
 
   const { chatId, userId, taskId, agentName, task, outcome, summary } = body;
@@ -50,12 +56,18 @@ export async function POST(req: NextRequest) {
     !task ||
     (outcome !== "completed" && outcome !== "failed")
   ) {
-    return NextResponse.json({ ok: false, error: "Missing fields" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Missing fields" },
+      { status: 400 }
+    );
   }
 
   const chat = await getChatById({ id: chatId });
   if (!chat || chat.userId !== userId) {
-    return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+    return NextResponse.json(
+      { ok: false, error: "Forbidden" },
+      { status: 403 }
+    );
   }
 
   const recent = await getRecentMessagesForChat({ chatId, limit: 40 });
@@ -82,16 +94,18 @@ Do not paste raw JSON. Do not repeat the full sub-agent output — summarize onl
       : `Original delegated task:\n${task}\n\nSub-agent outcome: failed\n\nError / details:\n${excerpt || "(none)"}`;
 
   const { text } = await generateText({
-    model: getLanguageModel(process.env.SUBAGENT_HANDOFF_MODEL?.trim() || DEFAULT_CHAT_MODEL),
+    model: getLanguageModel(
+      process.env.SUBAGENT_HANDOFF_MODEL?.trim() || DEFAULT_CHAT_MODEL
+    ),
     system,
     prompt: userPrompt,
   });
 
-  const visible = text.trim() || (
-    outcome === "completed"
+  const visible =
+    text.trim() ||
+    (outcome === "completed"
       ? `Your **${agentName}** sub-agent finished the task you delegated. Check the result card above for details.`
-      : `Your **${agentName}** sub-agent run did not complete successfully. See the result card above for the error.`
-  );
+      : `Your **${agentName}** sub-agent run did not complete successfully. See the result card above for the error.`);
 
   await saveMessages({
     messages: [

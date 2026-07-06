@@ -9,18 +9,18 @@
  * pending approval card in the chat UI.
  */
 
+import { Redis } from "@upstash/redis";
 import { tool } from "ai";
 import { z } from "zod";
-import { Redis } from "@upstash/redis";
+import {
+  type PendingApproval,
+  storePendingApproval,
+} from "@/app/api/telegram/callback/route-utils";
 import { getBotIntegration } from "@/lib/db/queries";
 import {
-  sendMessageWithInlineKeyboard,
   type InlineKeyboardButton,
+  sendMessageWithInlineKeyboard,
 } from "@/lib/telegram/api";
-import {
-  storePendingApproval,
-  type PendingApproval,
-} from "@/app/api/telegram/callback/route-utils";
 import { generateUUID } from "@/lib/utils";
 
 const redis =
@@ -54,26 +54,34 @@ export const queueApproval = ({
         .string()
         .describe(
           "A short human-readable description of what will happen on approval. " +
-          "E.g. 'Send email to john@example.com: Re: Invoice #1234' or 'Pay $500 to Acme Corp via Wise'"
+            "E.g. 'Send email to john@example.com: Re: Invoice #1234' or 'Pay $500 to Acme Corp via Wise'"
         ),
       preview: z
         .string()
         .optional()
         .describe(
           "Full text preview of the action (e.g. the email body, post text). " +
-          "Shown in Telegram before user approves."
+            "Shown in Telegram before user approves."
         ),
       executionTool: z
         .string()
         .describe(
           "The exact Composio tool name to call when approved. " +
-          "E.g. 'GMAIL_SEND_EMAIL', 'WISE_CREATE_TRANSFER', 'TWITTER_CREATE_TWEET'"
+            "E.g. 'GMAIL_SEND_EMAIL', 'WISE_CREATE_TRANSFER', 'TWITTER_CREATE_TWEET'"
         ),
       executionInput: z
         .record(z.unknown())
-        .describe("The exact arguments to pass to executionTool when approved."),
+        .describe(
+          "The exact arguments to pass to executionTool when approved."
+        ),
     }),
-    execute: async ({ type, summary, preview, executionTool, executionInput }) => {
+    execute: async ({
+      type,
+      summary,
+      preview,
+      executionTool,
+      executionInput,
+    }) => {
       const draftId = generateUUID();
 
       const emoji: Record<string, string> = {
@@ -90,8 +98,7 @@ export const queueApproval = ({
       const previewSection = preview
         ? `\n\n<blockquote>${preview.slice(0, 600)}${preview.length > 600 ? "…" : ""}</blockquote>`
         : "";
-      const telegramText =
-        `${icon} <b>Approval needed</b>\n\n${summary}${previewSection}\n\n<i>What would you like to do?</i>`;
+      const telegramText = `${icon} <b>Approval needed</b>\n\n${summary}${previewSection}\n\n<i>What would you like to do?</i>`;
 
       const buttons: InlineKeyboardButton[][] = [
         [
@@ -102,8 +109,8 @@ export const queueApproval = ({
       ];
 
       // Get Telegram integration (only if not skipping)
-      const integration = skipTelegram 
-        ? null 
+      const integration = skipTelegram
+        ? null
         : await getBotIntegration({ userId, platform: "telegram" });
       let messageId: number | null = null;
       let telegramChatId: number | null = null;
@@ -144,8 +151,8 @@ export const queueApproval = ({
         status: "pending_approval",
         deliveredVia: hasTelegram ? "telegram" : "chat",
         message: hasTelegram
-          ? `Approval request sent to your Telegram. Tap Approve when ready.`
-          : `Action queued for approval. Tap Approve in the chat.`,
+          ? "Approval request sent to your Telegram. Tap Approve when ready."
+          : "Action queued for approval. Tap Approve in the chat.",
       };
     },
   });

@@ -1,18 +1,11 @@
 "use client";
 
+import { Loader2, Plus, Search, Trash2, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Skill, SkillCard } from "@/components/skill-card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Search, Upload, Plus, Loader2, Trash2, Book } from "lucide-react";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Response } from "@/components/elements/response";
+import { SidebarToggle } from "@/components/sidebar-toggle";
+import { type Skill, SkillCard } from "@/components/skill-card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,9 +16,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { SidebarToggle } from "@/components/sidebar-toggle";
-import { Response } from "@/components/elements/response";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 export function SkillsClient() {
   const [skills, setSkills] = useState<Skill[]>([]);
@@ -40,7 +39,9 @@ export function SkillsClient() {
     setIsLoading(true);
     try {
       const res = await fetch("/api/skills");
-      if (!res.ok) throw new Error("Failed to fetch skills");
+      if (!res.ok) {
+        throw new Error("Failed to fetch skills");
+      }
       const data = await res.json();
       setSkills(data);
     } catch (error) {
@@ -56,7 +57,9 @@ export function SkillsClient() {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     if (!file.name.endsWith(".md")) {
       toast.error("Please upload a .md file");
@@ -82,8 +85,12 @@ export function SkillsClient() {
           const nameMatch = frontmatter.match(/name:\s*(.*)/);
           const descMatch = frontmatter.match(/description:\s*(.*)/);
 
-          if (nameMatch) title = nameMatch[1].trim();
-          if (descMatch) description = descMatch[1].trim();
+          if (nameMatch) {
+            title = nameMatch[1].trim();
+          }
+          if (descMatch) {
+            description = descMatch[1].trim();
+          }
 
           // Remove frontmatter from content for clean display
           content = parts.slice(2).join("---").trim();
@@ -97,7 +104,9 @@ export function SkillsClient() {
           body: JSON.stringify({ title, slug, content, description }),
         });
 
-        if (!res.ok) throw new Error("Upload failed");
+        if (!res.ok) {
+          throw new Error("Upload failed");
+        }
         toast.success(`Skill '${title}' uploaded!`);
         fetchSkills();
       } catch (error) {
@@ -110,7 +119,9 @@ export function SkillsClient() {
   const handleDelete = async (slug: string) => {
     try {
       const res = await fetch(`/api/skills/${slug}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Delete failed");
+      if (!res.ok) {
+        throw new Error("Delete failed");
+      }
       toast.success("Skill deleted");
       setSkills(skills.filter((s) => s.slug !== slug));
     } catch (error) {
@@ -153,27 +164,43 @@ export function SkillsClient() {
       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 border-b bg-background/50 backdrop-blur-md sticky top-0 z-20 gap-3">
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <SidebarToggle />
-          <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate">Knowledge & Skills</h1>
+          <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate">
+            Knowledge & Skills
+          </h1>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
           <div className="relative flex-1 sm:flex-none max-w-[200px] sm:max-w-none">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/70" />
             <Input
-              placeholder="Search..."
               className="pl-8 w-full sm:w-48 bg-muted/20 border-border/30 rounded-full h-8 text-xs shadow-none transition-all focus:ring-1 focus:ring-primary/30 focus:bg-background/80"
-              value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search..."
+              value={searchQuery}
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <Button variant="outline" size="sm" className="h-8 rounded-full text-[11px] px-3 border-border/40" asChild>
+            <Button
+              asChild
+              className="h-8 rounded-full text-[11px] px-3 border-border/40"
+              size="sm"
+              variant="outline"
+            >
               <label className="cursor-pointer">
                 <Upload className="w-3.5 h-3.5 mr-1.5 opacity-70" />
                 <span className="hidden xs:inline">Upload</span>
-                <input type="file" className="hidden" accept=".md" onChange={handleFileUpload} />
+                <input
+                  accept=".md"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  type="file"
+                />
               </label>
             </Button>
-            <Button size="sm" className="h-8 rounded-full text-[11px] px-3 shadow-sm shadow-primary/20" onClick={() => window.location.href = '/chat'}>
+            <Button
+              className="h-8 rounded-full text-[11px] px-3 shadow-sm shadow-primary/20"
+              onClick={() => (window.location.href = "/chat")}
+              size="sm"
+            >
               <Plus className="w-3.5 h-3.5 mr-1.5" />
               <span>Create</span>
             </Button>
@@ -196,16 +223,19 @@ export function SkillsClient() {
             {filteredSkills.map((skill) => (
               <SkillCard
                 key={skill.id}
-                skill={skill}
-                onDelete={handleDelete}
                 onClick={handleSkillClick}
+                onDelete={handleDelete}
+                skill={skill}
               />
             ))}
           </div>
         )}
       </main>
 
-      <Dialog open={!!selectedSkill} onOpenChange={(open) => !open && setSelectedSkill(null)}>
+      <Dialog
+        onOpenChange={(open) => !open && setSelectedSkill(null)}
+        open={!!selectedSkill}
+      >
         <DialogContent className="max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col p-0 overflow-hidden border-border/40 shadow-2xl">
           <DialogHeader className="p-4 sm:p-5 border-b bg-muted/5">
             <div className="flex items-center justify-between gap-4">
@@ -219,13 +249,15 @@ export function SkillsClient() {
               </div>
               {selectedSkill && !selectedSkill.isDefault && (
                 <Button
-                  variant="ghost"
-                  size="sm"
                   className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0 h-8 px-2"
                   onClick={() => setSkillToDelete(selectedSkill.slug)}
+                  size="sm"
+                  variant="ghost"
                 >
                   <Trash2 className="w-3.5 h-3.5 sm:mr-2" />
-                  <span className="hidden sm:inline text-xs font-semibold">Delete</span>
+                  <span className="hidden sm:inline text-xs font-semibold">
+                    Delete
+                  </span>
                 </Button>
               )}
             </div>
@@ -245,8 +277,8 @@ export function SkillsClient() {
       </Dialog>
 
       <AlertDialog
-        open={!!skillToDelete}
         onOpenChange={(open) => !open && setSkillToDelete(null)}
+        open={!!skillToDelete}
       >
         <AlertDialogContent>
           <AlertDialogHeader>

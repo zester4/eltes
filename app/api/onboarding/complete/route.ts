@@ -11,20 +11,24 @@
  * stops injecting the onboarding flow.
  */
 
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/app/(auth)/auth";
 import { Index } from "@upstash/vector";
-import { registerUserCrons, triggerHeartbeatWorkflow } from "@/lib/workflow/client";
+import { type NextRequest, NextResponse } from "next/server";
+import { auth } from "@/app/(auth)/auth";
+import {
+  registerUserCrons,
+  triggerHeartbeatWorkflow,
+} from "@/lib/workflow/client";
 
 export async function POST(req: NextRequest) {
   // Accept both authenticated users and internal agent calls
   const agentSecret = req.headers.get("x-agent-secret");
-  const isInternal = agentSecret === (process.env.AGENT_DELEGATE_SECRET ?? "dev-internal");
+  const isInternal =
+    agentSecret === (process.env.AGENT_DELEGATE_SECRET ?? "dev-internal");
 
   let userId: string;
 
   if (isInternal) {
-    const body = await req.json() as { userId?: string };
+    const body = (await req.json()) as { userId?: string };
     if (!body.userId) {
       return NextResponse.json({ error: "Missing userId" }, { status: 400 });
     }
@@ -63,7 +67,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      message: "Onboarding complete. Heartbeat and weekly synthesis crons registered.",
+      message:
+        "Onboarding complete. Heartbeat and weekly synthesis crons registered.",
     });
   } catch (err: any) {
     console.error("[Onboarding Complete] Failed:", err);

@@ -39,7 +39,9 @@ export function getLanguageModel(modelId: string) {
     (modelId.includes("reasoning") && !modelId.includes("non-reasoning"));
 
   // Diagnostic log for model selection
-  console.log(`[AI SDK] Using model: ${modelId} (reasoning: ${isReasoningModel})`);
+  console.log(
+    `[AI SDK] Using model: ${modelId} (reasoning: ${isReasoningModel})`
+  );
 
   if (isReasoningModel) {
     // We wrap with reasoning middleware to extract thinking blocks if present.

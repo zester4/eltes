@@ -7,6 +7,7 @@ import type { User } from "next-auth";
 import { useState } from "react";
 import { toast } from "sonner";
 import useSWRInfinite from "swr/infinite";
+import { PwaUpdater } from "@/components/pwa-updater";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,12 +24,11 @@ import {
   SidebarMenu,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useActiveAgentTasksByChat } from "@/hooks/use-active-agent-tasks";
 import type { Chat } from "@/lib/db/schema";
 import { fetcher } from "@/lib/utils";
-import { useActiveAgentTasksByChat } from "@/hooks/use-active-agent-tasks";
 import { LoaderIcon } from "./icons";
 import { ChatItem } from "./sidebar-history-item";
-import { PwaUpdater } from "@/components/pwa-updater";
 
 type GroupedChats = {
   today: Chat[];
@@ -237,7 +237,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                         {groupedChats.today.map((chat) => (
                           <ChatItem
                             chat={chat}
-                            hasActiveAgentTask={chatIdsWithActiveTasks.has(chat.id)}
+                            hasActiveAgentTask={chatIdsWithActiveTasks.has(
+                              chat.id
+                            )}
                             isActive={chat.id === id}
                             key={chat.id}
                             onDelete={(chatId) => {
@@ -258,7 +260,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                         {groupedChats.yesterday.map((chat) => (
                           <ChatItem
                             chat={chat}
-                            hasActiveAgentTask={chatIdsWithActiveTasks.has(chat.id)}
+                            hasActiveAgentTask={chatIdsWithActiveTasks.has(
+                              chat.id
+                            )}
                             isActive={chat.id === id}
                             key={chat.id}
                             onDelete={(chatId) => {
@@ -279,7 +283,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                         {groupedChats.lastWeek.map((chat) => (
                           <ChatItem
                             chat={chat}
-                            hasActiveAgentTask={chatIdsWithActiveTasks.has(chat.id)}
+                            hasActiveAgentTask={chatIdsWithActiveTasks.has(
+                              chat.id
+                            )}
                             isActive={chat.id === id}
                             key={chat.id}
                             onDelete={(chatId) => {
@@ -300,7 +306,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                         {groupedChats.lastMonth.map((chat) => (
                           <ChatItem
                             chat={chat}
-                            hasActiveAgentTask={chatIdsWithActiveTasks.has(chat.id)}
+                            hasActiveAgentTask={chatIdsWithActiveTasks.has(
+                              chat.id
+                            )}
                             isActive={chat.id === id}
                             key={chat.id}
                             onDelete={(chatId) => {
@@ -321,7 +329,9 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
                         {groupedChats.older.map((chat) => (
                           <ChatItem
                             chat={chat}
-                            hasActiveAgentTask={chatIdsWithActiveTasks.has(chat.id)}
+                            hasActiveAgentTask={chatIdsWithActiveTasks.has(
+                              chat.id
+                            )}
                             isActive={chat.id === id}
                             key={chat.id}
                             onDelete={(chatId) => {
@@ -358,7 +368,7 @@ export function SidebarHistory({ user }: { user: User | undefined }) {
               <div>Loading Chats...</div>
             </div>
           )}
-          
+
           <PwaUpdater />
         </SidebarGroupContent>
       </SidebarGroup>

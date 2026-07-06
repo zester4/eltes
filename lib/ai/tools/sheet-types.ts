@@ -8,15 +8,15 @@ export interface SheetStyle {
 }
 
 export interface Sheet {
-  name: string;
   csv: string;
+  name: string;
   styles?: SheetStyle;
 }
 
 export interface SheetData {
-  title: string;
-  sheets: Sheet[];
   activeSheetIndex?: number;
+  sheets: Sheet[];
+  title: string;
 }
 
 export function isSheetData(content: any): content is SheetData {

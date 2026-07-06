@@ -47,9 +47,9 @@ export type AgentSlug =
   | "travel_concierge";
 
 export interface SubAgentDefinition {
-  slug: AgentSlug;
-  name: string;
   description: string;
+  name: string;
+  slug: AgentSlug;
   systemPrompt: string;
   toolkits: string[];
 }
@@ -76,47 +76,275 @@ const UNIVERSAL_COMPOSIO_TOOLKITS = [
 ];
 
 const AGENT_TOOLKIT_EXPANSIONS: Partial<Record<AgentSlug, string[]>> = {
-  inbox_operator: ["intercom", "zendesk", "front", "microsoftteams", "discord", "twilio"],
+  inbox_operator: [
+    "intercom",
+    "zendesk",
+    "front",
+    "microsoftteams",
+    "discord",
+    "twilio",
+  ],
   sdr: ["apollo", "hunter", "clearbit", "zoominfo", "outreach", "salesloft"],
-  chief_of_staff: ["microsoftteams", "calendly", "todoist", "trello", "confluence"],
-  project_manager: ["trello", "monday", "basecamp", "confluence", "microsoftteams"],
-  social_media: ["instagram", "facebook", "youtube", "tiktok", "buffer", "hootsuite"],
+  chief_of_staff: [
+    "microsoftteams",
+    "calendly",
+    "todoist",
+    "trello",
+    "confluence",
+  ],
+  project_manager: [
+    "trello",
+    "monday",
+    "basecamp",
+    "confluence",
+    "microsoftteams",
+  ],
+  social_media: [
+    "instagram",
+    "facebook",
+    "youtube",
+    "tiktok",
+    "buffer",
+    "hootsuite",
+  ],
   hiring: ["greenhouse", "lever", "workable", "ashby", "bamboohr", "calendly"],
   finance: ["plaid", "brex", "ramp", "expensify", "netsuite", "freshbooks"],
-  competitive_intel: ["crunchbase", "semrush", "similarweb", "googleanalytics", "reddit", "youtube"],
-  customer_success: ["intercom", "zendesk", "freshdesk", "helpscout", "stripe", "chargebee"],
-  personal_admin: ["todoist", "trello", "calendly", "uber", "airbnb", "expensify"],
-  incident_response: ["pagerduty", "opsgenie", "statuspage", "cloudflare", "aws", "gcp", "azure"],
-  stripe_churn: ["chargebee", "recurly", "intercom", "zendesk", "posthog", "segment"],
-  code_review: ["snyk", "sonarqube", "bitbucket", "circleci", "githubactions", "sentry"],
-  cloud_cost: ["datadog", "grafana", "pagerduty", "snowflake", "bigquery", "postgres"],
-  product_analytics: ["posthog", "heap", "looker", "metabase", "bigquery", "snowflake"],
-  contractor_payment: ["deel", "remote", "gusto", "bamboohr", "expensify", "docusign"],
-  legal_operator: ["hellosign", "dropbox", "box", "clio", "ironclad", "googleforms"],
-  brand_monitor: ["reddit", "youtube", "instagram", "facebook", "googleanalytics", "semrush"],
-  revenue_forecasting: ["looker", "metabase", "bigquery", "snowflake", "chargebee", "recurly"],
+  competitive_intel: [
+    "crunchbase",
+    "semrush",
+    "similarweb",
+    "googleanalytics",
+    "reddit",
+    "youtube",
+  ],
+  customer_success: [
+    "intercom",
+    "zendesk",
+    "freshdesk",
+    "helpscout",
+    "stripe",
+    "chargebee",
+  ],
+  personal_admin: [
+    "todoist",
+    "trello",
+    "calendly",
+    "uber",
+    "airbnb",
+    "expensify",
+  ],
+  incident_response: [
+    "pagerduty",
+    "opsgenie",
+    "statuspage",
+    "cloudflare",
+    "aws",
+    "gcp",
+    "azure",
+  ],
+  stripe_churn: [
+    "chargebee",
+    "recurly",
+    "intercom",
+    "zendesk",
+    "posthog",
+    "segment",
+  ],
+  code_review: [
+    "snyk",
+    "sonarqube",
+    "bitbucket",
+    "circleci",
+    "githubactions",
+    "sentry",
+  ],
+  cloud_cost: [
+    "datadog",
+    "grafana",
+    "pagerduty",
+    "snowflake",
+    "bigquery",
+    "postgres",
+  ],
+  product_analytics: [
+    "posthog",
+    "heap",
+    "looker",
+    "metabase",
+    "bigquery",
+    "snowflake",
+  ],
+  contractor_payment: [
+    "deel",
+    "remote",
+    "gusto",
+    "bamboohr",
+    "expensify",
+    "docusign",
+  ],
+  legal_operator: [
+    "hellosign",
+    "dropbox",
+    "box",
+    "clio",
+    "ironclad",
+    "googleforms",
+  ],
+  brand_monitor: [
+    "reddit",
+    "youtube",
+    "instagram",
+    "facebook",
+    "googleanalytics",
+    "semrush",
+  ],
+  revenue_forecasting: [
+    "looker",
+    "metabase",
+    "bigquery",
+    "snowflake",
+    "chargebee",
+    "recurly",
+  ],
   docs_keeper: ["confluence", "dropbox", "box", "webflow", "github", "gitlab"],
-  investor_relations: ["docsend", "dropbox", "box", "crunchbase", "pitchbook", "mailchimp"],
-  product_hunt_launcher: ["producthunt", "reddit", "discord", "mailchimp", "buffer", "youtube"],
-  growth_hacker: ["googleads", "facebookads", "linkedinads", "semrush", "ahrefs", "webflow"],
-  community_manager: ["discord", "telegram", "reddit", "microsoftteams", "intercom", "zendesk"],
-  demo_closer: ["zoom", "googlemeet", "microsoftteams", "loom", "salesforce", "stripe"],
-  onboarding_specialist: ["intercom", "zendesk", "calendly", "googleforms", "typeform", "loom"],
-  sandbox_specialist: ["e2b", "replit", "github", "gitlab", "vercel", "netlify"],
-  browser_operator: ["browser_use", "daytona_browser", "tavily", "apify", "firecrawl"],
+  investor_relations: [
+    "docsend",
+    "dropbox",
+    "box",
+    "crunchbase",
+    "pitchbook",
+    "mailchimp",
+  ],
+  product_hunt_launcher: [
+    "producthunt",
+    "reddit",
+    "discord",
+    "mailchimp",
+    "buffer",
+    "youtube",
+  ],
+  growth_hacker: [
+    "googleads",
+    "facebookads",
+    "linkedinads",
+    "semrush",
+    "ahrefs",
+    "webflow",
+  ],
+  community_manager: [
+    "discord",
+    "telegram",
+    "reddit",
+    "microsoftteams",
+    "intercom",
+    "zendesk",
+  ],
+  demo_closer: [
+    "zoom",
+    "googlemeet",
+    "microsoftteams",
+    "loom",
+    "salesforce",
+    "stripe",
+  ],
+  onboarding_specialist: [
+    "intercom",
+    "zendesk",
+    "calendly",
+    "googleforms",
+    "typeform",
+    "loom",
+  ],
+  sandbox_specialist: [
+    "e2b",
+    "replit",
+    "github",
+    "gitlab",
+    "vercel",
+    "netlify",
+  ],
+  browser_operator: [
+    "browser_use",
+    "daytona_browser",
+    "tavily",
+    "apify",
+    "firecrawl",
+  ],
   cinematic_director: ["youtube", "vimeo", "dropbox", "box", "figma", "canva"],
   visual_designer: ["figma", "canva", "webflow", "framer", "dropbox", "box"],
-  task_coordinator: ["microsoftteams", "todoist", "trello", "confluence", "zapier"],
-  data_engineer: ["postgres", "mysql", "snowflake", "bigquery", "mongodb", "supabase"],
+  task_coordinator: [
+    "microsoftteams",
+    "todoist",
+    "trello",
+    "confluence",
+    "zapier",
+  ],
+  data_engineer: [
+    "postgres",
+    "mysql",
+    "snowflake",
+    "bigquery",
+    "mongodb",
+    "supabase",
+  ],
   security_operator: ["snyk", "sonarqube", "cloudflare", "aws", "gcp", "azure"],
-  customer_researcher: ["intercom", "zendesk", "typeform", "googleforms", "posthog", "amplitude"],
-  ecommerce_operator: ["shopify", "woocommerce", "stripe", "paypal", "klaviyo", "mailchimp"],
-  ads_manager: ["googleads", "facebookads", "linkedinads", "tiktok", "googleanalytics", "semrush"],
-  event_planner: ["eventbrite", "zoom", "googlemeet", "microsoftteams", "mailchimp", "typeform"],
-  procurement_operator: ["quickbooks", "xero", "netsuite", "ramp", "brex", "docusign"],
+  customer_researcher: [
+    "intercom",
+    "zendesk",
+    "typeform",
+    "googleforms",
+    "posthog",
+    "amplitude",
+  ],
+  ecommerce_operator: [
+    "shopify",
+    "woocommerce",
+    "stripe",
+    "paypal",
+    "klaviyo",
+    "mailchimp",
+  ],
+  ads_manager: [
+    "googleads",
+    "facebookads",
+    "linkedinads",
+    "tiktok",
+    "googleanalytics",
+    "semrush",
+  ],
+  event_planner: [
+    "eventbrite",
+    "zoom",
+    "googlemeet",
+    "microsoftteams",
+    "mailchimp",
+    "typeform",
+  ],
+  procurement_operator: [
+    "quickbooks",
+    "xero",
+    "netsuite",
+    "ramp",
+    "brex",
+    "docusign",
+  ],
   qa_tester: ["github", "gitlab", "linear", "jira", "sentry", "browser_use"],
-  knowledge_librarian: ["confluence", "dropbox", "box", "airtable", "webflow", "github"],
-  travel_concierge: ["airbnb", "uber", "googlemaps", "expensify", "tripadvisor", "googlecalendar"],
+  knowledge_librarian: [
+    "confluence",
+    "dropbox",
+    "box",
+    "airtable",
+    "webflow",
+    "github",
+  ],
+  travel_concierge: [
+    "airbnb",
+    "uber",
+    "googlemaps",
+    "expensify",
+    "tripadvisor",
+    "googlecalendar",
+  ],
 };
 
 function uniqueToolkits(toolkits: string[]): string[] {
@@ -138,7 +366,8 @@ const BASE_SUBAGENT_DEFINITIONS: SubAgentDefinition[] = [
   {
     slug: "inbox_operator",
     name: "24/7 Inbox Operator",
-    description: "Monitors and operates inboxes across Gmail, Outlook, Slack, WhatsApp, LinkedIn. Classifies, responds, routes sensitive items.",
+    description:
+      "Monitors and operates inboxes across Gmail, Outlook, Slack, WhatsApp, LinkedIn. Classifies, responds, routes sensitive items.",
     toolkits: ["gmail", "outlook", "slack", "whatsapp", "telegram", "linkedin"],
     systemPrompt: `You are Etles's 24/7 Autonomous Inbox Operator — a senior executive assistant with perfect judgment and zero tolerance for inbox chaos. You have been granted full operational authority over the user's inboxes. You think, write, and act like the user. You never sound like a bot.
 
@@ -176,8 +405,17 @@ HARD RULES:
   {
     slug: "sdr",
     name: "Autonomous Sales Development Rep",
-    description: "Runs outbound sales: lead sourcing, enrichment, personalized outreach, sequences, booking meetings.",
-    toolkits: ["gmail", "hubspot", "salesforce", "pipedrive", "calendly", "googledrive", "linkedin"],
+    description:
+      "Runs outbound sales: lead sourcing, enrichment, personalized outreach, sequences, booking meetings.",
+    toolkits: [
+      "gmail",
+      "hubspot",
+      "salesforce",
+      "pipedrive",
+      "calendly",
+      "googledrive",
+      "linkedin",
+    ],
     systemPrompt: `You are Etles's Autonomous Sales Development Rep — a world-class outbound operator who combines the research instincts of an analyst with the persuasion of a top 1% salesperson. You do not send templates. You do not spray and pray. Every lead you touch gets a message that feels like it was written specifically for them — because it was.
 
 YOUR MISSION:
@@ -218,7 +456,8 @@ HARD RULES:
   {
     slug: "chief_of_staff",
     name: "Chief of Staff — Daily Briefing",
-    description: "Prepares morning brief: overnight communications, calendar, commitments, pre-drafted actions.",
+    description:
+      "Prepares morning brief: overnight communications, calendar, commitments, pre-drafted actions.",
     toolkits: ["gmail", "googledrive", "notion", "jira", "asana", "slack"],
     systemPrompt: `You are Etles's Chief of Staff — the most organised, perceptive, and proactive operator the user has ever worked with. Every morning, before the user opens their eyes, you have already done the first two hours of their job. You do not summarise noise. You surface signal, eliminate friction, and hand the user a day that is already set up to succeed.
 
@@ -262,8 +501,18 @@ HARD RULES:
   {
     slug: "project_manager",
     name: "Autonomous Project Manager",
-    description: "Creates tickets, tracks progress, chases blockers, updates stakeholders, manages timeline slippage.",
-    toolkits: ["jira", "linear", "asana", "clickup", "slack", "gmail", "notion", "googledrive"],
+    description:
+      "Creates tickets, tracks progress, chases blockers, updates stakeholders, manages timeline slippage.",
+    toolkits: [
+      "jira",
+      "linear",
+      "asana",
+      "clickup",
+      "slack",
+      "gmail",
+      "notion",
+      "googledrive",
+    ],
     systemPrompt: `You are Etles's Autonomous Project Manager — a relentless, organised, and politically intelligent operator who ensures that every project moves forward every single day. You do not wait for problems to become crises. You detect stall before it becomes failure. You communicate with stakeholders in a way that builds confidence even when things are hard.
 
 You can use 'generateImage' to create project diagrams, UI mockups, or visual progress report icons if helpful for clarity. If you generate an image, include its URL in your report: ![Project Visual](url).
@@ -305,8 +554,16 @@ HARD RULES:
   {
     slug: "onboarding_specialist",
     name: "Etles Welcome Committee",
-    description: "Guides new users through their 2-minute setup, collects persona info, and helps connect initial apps.",
-    toolkits: ["gmail", "slack", "notion", "googledrive", "googlecalendar", "github"],
+    description:
+      "Guides new users through their 2-minute setup, collects persona info, and helps connect initial apps.",
+    toolkits: [
+      "gmail",
+      "slack",
+      "notion",
+      "googledrive",
+      "googlecalendar",
+      "github",
+    ],
     systemPrompt: `You are the Etles Welcome Committee — a world-class onboarding specialist. Your goal is to make the user feel like Etles is their most powerful ally, starting today. You don't just ask questions; you build a relationship and tailor Etles to their specific workflow.
 
 MISSION:
@@ -345,8 +602,17 @@ TONE & VOICE:
   {
     slug: "social_media",
     name: "Social Media Operator",
-    description: "Content creation, scheduling, engagement, performance optimization across LinkedIn, Twitter, newsletters.",
-    toolkits: ["linkedin", "twitter", "notion", "gmail", "mailchimp", "convertkit", "slack"],
+    description:
+      "Content creation, scheduling, engagement, performance optimization across LinkedIn, Twitter, newsletters.",
+    toolkits: [
+      "linkedin",
+      "twitter",
+      "notion",
+      "gmail",
+      "mailchimp",
+      "convertkit",
+      "slack",
+    ],
     systemPrompt: `You are Etles's Social Media Operator — a world-class content strategist and ghostwriter who understands that the best social content does not feel like content. It feels like a real person thinking out loud. You write in the user's voice so precisely that their audience would never guess anyone else was involved.
 
 You have access to the 'generateImage' tool. Use it to create or edit high-quality visual assets for your posts. When you generate an image, you MUST include its URL in your final response using standard markdown: ![Image Description](url).
@@ -389,8 +655,16 @@ HARD RULES:
   {
     slug: "hiring",
     name: "Autonomous Hiring Pipeline",
-    description: "Job description, posting, screening, interviews, onboarding — full recruiting logistics.",
-    toolkits: ["gmail", "linkedin", "calendly", "googledrive", "notion", "slack"],
+    description:
+      "Job description, posting, screening, interviews, onboarding — full recruiting logistics.",
+    toolkits: [
+      "gmail",
+      "linkedin",
+      "calendly",
+      "googledrive",
+      "notion",
+      "slack",
+    ],
     systemPrompt: `You are Etles's Autonomous Hiring Pipeline — a senior talent operator who runs every administrative and logistical aspect of the hiring process end-to-end. You find great people, move fast, and create a candidate experience that makes the best candidates want to join — because the process itself signals how well-run this organisation is.
 
 YOUR MISSION:
@@ -430,8 +704,17 @@ HARD RULES:
   {
     slug: "finance",
     name: "Finance and Vendor Admin",
-    description: "Monitors transactions, chases payments, negotiates renewals, reconciles expenses, keeps books.",
-    toolkits: ["stripe", "wise", "paypal", "quickbooks", "xero", "gmail", "googledrive"],
+    description:
+      "Monitors transactions, chases payments, negotiates renewals, reconciles expenses, keeps books.",
+    toolkits: [
+      "stripe",
+      "wise",
+      "paypal",
+      "quickbooks",
+      "xero",
+      "gmail",
+      "googledrive",
+    ],
     systemPrompt: `You are Etles's Finance and Vendor Admin Operator — a meticulous, assertive, and commercially sharp financial operator. You ensure that money coming in arrives on time, money going out is justified and optimised, and the books are always accurate. You treat the user's financial health with the same attention a CFO would give a company they are personally accountable for.
 
 YOUR MISSION:
@@ -470,8 +753,16 @@ HARD RULES:
   {
     slug: "competitive_intel",
     name: "Competitive Intelligence Operator",
-    description: "Monitors competitors, delivers weekly briefs with actionable recommendations.",
-    toolkits: ["gmail", "slack", "notion", "hubspot", "linkedin", "googleanalytics"],
+    description:
+      "Monitors competitors, delivers weekly briefs with actionable recommendations.",
+    toolkits: [
+      "gmail",
+      "slack",
+      "notion",
+      "hubspot",
+      "linkedin",
+      "googleanalytics",
+    ],
     systemPrompt: `You are Etles's Competitive Intelligence Operator — a sharp strategic analyst who watches the market so the user never gets blindsided. You do not produce generic market reports. You produce specific, actionable intelligence tied directly to the user's situation, with a clear answer to the only question that matters: what should the user do about this, right now?
 
 YOUR MISSION:
@@ -514,8 +805,17 @@ HARD RULES:
   {
     slug: "customer_success",
     name: "Customer Success and Support",
-    description: "Handles support, detects churn, triggers retention. Full CS function.",
-    toolkits: ["gmail", "slack", "hubspot", "salesforce", "amplitude", "mixpanel", "notion"],
+    description:
+      "Handles support, detects churn, triggers retention. Full CS function.",
+    toolkits: [
+      "gmail",
+      "slack",
+      "hubspot",
+      "salesforce",
+      "amplitude",
+      "mixpanel",
+      "notion",
+    ],
     systemPrompt: `You are Etles's Customer Success and Support Operator — a seasoned CS professional who treats every customer interaction as an opportunity to either deepen loyalty or prevent a loss. You respond fast, resolve thoroughly, and catch the customers who are quietly drifting away before they are gone.
 
 YOUR MISSION:
@@ -563,7 +863,8 @@ HARD RULES:
   {
     slug: "personal_admin",
     name: "Personal Life Admin Autopilot",
-    description: "Appointments, travel, insurance, renewals, household — personal admin automation.",
+    description:
+      "Appointments, travel, insurance, renewals, household — personal admin automation.",
     toolkits: ["gmail", "googledrive", "notion", "twilio", "wise"],
     systemPrompt: `You are Etles's Personal Life Admin Autopilot — a supremely organised and discreet personal assistant who handles the relentless low-level coordination that drains the user's time and mental energy. You anticipate needs before they become urgent. You handle complexity so the user does not have to think about it.
 
@@ -603,8 +904,21 @@ HARD RULES:
   {
     slug: "incident_response",
     name: "Incident Response Engineer",
-    description: "Detects, diagnoses, responds to production incidents. Rollback, communicate, create tickets.",
-    toolkits: ["sentry", "datadog", "newrelic", "github", "gitlab", "vercel", "netlify", "slack", "jira", "linear", "sendgrid"],
+    description:
+      "Detects, diagnoses, responds to production incidents. Rollback, communicate, create tickets.",
+    toolkits: [
+      "sentry",
+      "datadog",
+      "newrelic",
+      "github",
+      "gitlab",
+      "vercel",
+      "netlify",
+      "slack",
+      "jira",
+      "linear",
+      "sendgrid",
+    ],
     systemPrompt: `You are Etles's Autonomous Incident Response Engineer — a battle-hardened senior SRE who responds to production incidents with the speed of a first responder and the precision of a surgeon. When something breaks in production, you are already on it before any human knows. You contain the damage, find the cause, communicate to everyone who needs to know, and create a clean record — all in the time it would take a human to even read the alert.
 
 YOUR MISSION:
@@ -649,8 +963,18 @@ HARD RULES:
   {
     slug: "stripe_churn",
     name: "Stripe Churn Defense",
-    description: "Intercepts failed payments, cancellations; orchestrates personalized recovery sequences.",
-    toolkits: ["stripe", "salesforce", "hubspot", "amplitude", "mixpanel", "gmail", "twilio", "slack"],
+    description:
+      "Intercepts failed payments, cancellations; orchestrates personalized recovery sequences.",
+    toolkits: [
+      "stripe",
+      "salesforce",
+      "hubspot",
+      "amplitude",
+      "mixpanel",
+      "gmail",
+      "twilio",
+      "slack",
+    ],
     systemPrompt: `You are Etles's Revenue Protection Operator — a commercially sharp, empathetic operator whose sole job is to ensure that failed payments and cancellation signals do not become lost revenue. You understand that how you recover a failing payment reveals how much you value the customer. You do not send generic dunning emails. You treat every account as an individual and respond with the intelligence and care that intelligent customers deserve.
 
 YOUR MISSION:
@@ -695,8 +1019,20 @@ HARD RULES:
   {
     slug: "code_review",
     name: "Code Review and Deployment",
-    description: "PR review, CI/CD, deployments, post-deploy monitoring, Slack summaries.",
-    toolkits: ["github", "gitlab", "bitbucket", "circleci", "travis", "vercel", "netlify", "sentry", "datadog", "slack"],
+    description:
+      "PR review, CI/CD, deployments, post-deploy monitoring, Slack summaries.",
+    toolkits: [
+      "github",
+      "gitlab",
+      "bitbucket",
+      "circleci",
+      "travis",
+      "vercel",
+      "netlify",
+      "sentry",
+      "datadog",
+      "slack",
+    ],
     systemPrompt: `You are Etles's Autonomous Code Review and Deployment Agent — a senior engineer with deep experience in code quality, security, and production stability. You are not a linter. You do not just check whether tests pass. You review code the way a senior engineer does: with commercial awareness, security instincts, and an understanding of what breaks production at 2am.
 
 YOUR MISSION:
@@ -751,8 +1087,19 @@ HARD RULES:
   {
     slug: "cloud_cost",
     name: "Cloud Cost Intelligence",
-    description: "Monitors spend, identifies waste, rightsizes resources. Cost optimization.",
-    toolkits: ["aws", "gcp", "azure", "digitalocean", "heroku", "cloudflare", "github", "slack", "notion"],
+    description:
+      "Monitors spend, identifies waste, rightsizes resources. Cost optimization.",
+    toolkits: [
+      "aws",
+      "gcp",
+      "azure",
+      "digitalocean",
+      "heroku",
+      "cloudflare",
+      "github",
+      "slack",
+      "notion",
+    ],
     systemPrompt: `You are Etles's Cloud Cost Intelligence and Rightsizing Operator — a financially sharp, technically precise cloud economist who treats every dollar of cloud spend as if it were their own money. You do not wait for the monthly bill to find waste. You find it the moment it appears. You are the reason cloud costs go down without anything breaking.
 
 YOUR MISSION:
@@ -799,8 +1146,20 @@ HARD RULES:
   {
     slug: "product_analytics",
     name: "Product Analytics to Engineering",
-    description: "Detects metric changes, traces deploys, creates tickets, notifies PM, queues re-engagement.",
-    toolkits: ["amplitude", "mixpanel", "segment", "github", "linear", "jira", "slack", "klaviyo", "activecampaign", "notion"],
+    description:
+      "Detects metric changes, traces deploys, creates tickets, notifies PM, queues re-engagement.",
+    toolkits: [
+      "amplitude",
+      "mixpanel",
+      "segment",
+      "github",
+      "linear",
+      "jira",
+      "slack",
+      "klaviyo",
+      "activecampaign",
+      "notion",
+    ],
     systemPrompt: `You are Etles's Product Analytics to Engineering Action Agent — the intelligence layer that sits between product data and engineering response. You close the loop that most product teams never fully close: the gap between "our metrics dropped" and "here is exactly why, here is the ticket, here is who owns it, and here is the message going to the affected users." You turn data events into coordinated action in minutes, not days.
 
 YOUR MISSION:
@@ -853,8 +1212,22 @@ HARD RULES:
   {
     slug: "contractor_payment",
     name: "Contractor and Vendor Payment",
-    description: "Invoice parsing, verification, payment execution, bookkeeping. Full AP cycle.",
-    toolkits: ["gmail", "outlook", "asana", "linear", "stripe", "wise", "paypal", "quickbooks", "xero", "freshbooks", "googledrive", "notion"],
+    description:
+      "Invoice parsing, verification, payment execution, bookkeeping. Full AP cycle.",
+    toolkits: [
+      "gmail",
+      "outlook",
+      "asana",
+      "linear",
+      "stripe",
+      "wise",
+      "paypal",
+      "quickbooks",
+      "xero",
+      "freshbooks",
+      "googledrive",
+      "notion",
+    ],
     systemPrompt: `You are Etles's Contractor and Vendor Payment Operator — a precise, trustworthy, and efficient accounts payable specialist who ensures that every contractor gets paid accurately and on time, every invoice is properly verified and categorised, and the books are always in perfect order. Contractors who work with users running Etles get paid faster and with fewer errors than contractors working with anyone else. That reputation matters.
 
 YOUR MISSION:
@@ -907,8 +1280,16 @@ HARD RULES:
   {
     slug: "legal_operator",
     name: "Legal & Contract Intelligence",
-    description: "Monitors contracts for renewals, obligations, and risk. Alerts on deadlines and drafts negotiations.",
-    toolkits: ["gmail", "googledrive", "notion", "docusign", "pandadoc", "slack"],
+    description:
+      "Monitors contracts for renewals, obligations, and risk. Alerts on deadlines and drafts negotiations.",
+    toolkits: [
+      "gmail",
+      "googledrive",
+      "notion",
+      "docusign",
+      "pandadoc",
+      "slack",
+    ],
     systemPrompt: `You are Etles's Legal & Contract Intelligence Operator — a sharp, meticulous operational legal assistant who ensures the user is never blindsided by a contract they signed. You monitor every renewal window, obligation deadline, auto-renew trap, and liability clause. You don't replace a lawyer — you ensure the user is never caught off guard.
 
 YOUR MISSION:
@@ -938,7 +1319,8 @@ HARD RULES:
   {
     slug: "brand_monitor",
     name: "Brand & Reputation Crisis Monitor",
-    description: "Real-time social & news monitoring. Triages crises, surface opportunities, and drafts responses.",
+    description:
+      "Real-time social & news monitoring. Triages crises, surface opportunities, and drafts responses.",
     toolkits: ["twitter", "slack", "gmail", "notion", "hubspot", "linkedin"],
     systemPrompt: `You are Etles's Brand & Reputation Crisis Monitor — a high-velocity PR and social intelligence agent. You detect the gap between when a crisis starts and when the user finds out. You monitor mentions across Twitter, Reddit, HackerNews, and news indexers in real time to protect the user's reputation and surface growth opportunities.
 
@@ -964,8 +1346,17 @@ HARD RULES:
   {
     slug: "revenue_forecasting",
     name: "Revenue Forecasting & Early Warning",
-    description: "Tracks MRR, churn, and pipeline velocity. Forecasts performance and alerts on target gaps.",
-    toolkits: ["stripe", "hubspot", "salesforce", "amplitude", "notion", "slack", "googlesheets"],
+    description:
+      "Tracks MRR, churn, and pipeline velocity. Forecasts performance and alerts on target gaps.",
+    toolkits: [
+      "stripe",
+      "hubspot",
+      "salesforce",
+      "amplitude",
+      "notion",
+      "slack",
+      "googlesheets",
+    ],
     systemPrompt: `You are Etles's Revenue Forecasting & Early Warning System — a data-driven financial strategist. You handle the question that keeps founders up at night: "Are we going to hit the number?" You analyze MRR, churn, pipeline velocity, and conversion rates to give the user enough time to act before a miss happens.
 
 YOUR MISSION:
@@ -995,7 +1386,8 @@ HARD RULES:
   {
     slug: "docs_keeper",
     name: "Living Docs & Knowledge Keeper",
-    description: "Syncs code changes with documentation. Detects gaps from Slack and drafts missing entries.",
+    description:
+      "Syncs code changes with documentation. Detects gaps from Slack and drafts missing entries.",
     toolkits: ["github", "gitlab", "confluence", "notion", "slack", "linear"],
     systemPrompt: `You are Etles's Living Documentation & Knowledge Base Keeper — the bridge between shipping code and sharing knowledge. You recognize that "docs that lie" are worse than no docs. You close the gap between what the code does and what the documentation says as a side effect of the engineering process.
 
@@ -1024,8 +1416,17 @@ HARD RULES:
   {
     slug: "investor_relations",
     name: "Board & Investor Relations Operator",
-    description: "Automates investor updates, cap table comms, and board pack preparation.",
-    toolkits: ["gmail", "notion", "googlesheets", "googledrive", "stripe", "hubspot", "slack"],
+    description:
+      "Automates investor updates, cap table comms, and board pack preparation.",
+    toolkits: [
+      "gmail",
+      "notion",
+      "googlesheets",
+      "googledrive",
+      "stripe",
+      "hubspot",
+      "slack",
+    ],
     systemPrompt: `You are Etles's Board & Investor Relations Operator — a high-leverage executive assistant focused on maintaining perfect alignment with stakeholders. You understand that investor updates are a founder's best chance to build trust and get help. You automate the data heavy-lifting so the user can focus on the narrative.
 
 YOUR MISSION:
@@ -1056,7 +1457,14 @@ HARD RULES:
     name: "Growth Hacker",
     description:
       "Designs and executes user acquisition strategies: ICP research, channel prioritization, viral loops, referral programs, launch strategies on ProductHunt/HackerNews/IndieHackers.",
-    toolkits: ["linkedin", "twitter", "gmail", "notion", "googledrive", "hubspot"],
+    toolkits: [
+      "linkedin",
+      "twitter",
+      "gmail",
+      "notion",
+      "googledrive",
+      "hubspot",
+    ],
     systemPrompt: `You are Etles's Growth Hacker — a T-shaped growth operator who has taken 5 startups from 0 to their first 1000 users. You think in systems, not one-off tactics. You believe distribution is a product feature, not an afterthought.
 
 YOUR MISSION: Find the fastest, most defensible path to the user's specific growth goal. Then execute the first steps immediately.
@@ -1289,7 +1697,7 @@ OPERATING RULES
     name: "Browser Operator",
     description:
       "Performs complex web automation, data extraction, and multi-tab research using Browser Use Cloud and Daytona Playwright sandboxes.",
-    toolkits: ["browser_tool","browser_use", "daytona_browser"],
+    toolkits: ["browser_tool", "browser_use", "daytona_browser"],
     systemPrompt: `You are the Browser Operator for Etles — an expert web automation and research agent. You control real browsers to navigate websites, extract structured data, fill forms, and automate complex multi-step web workflows.
 
 Today's date is ${new Date().toLocaleDateString()}.
@@ -1496,7 +1904,8 @@ Present the shot list to the user for approval before generating. This prevents 
   {
     slug: "visual_designer",
     name: "Visual Designer & Asset Producer",
-    description: "High-fidelity UI/UX design, logos, mockups, marketing assets, and brand-consistent visuals.",
+    description:
+      "High-fidelity UI/UX design, logos, mockups, marketing assets, and brand-consistent visuals.",
     toolkits: ["googledrive", "notion", "slack", "gmail"],
     systemPrompt: `You are Etles's Autonomous Visual Designer — a senior art director and principal asset producer operating at the intersection of world-class design craft and technical precision. You don't generate images; you architect **visual systems** that command attention, communicate brand authority, and convert at scale.
 
@@ -1649,7 +2058,17 @@ Non-blocking check on how many child agents have completed. Use mid-coordination
     name: "Data Engineer",
     description:
       "Builds and repairs data pipelines, warehouse tables, dashboards, ETL jobs, schemas, and analytics data quality checks.",
-    toolkits: ["postgres", "mysql", "snowflake", "bigquery", "mongodb", "supabase", "github", "googlesheets", "airtable"],
+    toolkits: [
+      "postgres",
+      "mysql",
+      "snowflake",
+      "bigquery",
+      "mongodb",
+      "supabase",
+      "github",
+      "googlesheets",
+      "airtable",
+    ],
     systemPrompt: `You are Etles's Data Engineer, responsible for turning scattered operational data into reliable, queryable systems.
 
 MISSION:
@@ -1669,7 +2088,18 @@ OPERATING RULES:
     name: "Security Operator",
     description:
       "Monitors security posture, reviews access, triages alerts, checks cloud/app risk, and prepares remediation plans.",
-    toolkits: ["snyk", "sonarqube", "cloudflare", "aws", "gcp", "azure", "github", "gitlab", "sentry", "datadog"],
+    toolkits: [
+      "snyk",
+      "sonarqube",
+      "cloudflare",
+      "aws",
+      "gcp",
+      "azure",
+      "github",
+      "gitlab",
+      "sentry",
+      "datadog",
+    ],
     systemPrompt: `You are Etles's Security Operator, a calm and precise security analyst focused on practical risk reduction.
 
 MISSION:
@@ -1688,7 +2118,17 @@ HARD RULES:
     name: "Customer Researcher",
     description:
       "Synthesizes customer interviews, support tickets, surveys, product analytics, reviews, and churn signals into product insight.",
-    toolkits: ["intercom", "zendesk", "typeform", "googleforms", "posthog", "amplitude", "mixpanel", "hubspot", "notion"],
+    toolkits: [
+      "intercom",
+      "zendesk",
+      "typeform",
+      "googleforms",
+      "posthog",
+      "amplitude",
+      "mixpanel",
+      "hubspot",
+      "notion",
+    ],
     systemPrompt: `You are Etles's Customer Researcher, a product-minded qualitative analyst who finds signal in messy user feedback.
 
 MISSION:
@@ -1707,7 +2147,16 @@ OPERATING RULES:
     name: "Ecommerce Operator",
     description:
       "Runs store operations across Shopify/WooCommerce, orders, refunds, inventory, lifecycle email, product pages, and conversion fixes.",
-    toolkits: ["shopify", "woocommerce", "stripe", "paypal", "klaviyo", "mailchimp", "googleanalytics", "googlesheets"],
+    toolkits: [
+      "shopify",
+      "woocommerce",
+      "stripe",
+      "paypal",
+      "klaviyo",
+      "mailchimp",
+      "googleanalytics",
+      "googlesheets",
+    ],
     systemPrompt: `You are Etles's Ecommerce Operator, a detail-obsessed store operator focused on revenue, fulfillment, and customer trust.
 
 MISSION:
@@ -1725,7 +2174,16 @@ HARD RULES:
     name: "Ads Manager",
     description:
       "Plans, monitors, and optimizes paid acquisition across search, social, retargeting, creative tests, and campaign reporting.",
-    toolkits: ["googleads", "facebookads", "linkedinads", "tiktok", "googleanalytics", "semrush", "hubspot", "googlesheets"],
+    toolkits: [
+      "googleads",
+      "facebookads",
+      "linkedinads",
+      "tiktok",
+      "googleanalytics",
+      "semrush",
+      "hubspot",
+      "googlesheets",
+    ],
     systemPrompt: `You are Etles's Ads Manager, a performance marketer who protects spend and compounds learning.
 
 MISSION:
@@ -1743,7 +2201,16 @@ HARD RULES:
     name: "Event Planner",
     description:
       "Plans webinars, launches, workshops, team events, guest coordination, reminders, attendance tracking, and follow-ups.",
-    toolkits: ["eventbrite", "zoom", "googlemeet", "microsoftteams", "mailchimp", "typeform", "googlecalendar", "googlesheets"],
+    toolkits: [
+      "eventbrite",
+      "zoom",
+      "googlemeet",
+      "microsoftteams",
+      "mailchimp",
+      "typeform",
+      "googlecalendar",
+      "googlesheets",
+    ],
     systemPrompt: `You are Etles's Event Planner, a logistics operator who makes events feel effortless before, during, and after.
 
 MISSION:
@@ -1761,7 +2228,17 @@ HARD RULES:
     name: "Procurement Operator",
     description:
       "Compares vendors, manages renewal calendars, drafts purchase approvals, tracks invoices, and flags spend or contract risk.",
-    toolkits: ["quickbooks", "xero", "netsuite", "ramp", "brex", "docusign", "pandadoc", "gmail", "googledrive"],
+    toolkits: [
+      "quickbooks",
+      "xero",
+      "netsuite",
+      "ramp",
+      "brex",
+      "docusign",
+      "pandadoc",
+      "gmail",
+      "googledrive",
+    ],
     systemPrompt: `You are Etles's Procurement Operator, a cost-conscious operator who keeps vendor spend controlled and documented.
 
 MISSION:
@@ -1779,7 +2256,16 @@ HARD RULES:
     name: "QA Tester",
     description:
       "Designs and runs product QA plans, browser checks, regression tests, bug reports, release notes, and acceptance criteria.",
-    toolkits: ["github", "gitlab", "linear", "jira", "sentry", "browser_use", "daytona_browser", "vercel"],
+    toolkits: [
+      "github",
+      "gitlab",
+      "linear",
+      "jira",
+      "sentry",
+      "browser_use",
+      "daytona_browser",
+      "vercel",
+    ],
     systemPrompt: `You are Etles's QA Tester, a skeptical product tester who catches regressions before customers do.
 
 MISSION:
@@ -1797,7 +2283,16 @@ OPERATING RULES:
     name: "Knowledge Librarian",
     description:
       "Organizes company knowledge across docs, drives, wikis, tickets, transcripts, decisions, and reusable operating procedures.",
-    toolkits: ["notion", "confluence", "googledrive", "dropbox", "box", "airtable", "github", "slack"],
+    toolkits: [
+      "notion",
+      "confluence",
+      "googledrive",
+      "dropbox",
+      "box",
+      "airtable",
+      "github",
+      "slack",
+    ],
     systemPrompt: `You are Etles's Knowledge Librarian, a systems thinker who turns scattered context into durable institutional memory.
 
 MISSION:
@@ -1815,7 +2310,16 @@ HARD RULES:
     name: "Travel Concierge",
     description:
       "Plans business and personal travel, itineraries, reservations, calendar holds, expense prep, local logistics, and disruption recovery.",
-    toolkits: ["googlecalendar", "gmail", "googledrive", "googlemaps", "uber", "airbnb", "expensify", "tripadvisor"],
+    toolkits: [
+      "googlecalendar",
+      "gmail",
+      "googledrive",
+      "googlemaps",
+      "uber",
+      "airbnb",
+      "expensify",
+      "tripadvisor",
+    ],
     systemPrompt: `You are Etles's Travel Concierge, a meticulous travel planner who optimizes for time, comfort, cost, and reliability.
 
 MISSION:
@@ -1833,7 +2337,9 @@ HARD RULES:
 export const SUBAGENT_DEFINITIONS: SubAgentDefinition[] =
   BASE_SUBAGENT_DEFINITIONS.map(enrichToolkits);
 
-export function getSubAgentBySlug(slug: string): SubAgentDefinition | undefined {
+export function getSubAgentBySlug(
+  slug: string
+): SubAgentDefinition | undefined {
   return SUBAGENT_DEFINITIONS.find((a) => a.slug === slug);
 }
 

@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef } from 'react';
-import Hls from 'hls.js';
+import Hls from "hls.js";
+import { useEffect, useRef } from "react";
 
 interface HlsVideoProps {
-  src: string;
-  poster?: string;
   className?: string;
+  poster?: string;
+  src: string;
 }
 
 export function HlsVideo({ src, poster, className = "" }: HlsVideoProps) {
@@ -14,7 +14,9 @@ export function HlsVideo({ src, poster, className = "" }: HlsVideoProps) {
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video) {
+      return;
+    }
 
     let hls: Hls | null = null;
 
@@ -22,17 +24,21 @@ export function HlsVideo({ src, poster, className = "" }: HlsVideoProps) {
       hls = new Hls({
         capLevelToPlayerSize: true,
         maxBufferLength: 30,
-        enableWorker: true
+        enableWorker: true,
       });
       hls.loadSource(src);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(e => console.error("Video autoplay prevented:", e));
+        video
+          .play()
+          .catch((e) => console.error("Video autoplay prevented:", e));
       });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = src;
-      video.addEventListener('loadedmetadata', () => {
-        video.play().catch(e => console.error("Video autoplay prevented:", e));
+      video.addEventListener("loadedmetadata", () => {
+        video
+          .play()
+          .catch((e) => console.error("Video autoplay prevented:", e));
       });
     }
 
@@ -45,12 +51,12 @@ export function HlsVideo({ src, poster, className = "" }: HlsVideoProps) {
 
   return (
     <video
-      ref={videoRef}
       className={`absolute inset-0 w-full h-full object-cover z-0 ${className}`}
-      muted
       loop
+      muted
       playsInline
       poster={poster}
+      ref={videoRef}
     />
   );
 }

@@ -5,27 +5,26 @@
 //
 // QStash guarantees: at-least-once delivery, automatic retries, no timeout pressure.
 
-import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
-import { NextRequest, NextResponse } from "next/server";
-import { generateText, stepCountIs } from "ai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
-import { getLanguageModel } from "@/lib/ai/providers";
-import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
+import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 import { Index } from "@upstash/vector";
+import { generateText, stepCountIs } from "ai";
+import { type NextRequest, NextResponse } from "next/server";
+import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
+import { getLanguageModel } from "@/lib/ai/providers";
+import { getWeather } from "@/lib/ai/tools/get-weather";
+import {
+  deleteMemory,
+  recallMemory,
+  saveMemory,
+  updateMemory,
+} from "@/lib/ai/tools/memory";
 import {
   createAgentTask,
-  getChatsByUserId,
   saveMessages,
   updateAgentTask,
 } from "@/lib/db/queries";
-import { getWeather } from "@/lib/ai/tools/get-weather";
-import {
-  saveMemory,
-  recallMemory,
-  updateMemory,
-  deleteMemory,
-} from "@/lib/ai/tools/memory";
 import { generateUUID } from "@/lib/utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -33,18 +32,21 @@ import { generateUUID } from "@/lib/utils";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface TriggerWorkerPayload {
-  userId: string;
-  chatId: string;
   agentSlug: string;
+  chatId: string;
   taskPrompt: string;
   triggerName: string;
+  userId: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Memory injection — recall relevant context before agent runs
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function recallRelevantMemory(userId: string, query: string): Promise<string> {
+async function recallRelevantMemory(
+  userId: string,
+  query: string
+): Promise<string> {
   try {
     const index = new Index({
       url: process.env.UPSTASH_VECTOR_REST_URL!,
@@ -57,7 +59,9 @@ async function recallRelevantMemory(userId: string, query: string): Promise<stri
       includeMetadata: true,
     });
 
-    if (!results.length) return "";
+    if (!results.length) {
+      return "";
+    }
 
     const lines = results.map((r) => {
       const meta = r.metadata as any;
@@ -113,7 +117,9 @@ async function persistToChat(
     id: generateUUID(),
     chatId,
     role: "user",
-    parts: [{ type: "text", text: `[Trigger: ${triggerName}]\n\n${taskPrompt}` }],
+    parts: [
+      { type: "text", text: `[Trigger: ${triggerName}]\n\n${taskPrompt}` },
+    ],
     attachments: [],
     createdAt: timestamp,
   });
@@ -126,7 +132,7 @@ async function persistToChat(
       role: "assistant",
       parts: [{ type: "text", text: result.text }],
       attachments: [],
-      createdAt: new Date(timestamp.getTime() + 1_000),
+      createdAt: new Date(timestamp.getTime() + 1000),
     });
   }
 
@@ -134,12 +140,16 @@ async function persistToChat(
   // single assistant message per step. The AI SDK UIMessage schema has no
   // "tool" role; results live as parts inside assistant messages.
   if (result.steps) {
-    let offset = 2_000;
+    let offset = 2000;
     for (const step of result.steps) {
-      if (!step.toolCalls?.length) continue;
+      if (!step.toolCalls?.length) {
+        continue;
+      }
       for (const call of step.toolCalls) {
         const toolCallId = call.toolCallId;
-        const toolResult = step.toolResults?.find((r: any) => r.toolCallId === toolCallId);
+        const toolResult = step.toolResults?.find(
+          (r: any) => r.toolCallId === toolCallId
+        );
 
         const parts: any[] = [
           {
@@ -168,7 +178,7 @@ async function persistToChat(
           createdAt: new Date(timestamp.getTime() + offset),
         });
 
-        offset += 1_000;
+        offset += 1000;
       }
     }
   }
@@ -185,21 +195,32 @@ async function handler(req: NextRequest): Promise<NextResponse> {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Invalid JSON" },
+      { status: 400 }
+    );
   }
 
   const { userId, chatId, agentSlug, taskPrompt, triggerName } = body;
 
   if (!userId || !chatId || !agentSlug || !taskPrompt || !triggerName) {
-    return NextResponse.json({ ok: false, error: "Missing required fields" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Missing required fields" },
+      { status: 400 }
+    );
   }
 
   const agent = getSubAgentBySlug(agentSlug);
   if (!agent) {
-    return NextResponse.json({ ok: false, error: `Unknown agent: ${agentSlug}` }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: `Unknown agent: ${agentSlug}` },
+      { status: 400 }
+    );
   }
 
-  console.log(`[TriggerWorker] Running "${agentSlug}" for trigger "${triggerName}" | user: ${userId}`);
+  console.log(
+    `[TriggerWorker] Running "${agentSlug}" for trigger "${triggerName}" | user: ${userId}`
+  );
 
   // 1. Recall relevant user memory
   const memoryContext = await recallRelevantMemory(userId, taskPrompt);
@@ -211,7 +232,10 @@ async function handler(req: NextRequest): Promise<NextResponse> {
     const session = await composio.create(userId);
     composioTools = await session.tools();
   } catch (e) {
-    console.error(`[TriggerWorker] Composio tools failed for "${agentSlug}":`, e);
+    console.error(
+      `[TriggerWorker] Composio tools failed for "${agentSlug}":`,
+      e
+    );
   }
 
   const tools = {
@@ -264,8 +288,8 @@ async function handler(req: NextRequest): Promise<NextResponse> {
 
   console.log(
     `[TriggerWorker] "${agentSlug}" done — ` +
-    `tools used: ${result.toolCalls?.length ?? 0}, ` +
-    `response: ${result.text?.length ?? 0} chars`
+      `tools used: ${result.toolCalls?.length ?? 0}, ` +
+      `response: ${result.text?.length ?? 0} chars`
   );
 
   return NextResponse.json({

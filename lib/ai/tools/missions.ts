@@ -1,11 +1,13 @@
+import { Client } from "@upstash/workflow";
 import { tool } from "ai";
 import { z } from "zod";
-import { Client } from "@upstash/workflow";
 import { createAgentTask } from "@/lib/db/queries";
 import { generateUUID } from "@/lib/utils";
 
 function getMissionWorkflowClient(): Client | null {
-  if (!process.env.QSTASH_TOKEN) return null;
+  if (!process.env.QSTASH_TOKEN) {
+    return null;
+  }
   return new Client({ token: process.env.QSTASH_TOKEN });
 }
 
@@ -36,7 +38,10 @@ export const launchMission = ({
         .describe(
           "Describe your product, who it's for, and the core problem it solves. The more specific the better."
         ),
-      productUrl: z.string().optional().describe("Your product URL if you have one"),
+      productUrl: z
+        .string()
+        .optional()
+        .describe("Your product URL if you have one"),
     }),
     execute: async ({ goal, startupDescription, productUrl }) => {
       if (!process.env.QSTASH_TOKEN) {
@@ -60,7 +65,14 @@ export const launchMission = ({
       try {
         const { workflowRunId } = await client.trigger({
           url: missionUrl,
-          body: { missionId, userId, chatId, goal, startupDescription, productUrl },
+          body: {
+            missionId,
+            userId,
+            chatId,
+            goal,
+            startupDescription,
+            productUrl,
+          },
           retries: 3,
         });
 
@@ -81,7 +93,10 @@ export const launchMission = ({
         };
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : String(error);
-        return { success: false, error: `Failed to trigger mission workflow: ${msg}` };
+        return {
+          success: false,
+          error: `Failed to trigger mission workflow: ${msg}`,
+        };
       }
     },
   });
@@ -95,7 +110,9 @@ export const getMissionStatus = ({ userId: _userId }: { userId: string }) =>
       workflowRunId: z
         .string()
         .optional()
-        .describe("The workflowRunId returned by launchMission. If omitted, checks the most recent."),
+        .describe(
+          "The workflowRunId returned by launchMission. If omitted, checks the most recent."
+        ),
     }),
     execute: async ({ workflowRunId }) => {
       const client = getMissionWorkflowClient();
@@ -117,7 +134,8 @@ export const getMissionStatus = ({ userId: _userId }: { userId: string }) =>
         if (!runs.length) {
           return {
             status: "not_found",
-            message: "No workflow runs found. The mission may still be starting up.",
+            message:
+              "No workflow runs found. The mission may still be starting up.",
           };
         }
 

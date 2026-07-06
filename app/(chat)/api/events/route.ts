@@ -1,6 +1,6 @@
-import { auth } from "../../../(auth)/auth";
-import { getEventsByUserId } from "@/lib/db/queries";
 import { guestRegex } from "@/lib/constants";
+import { getEventsByUserId } from "@/lib/db/queries";
+import { auth } from "../../../(auth)/auth";
 
 export async function GET() {
   const session = await auth();
@@ -10,7 +10,10 @@ export async function GET() {
 
   const isGuest = guestRegex.test(session?.user?.email ?? "");
   if (isGuest) {
-    return Response.json({ error: "Unauthorized: Guest access not allowed" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized: Guest access not allowed" },
+      { status: 401 }
+    );
   }
 
   try {
@@ -22,6 +25,9 @@ export async function GET() {
     return Response.json({ events });
   } catch (error: any) {
     console.error("Failed to fetch events from DB:", error);
-    return Response.json({ error: "Failed to load events", details: error.message }, { status: 500 });
+    return Response.json(
+      { error: "Failed to load events", details: error.message },
+      { status: 500 }
+    );
   }
 }

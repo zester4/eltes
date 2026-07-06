@@ -3,18 +3,11 @@
 import { exampleSetup } from "prosemirror-example-setup";
 import { inputRules } from "prosemirror-inputrules";
 import { keymap } from "prosemirror-keymap";
-import {
-  columnResizing,
-  goToNextCell,
-  tableEditing,
-} from "prosemirror-tables";
-import { type Node } from "prosemirror-model";
+import type { Node } from "prosemirror-model";
 import { EditorState } from "prosemirror-state";
+import { columnResizing, goToNextCell, tableEditing } from "prosemirror-tables";
 import { EditorView, type NodeView } from "prosemirror-view";
 import { memo, useEffect, useRef } from "react";
-
-import { ChartDisplay } from "./elements/chart-display";
-import { ReactRenderer } from "@/lib/editor/react-renderer";
 import type { Suggestion } from "@/lib/db/schema";
 import {
   documentSchema,
@@ -26,11 +19,13 @@ import {
   buildDocumentFromContent,
   createDecorations,
 } from "@/lib/editor/functions";
+import { ReactRenderer } from "@/lib/editor/react-renderer";
 import {
   projectWithPositions,
   suggestionsPlugin,
   suggestionsPluginKey,
 } from "@/lib/editor/suggestions";
+import { ChartDisplay } from "./elements/chart-display";
 
 type EditorProps = {
   content: string;
@@ -56,15 +51,22 @@ class ChartNodeView implements NodeView {
   render() {
     try {
       const spec = JSON.parse(this.node.attrs.data);
-      this.renderer = ReactRenderer.render(<ChartDisplay spec={spec} />, this.dom);
+      this.renderer = ReactRenderer.render(
+        <ChartDisplay spec={spec} />,
+        this.dom
+      );
     } catch (e) {
       this.dom.innerText = "Invalid chart data: " + this.node.attrs.data;
     }
   }
 
   update(node: Node) {
-    if (node.type !== this.node.type) return false;
-    if (node.attrs.data === this.node.attrs.data) return true;
+    if (node.type !== this.node.type) {
+      return false;
+    }
+    if (node.attrs.data === this.node.attrs.data) {
+      return true;
+    }
     this.node = node;
     this.renderer?.destroy();
     this.render();

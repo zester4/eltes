@@ -7,12 +7,16 @@ const ai = new GoogleGenAI({});
 // Detects repeated phrases and returns only the first clean segment
 function removeLoops(text: string): string {
   const words = text.trim().split(/\s+/);
-  
+
   // Try increasing window sizes to find a repeated pattern
-  for (let windowSize = 3; windowSize <= Math.floor(words.length / 2); windowSize++) {
+  for (
+    let windowSize = 3;
+    windowSize <= Math.floor(words.length / 2);
+    windowSize++
+  ) {
     const pattern = words.slice(0, windowSize).join(" ");
     const rest = words.slice(windowSize).join(" ");
-    
+
     if (rest.startsWith(pattern)) {
       // Loop detected — return just the first occurrence
       return pattern;
@@ -62,7 +66,7 @@ If there is no intelligible speech, output exactly: SILENCE_DETECTED`;
       ],
       config: {
         temperature: 0,
-        maxOutputTokens: 500,           // ✅ short clips don't need more
+        maxOutputTokens: 500, // ✅ short clips don't need more
         stopSequences: ["\n\n", "---"], // ✅ cuts off if model starts padding
       },
     });

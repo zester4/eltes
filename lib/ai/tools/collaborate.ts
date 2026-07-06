@@ -18,17 +18,14 @@
 
 import { tool } from "ai";
 import { z } from "zod";
-import { generateUUID } from "@/lib/utils";
-import { createAgentTask } from "@/lib/db/queries";
 import {
-  triggerAgentWorkflow,
-  isWorkflowEnabled,
-} from "@/lib/workflow/client";
-import {
-  initCoordination,
   collectAgentResults,
   getCoordinationStatus,
+  initCoordination,
 } from "@/lib/agent/agent-bus";
+import { createAgentTask } from "@/lib/db/queries";
+import { generateUUID } from "@/lib/utils";
+import { isWorkflowEnabled, triggerAgentWorkflow } from "@/lib/workflow/client";
 
 // ── spawnChildAgent ───────────────────────────────────────────────────────────
 
@@ -57,20 +54,20 @@ export const spawnChildAgent = ({
         .string()
         .describe(
           "The slug of the agent to spawn. Examples: sdr, competitive_intel, " +
-            "inbox_operator, chief_of_staff, social_media, finance, brand_monitor.",
+            "inbox_operator, chief_of_staff, social_media, finance, brand_monitor."
         ),
       task: z
         .string()
         .describe(
           "Specific task for the child agent. Be precise — include all context " +
-            "the child needs since it won't have access to your conversation history.",
+            "the child needs since it won't have access to your conversation history."
         ),
       coordinationId: z
         .string()
         .optional()
         .describe(
           "Shared coordination ID if you're spawning multiple agents in a fan-out pattern. " +
-            "Use the same coordinationId across all sibling spawn calls to group their results.",
+            "Use the same coordinationId across all sibling spawn calls to group their results."
         ),
       waitForResult: z
         .boolean()
@@ -79,7 +76,7 @@ export const spawnChildAgent = ({
         .describe(
           "If true, this tool will wait up to 8 minutes for the child to complete. " +
             "Only set to true for SEQUENTIAL workflows where you need the result before continuing. " +
-            "For parallel fan-out, set false and use waitForChildAgents separately.",
+            "For parallel fan-out, set false and use waitForChildAgents separately."
         ),
     }),
     execute: async ({ agentType, task, coordinationId, waitForResult }) => {
@@ -100,7 +97,8 @@ export const spawnChildAgent = ({
         if (!isWorkflowEnabled()) {
           return {
             success: false,
-            error: "Workflow not configured (QSTASH_TOKEN missing). Cannot spawn child agents.",
+            error:
+              "Workflow not configured (QSTASH_TOKEN missing). Cannot spawn child agents.",
             taskId,
           };
         }
@@ -133,7 +131,8 @@ export const spawnChildAgent = ({
           childEventId,
           agentType,
           workflowRunId: result.workflowRunId,
-          message: `Spawned ${agentType} agent (task: ${taskId}). ` +
+          message:
+            `Spawned ${agentType} agent (task: ${taskId}). ` +
             `It will notify on event: ${childEventId} when done.`,
         };
 
@@ -143,7 +142,7 @@ export const spawnChildAgent = ({
             coordination,
             [taskId],
             8 * 60 * 1000,
-            3000,
+            3000
           );
           const childResult = collected.results[taskId];
           return {
@@ -176,7 +175,9 @@ export const waitForChildAgents = () =>
         .describe("The coordinationId returned by spawnChildAgent calls."),
       taskIds: z
         .array(z.string())
-        .describe("List of taskIds from previous spawnChildAgent calls to wait for."),
+        .describe(
+          "List of taskIds from previous spawnChildAgent calls to wait for."
+        ),
       timeoutMinutes: z
         .number()
         .min(1)
@@ -191,7 +192,7 @@ export const waitForChildAgents = () =>
           coordinationId,
           taskIds,
           (timeoutMinutes ?? 8) * 60 * 1000,
-          4000,
+          4000
         );
 
         return {
@@ -210,7 +211,7 @@ export const waitForChildAgents = () =>
               };
               return acc;
             },
-            {} as Record<string, any>,
+            {} as Record<string, any>
           ),
           summary:
             receivedCount >= taskIds.length
@@ -242,8 +243,7 @@ export const getCollaborationStatus = () =>
           success: true,
           ...status,
           complete:
-            status.expected !== null &&
-            status.received >= status.expected,
+            status.expected !== null && status.received >= status.expected,
         };
       } catch (err: any) {
         return { success: false, error: err?.message ?? String(err) };

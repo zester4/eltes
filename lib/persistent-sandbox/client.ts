@@ -21,8 +21,8 @@
  * Env:     E2B_API_KEY
  */
 
-import { Sandbox } from "e2b";
 import { Redis } from "@upstash/redis";
+import { Sandbox } from "e2b";
 
 // ── Redis key ─────────────────────────────────────────────────────────────────
 // Stores the sandboxId for each user. TTL = 32 days (slightly above E2B's 30-day
@@ -76,7 +76,9 @@ export async function getOrCreatePersistentSandbox(
       const sandbox = await Sandbox.connect(sandboxId, {
         timeoutMs: ACTIVE_TIMEOUT_MS,
       });
-      console.log(`[PersistentSandbox] Connected to sandbox ${sandboxId} for user ${userId}`);
+      console.log(
+        `[PersistentSandbox] Connected to sandbox ${sandboxId} for user ${userId}`
+      );
       return { sandbox, sandboxId, isNew: false };
     } catch (err: any) {
       // Sandbox expired (>30 days) or was manually killed — fall through to create
@@ -98,7 +100,9 @@ export async function getOrCreatePersistentSandbox(
   });
 
   sandboxId = sandbox.sandboxId;
-  console.log(`[PersistentSandbox] Created new sandbox ${sandboxId} for user ${userId}`);
+  console.log(
+    `[PersistentSandbox] Created new sandbox ${sandboxId} for user ${userId}`
+  );
 
   // 4. Bootstrap the sandbox environment
   await bootstrapSandbox(sandbox, userId);
@@ -117,10 +121,15 @@ export async function getOrCreatePersistentSandbox(
  * One-time setup when a sandbox is first created for a user.
  * Installs common tools and creates the workspace directory structure.
  */
-async function bootstrapSandbox(sandbox: Sandbox, userId: string): Promise<void> {
+async function bootstrapSandbox(
+  sandbox: Sandbox,
+  userId: string
+): Promise<void> {
   try {
     // Create a clean workspace structure
-    await sandbox.commands.run("mkdir -p /home/user/workspace /home/user/projects /home/user/.etles");
+    await sandbox.commands.run(
+      "mkdir -p /home/user/workspace /home/user/projects /home/user/.etles"
+    );
 
     // Write a README so the agent knows what this is
     await sandbox.files.write(
@@ -146,14 +155,16 @@ async function bootstrapSandbox(sandbox: Sandbox, userId: string): Promise<void>
  * Call this after completing a task to stop billing and preserve state.
  * The next getOrCreatePersistentSandbox call will resume from this state.
  */
-export async function pausePersistentSandbox(
-  userId: string
-): Promise<void> {
+export async function pausePersistentSandbox(userId: string): Promise<void> {
   const redis = getRedis();
-  if (!redis) return;
+  if (!redis) {
+    return;
+  }
 
   const sandboxId = await redis.get<string>(sandboxKey(userId));
-  if (!sandboxId) return;
+  if (!sandboxId) {
+    return;
+  }
 
   try {
     const sandbox = await Sandbox.connect(sandboxId);
@@ -170,9 +181,7 @@ export async function pausePersistentSandbox(
  */
 export async function resetPersistentSandbox(userId: string): Promise<void> {
   const redis = getRedis();
-  const sandboxId = redis
-    ? await redis.get<string>(sandboxKey(userId))
-    : null;
+  const sandboxId = redis ? await redis.get<string>(sandboxKey(userId)) : null;
 
   if (sandboxId) {
     try {
@@ -195,10 +204,14 @@ export async function resetPersistentSandbox(userId: string): Promise<void> {
  */
 export async function keepAlive(userId: string): Promise<void> {
   const redis = getRedis();
-  if (!redis) return;
+  if (!redis) {
+    return;
+  }
 
   const sandboxId = await redis.get<string>(sandboxKey(userId));
-  if (!sandboxId) return;
+  if (!sandboxId) {
+    return;
+  }
 
   try {
     // Connect briefly (this resets the 30-day expiry clock on the paused snapshot)
@@ -221,6 +234,8 @@ export async function getPersistentSandboxId(
   userId: string
 ): Promise<string | null> {
   const redis = getRedis();
-  if (!redis) return null;
+  if (!redis) {
+    return null;
+  }
   return redis.get<string>(sandboxKey(userId));
 }

@@ -13,8 +13,8 @@
  *   DAYTONA_TARGET    — Optional; e.g. "us" or "eu"
  */
 
-import { tool } from "ai";
 import { Daytona } from "@daytonaio/sdk";
+import { tool } from "ai";
 import { z } from "zod";
 
 // ── SDK singleton ─────────────────────────────────────────────────────────────
@@ -40,10 +40,14 @@ function userLabels(userId: string) {
 async function findUserSandbox(userId: string, sandboxId: string) {
   const daytona = getDaytona();
   const sandbox = await daytona.get(sandboxId);
-  if (!sandbox) return null;
+  if (!sandbox) {
+    return null;
+  }
   // Verify ownership via labels
   const labels = (sandbox as any).labels as Record<string, string> | undefined;
-  if (labels?.etles_user_id && labels.etles_user_id !== userId) return null;
+  if (labels?.etles_user_id && labels.etles_user_id !== userId) {
+    return null;
+  }
   return sandbox;
 }
 
@@ -64,16 +68,26 @@ export const createSandbox = ({ userId }: { userId: string }) =>
       "that needs a real execution environment. Optionally clone a Git repository into the sandbox at creation time.",
     inputSchema: z.object({
       language: z
-        .enum(["typescript", "javascript", "python", "go", "rust", "java", "ruby"])
+        .enum([
+          "typescript",
+          "javascript",
+          "python",
+          "go",
+          "rust",
+          "java",
+          "ruby",
+        ])
         .optional()
         .default("typescript")
-        .describe("Runtime language for the sandbox. Ignored if `image` is set. Default: typescript."),
+        .describe(
+          "Runtime language for the sandbox. Ignored if `image` is set. Default: typescript."
+        ),
       image: z
         .string()
         .optional()
         .describe(
           "Custom Docker image to use. E.g. 'node:22-slim', 'python:3.12', 'golang:1.22'. " +
-          "Overrides `language` when set."
+            "Overrides `language` when set."
         ),
       resources: z
         .object({
@@ -86,11 +100,15 @@ export const createSandbox = ({ userId }: { userId: string }) =>
       envVars: z
         .record(z.string())
         .optional()
-        .describe("Environment variables to inject into the sandbox at creation. E.g. { NODE_ENV: 'test' }"),
+        .describe(
+          "Environment variables to inject into the sandbox at creation. E.g. { NODE_ENV: 'test' }"
+        ),
       repositoryUrl: z
         .string()
         .optional()
-        .describe("Optional Git repository URL to clone into the sandbox on startup."),
+        .describe(
+          "Optional Git repository URL to clone into the sandbox on startup."
+        ),
       autoStopMinutes: z
         .number()
         .min(0)
@@ -101,7 +119,14 @@ export const createSandbox = ({ userId }: { userId: string }) =>
           "Minutes of inactivity before auto-stop. Use 0 to disable (runs indefinitely). Default: 30."
         ),
     }),
-    execute: async ({ language, image, resources, envVars, repositoryUrl, autoStopMinutes }) => {
+    execute: async ({
+      language,
+      image,
+      resources,
+      envVars,
+      repositoryUrl,
+      autoStopMinutes,
+    }) => {
       try {
         const daytona = getDaytona();
 
@@ -121,7 +146,7 @@ export const createSandbox = ({ userId }: { userId: string }) =>
         if (repositoryUrl) {
           try {
             await sandbox.git.clone(repositoryUrl, "workspace/repo");
-            cloneResult = `Repository cloned to workspace/repo`;
+            cloneResult = "Repository cloned to workspace/repo";
           } catch (e: any) {
             cloneResult = `Warning: clone failed — ${e?.message ?? String(e)}`;
           }
@@ -185,13 +210,18 @@ export const deleteSandbox = ({ userId }: { userId: string }) =>
       "Permanently delete a Daytona sandbox and all its files. " +
       "Use when the user is done with a sandbox or explicitly asks to clean up.",
     inputSchema: z.object({
-      sandboxId: z.string().describe("The sandbox ID returned by createSandbox."),
+      sandboxId: z
+        .string()
+        .describe("The sandbox ID returned by createSandbox."),
     }),
     execute: async ({ sandboxId }) => {
       try {
         const sandbox = await findUserSandbox(userId, sandboxId);
         if (!sandbox) {
-          return { success: false, error: `Sandbox ${sandboxId} not found or not owned by you.` };
+          return {
+            success: false,
+            error: `Sandbox ${sandboxId} not found or not owned by you.`,
+          };
         }
         await sandbox.delete();
         return { success: true, message: `Sandbox ${sandboxId} deleted.` };
@@ -225,7 +255,9 @@ export const executeCommand = ({ userId }: { userId: string }) =>
       workingDir: z
         .string()
         .optional()
-        .describe("Working directory for the command. Defaults to sandbox home. E.g. 'workspace/repo'"),
+        .describe(
+          "Working directory for the command. Defaults to sandbox home. E.g. 'workspace/repo'"
+        ),
       env: z
         .record(z.string())
         .optional()
@@ -238,7 +270,13 @@ export const executeCommand = ({ userId }: { userId: string }) =>
         .default(60)
         .describe("Command timeout in seconds. Default: 60."),
     }),
-    execute: async ({ sandboxId, command, workingDir, env, timeoutSeconds }) => {
+    execute: async ({
+      sandboxId,
+      command,
+      workingDir,
+      env,
+      timeoutSeconds,
+    }) => {
       try {
         const sandbox = await findUserSandbox(userId, sandboxId);
         if (!sandbox) {
@@ -256,7 +294,7 @@ export const executeCommand = ({ userId }: { userId: string }) =>
           success: response.exitCode === 0,
           exitCode: response.exitCode,
           output: response.result ?? "",
-          error: response.exitCode !== 0 ? response.result : undefined,
+          error: response.exitCode === 0 ? undefined : response.result,
         };
       } catch (error: any) {
         return { success: false, error: error?.message ?? String(error) };
@@ -303,7 +341,7 @@ export const runCode = ({ userId }: { userId: string }) =>
           success: response.exitCode === 0,
           exitCode: response.exitCode,
           output: response.result ?? "",
-          error: response.exitCode !== 0 ? response.result : undefined,
+          error: response.exitCode === 0 ? undefined : response.result,
         };
       } catch (error: any) {
         return { success: false, error: error?.message ?? String(error) };
@@ -366,7 +404,11 @@ export const readFile = ({ userId }: { userId: string }) =>
       "Use to inspect source code, config files, build output, or any text file.",
     inputSchema: z.object({
       sandboxId: z.string().describe("Sandbox ID."),
-      path: z.string().describe("Path to the file inside the sandbox. E.g. 'workspace/repo/package.json'"),
+      path: z
+        .string()
+        .describe(
+          "Path to the file inside the sandbox. E.g. 'workspace/repo/package.json'"
+        ),
     }),
     execute: async ({ sandboxId, path }) => {
       try {
@@ -385,7 +427,9 @@ export const readFile = ({ userId }: { userId: string }) =>
         return {
           success: true,
           path,
-          content: truncated ? content.slice(0, MAX_CHARS) + "\n\n[...truncated]" : content,
+          content: truncated
+            ? content.slice(0, MAX_CHARS) + "\n\n[...truncated]"
+            : content,
           truncated,
           size: content.length,
         };
@@ -405,7 +449,11 @@ export const writeFile = ({ userId }: { userId: string }) =>
       "Use to create source files, config files, scripts, or any file the agent needs to write.",
     inputSchema: z.object({
       sandboxId: z.string().describe("Sandbox ID."),
-      path: z.string().describe("Destination path inside the sandbox. E.g. 'workspace/repo/index.ts'"),
+      path: z
+        .string()
+        .describe(
+          "Destination path inside the sandbox. E.g. 'workspace/repo/index.ts'"
+        ),
       content: z.string().describe("Text content to write to the file."),
     }),
     execute: async ({ sandboxId, path, content }) => {
@@ -433,10 +481,13 @@ export const writeFile = ({ userId }: { userId: string }) =>
  */
 export const createDirectory = ({ userId }: { userId: string }) =>
   tool({
-    description: "Create a new directory (folder) inside the sandbox at the given path.",
+    description:
+      "Create a new directory (folder) inside the sandbox at the given path.",
     inputSchema: z.object({
       sandboxId: z.string().describe("Sandbox ID."),
-      path: z.string().describe("Directory path to create. E.g. 'workspace/src/utils'"),
+      path: z
+        .string()
+        .describe("Directory path to create. E.g. 'workspace/src/utils'"),
       permissions: z
         .string()
         .optional()
@@ -484,10 +535,14 @@ export const searchFiles = ({ userId }: { userId: string }) =>
           return { success: false, error: `Sandbox ${sandboxId} not found.` };
         }
 
-        const results = await sandbox.fs.findFiles(path ?? "workspace", pattern);
+        const results = await sandbox.fs.findFiles(
+          path ?? "workspace",
+          pattern
+        );
 
         const MAX_RESULTS = 50;
-        const truncated = Array.isArray(results) && results.length > MAX_RESULTS;
+        const truncated =
+          Array.isArray(results) && results.length > MAX_RESULTS;
 
         return {
           success: true,
@@ -560,12 +615,16 @@ export const gitClone = ({ userId }: { userId: string }) =>
       "For private repos, provide username and a personal access token as password.",
     inputSchema: z.object({
       sandboxId: z.string().describe("Sandbox ID."),
-      url: z.string().describe("Repository URL. E.g. 'https://github.com/owner/repo.git'"),
+      url: z
+        .string()
+        .describe("Repository URL. E.g. 'https://github.com/owner/repo.git'"),
       path: z
         .string()
         .optional()
         .default("workspace/repo")
-        .describe("Destination path inside the sandbox. Default: 'workspace/repo'."),
+        .describe(
+          "Destination path inside the sandbox. Default: 'workspace/repo'."
+        ),
       branch: z
         .string()
         .optional()
@@ -573,7 +632,9 @@ export const gitClone = ({ userId }: { userId: string }) =>
       username: z
         .string()
         .optional()
-        .describe("Git username for private repos. Use 'git' for token-based auth."),
+        .describe(
+          "Git username for private repos. Use 'git' for token-based auth."
+        ),
       password: z
         .string()
         .optional()
@@ -680,7 +741,14 @@ export const gitCommit = ({ userId }: { userId: string }) =>
         .default("agent@etles.app")
         .describe("Commit author email."),
     }),
-    execute: async ({ sandboxId, repoPath, files, message, authorName, authorEmail }) => {
+    execute: async ({
+      sandboxId,
+      repoPath,
+      files,
+      message,
+      authorName,
+      authorEmail,
+    }) => {
       try {
         const sandbox = await findUserSandbox(userId, sandboxId);
         if (!sandbox) {
@@ -723,7 +791,10 @@ export const gitPush = ({ userId }: { userId: string }) =>
         .optional()
         .default("workspace/repo")
         .describe("Path to the repository."),
-      username: z.string().optional().describe("Git username for authentication."),
+      username: z
+        .string()
+        .optional()
+        .describe("Git username for authentication."),
       password: z
         .string()
         .optional()
@@ -754,7 +825,8 @@ export const gitPush = ({ userId }: { userId: string }) =>
  */
 export const gitPull = ({ userId }: { userId: string }) =>
   tool({
-    description: "Pull the latest changes from the remote repository into the sandbox.",
+    description:
+      "Pull the latest changes from the remote repository into the sandbox.",
     inputSchema: z.object({
       sandboxId: z.string().describe("Sandbox ID."),
       repoPath: z
@@ -762,8 +834,14 @@ export const gitPull = ({ userId }: { userId: string }) =>
         .optional()
         .default("workspace/repo")
         .describe("Path to the repository."),
-      username: z.string().optional().describe("Git username for private repos."),
-      password: z.string().optional().describe("Token or password for private repos."),
+      username: z
+        .string()
+        .optional()
+        .describe("Git username for private repos."),
+      password: z
+        .string()
+        .optional()
+        .describe("Token or password for private repos."),
     }),
     execute: async ({ sandboxId, repoPath, username, password }) => {
       try {
@@ -802,7 +880,9 @@ export const gitBranch = ({ userId }: { userId: string }) =>
         .describe("Path to the repository."),
       action: z
         .enum(["list", "create", "checkout"])
-        .describe("Action to perform: 'list' all branches, 'create' a new branch, or 'checkout' an existing one."),
+        .describe(
+          "Action to perform: 'list' all branches, 'create' a new branch, or 'checkout' an existing one."
+        ),
       branchName: z
         .string()
         .optional()
@@ -826,7 +906,11 @@ export const gitBranch = ({ userId }: { userId: string }) =>
         }
 
         if (!branchName) {
-          return { success: false, error: "branchName is required for 'create' and 'checkout' actions." };
+          return {
+            success: false,
+            error:
+              "branchName is required for 'create' and 'checkout' actions.",
+          };
         }
 
         if (action === "create") {
@@ -836,7 +920,10 @@ export const gitBranch = ({ userId }: { userId: string }) =>
 
         // checkout
         await sandbox.git.checkoutBranch(path, branchName);
-        return { success: true, message: `Switched to branch '${branchName}'.` };
+        return {
+          success: true,
+          message: `Switched to branch '${branchName}'.`,
+        };
       } catch (error: any) {
         return { success: false, error: error?.message ?? String(error) };
       }
@@ -863,13 +950,17 @@ export const getPreviewLink = ({ userId }: { userId: string }) =>
         .number()
         .int()
         .min(1)
-        .max(65535)
-        .describe("Port the server is listening on. E.g. 3000, 5000, 5173, 8080."),
+        .max(65_535)
+        .describe(
+          "Port the server is listening on. E.g. 3000, 5000, 5173, 8080."
+        ),
     }),
     execute: async ({ sandboxId, port }) => {
       try {
         const sandbox = await findUserSandbox(userId, sandboxId);
-        if (!sandbox) return { success: false, error: `Sandbox ${sandboxId} not found.` };
+        if (!sandbox) {
+          return { success: false, error: `Sandbox ${sandboxId} not found.` };
+        }
         const preview = await (sandbox as any).getPreviewLink(port);
         return {
           success: true,
@@ -898,10 +989,14 @@ export const runBackgroundProcess = ({ userId }: { userId: string }) =>
       sandboxId: z.string().describe("Sandbox ID."),
       sessionId: z
         .string()
-        .describe("Unique name for this session. E.g. 'dev-server', 'test-watcher'. Reuse to send commands to same session."),
+        .describe(
+          "Unique name for this session. E.g. 'dev-server', 'test-watcher'. Reuse to send commands to same session."
+        ),
       command: z
         .string()
-        .describe("Command to run in the background. E.g. 'npm run dev', 'python app.py', 'pytest --watch'"),
+        .describe(
+          "Command to run in the background. E.g. 'npm run dev', 'python app.py', 'pytest --watch'"
+        ),
       workingDir: z
         .string()
         .optional()
@@ -910,7 +1005,9 @@ export const runBackgroundProcess = ({ userId }: { userId: string }) =>
     execute: async ({ sandboxId, sessionId, command, workingDir }) => {
       try {
         const sandbox = await findUserSandbox(userId, sandboxId);
-        if (!sandbox) return { success: false, error: `Sandbox ${sandboxId} not found.` };
+        if (!sandbox) {
+          return { success: false, error: `Sandbox ${sandboxId} not found.` };
+        }
 
         await sandbox.process.createSession(sessionId);
         const res = await sandbox.process.executeSessionCommand(sessionId, {
@@ -943,7 +1040,9 @@ export const lspDiagnostics = ({ userId }: { userId: string }) =>
       sandboxId: z.string().describe("Sandbox ID."),
       filePath: z
         .string()
-        .describe("Absolute or relative path to the file to check. E.g. 'workspace/repo/src/index.ts'"),
+        .describe(
+          "Absolute or relative path to the file to check. E.g. 'workspace/repo/src/index.ts'"
+        ),
       language: z
         .enum(["typescript", "javascript"])
         .optional()
@@ -953,14 +1052,21 @@ export const lspDiagnostics = ({ userId }: { userId: string }) =>
         .string()
         .optional()
         .default("workspace/repo")
-        .describe("Root path of the project (where tsconfig.json is). Default: 'workspace/repo'."),
+        .describe(
+          "Root path of the project (where tsconfig.json is). Default: 'workspace/repo'."
+        ),
     }),
     execute: async ({ sandboxId, filePath, language, projectPath }) => {
       try {
         const sandbox = await findUserSandbox(userId, sandboxId);
-        if (!sandbox) return { success: false, error: `Sandbox ${sandboxId} not found.` };
+        if (!sandbox) {
+          return { success: false, error: `Sandbox ${sandboxId} not found.` };
+        }
 
-        const lsp = await (sandbox as any).createLspServer(language ?? "typescript", projectPath ?? "workspace/repo");
+        const lsp = await (sandbox as any).createLspServer(
+          language ?? "typescript",
+          projectPath ?? "workspace/repo"
+        );
         await lsp.start();
         await lsp.didOpen(filePath);
         const diagnostics = await lsp.diagnostics(filePath);
@@ -970,7 +1076,12 @@ export const lspDiagnostics = ({ userId }: { userId: string }) =>
           filePath,
           clean: !diagnostics?.length,
           diagnostics: (diagnostics ?? []).map((d: any) => ({
-            severity: d.severity === 1 ? "error" : d.severity === 2 ? "warning" : "info",
+            severity:
+              d.severity === 1
+                ? "error"
+                : d.severity === 2
+                  ? "warning"
+                  : "info",
             message: d.message,
             line: (d.range?.start?.line ?? 0) + 1,
             column: (d.range?.start?.character ?? 0) + 1,
@@ -998,7 +1109,9 @@ export const archiveSandbox = ({ userId }: { userId: string }) =>
     execute: async ({ sandboxId }) => {
       try {
         const sandbox = await findUserSandbox(userId, sandboxId);
-        if (!sandbox) return { success: false, error: `Sandbox ${sandboxId} not found.` };
+        if (!sandbox) {
+          return { success: false, error: `Sandbox ${sandboxId} not found.` };
+        }
         await (sandbox as any).archive();
         return {
           success: true,
@@ -1008,4 +1121,4 @@ export const archiveSandbox = ({ userId }: { userId: string }) =>
         return { success: false, error: error?.message ?? String(error) };
       }
     },
-  });
+  });

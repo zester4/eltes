@@ -1,6 +1,7 @@
 //lib/ai/tools/schedule.ts
-import { tool } from "ai";
+
 import { Client } from "@upstash/qstash";
+import { tool } from "ai";
 import { z } from "zod";
 import { createAgentTask } from "@/lib/db/queries";
 import { generateUUID } from "@/lib/utils";
@@ -20,13 +21,22 @@ import { generateUUID } from "@/lib/utils";
 function getQStashClient() {
   return new Client({
     baseUrl: process.env.QSTASH_URL || "https://qstash-us-east-1.upstash.io",
-    token: process.env.QSTASH_URL === "http://localhost:3000" ? "not-needed" : process.env.QSTASH_TOKEN!,
+    token:
+      process.env.QSTASH_URL === "http://localhost:3000"
+        ? "not-needed"
+        : process.env.QSTASH_TOKEN!,
   });
 }
 
 // ─── setReminder ──────────────────────────────────────────────────────────────
 
-export const setReminder = ({ userId, baseUrl }: { userId: string; baseUrl: string }) =>
+export const setReminder = ({
+  userId,
+  baseUrl,
+}: {
+  userId: string;
+  baseUrl: string;
+}) =>
   tool({
     description:
       "Set a one-time reminder or delayed action for the user. " +
@@ -44,12 +54,14 @@ export const setReminder = ({ userId, baseUrl }: { userId: string; baseUrl: stri
         .min(1)
         .describe(
           "How many seconds from now to wait before delivering the reminder. " +
-          "Convert natural language durations: 1 hour = 3600, 1 day = 86400, 1 week = 604800."
+            "Convert natural language durations: 1 hour = 3600, 1 day = 86400, 1 week = 604800."
         ),
       label: z
         .string()
         .optional()
-        .describe("A short human-readable label to identify this reminder, e.g. 'weekly-report'"),
+        .describe(
+          "A short human-readable label to identify this reminder, e.g. 'weekly-report'"
+        ),
     }),
     execute: async ({ message, delaySeconds, label }) => {
       try {
@@ -70,7 +82,7 @@ export const setReminder = ({ userId, baseUrl }: { userId: string; baseUrl: stri
           retries: 3,
           label: label ?? "reminder",
         });
-        
+
         // Log to AgentTask for dashboard visibility, but do not fail scheduling if this write fails.
         try {
           await createAgentTask({
@@ -101,7 +113,13 @@ export const setReminder = ({ userId, baseUrl }: { userId: string; baseUrl: stri
 
 // ─── setCronJob ───────────────────────────────────────────────────────────────
 
-export const setCronJob = ({ userId, baseUrl }: { userId: string; baseUrl: string }) =>
+export const setCronJob = ({
+  userId,
+  baseUrl,
+}: {
+  userId: string;
+  baseUrl: string;
+}) =>
   tool({
     description:
       "Create a recurring scheduled action using a cron expression. " +
@@ -202,7 +220,9 @@ export const listSchedules = ({ userId }: { userId: string }) =>
         return {
           schedules: userSchedules.map((s) => {
             let parsed: any = {};
-            try { parsed = JSON.parse(s.body ?? "{}"); } catch {}
+            try {
+              parsed = JSON.parse(s.body ?? "{}");
+            } catch {}
             return {
               scheduleId: s.scheduleId,
               name: parsed.name ?? "unnamed",

@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/app/(auth)/auth";
 import { Index } from "@upstash/vector";
+import { type NextRequest, NextResponse } from "next/server";
+import { auth } from "@/app/(auth)/auth";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json() as {
+  const body = (await req.json()) as {
     name?: string;
     role?: string;
     painPoints?: string[];

@@ -1,10 +1,12 @@
 //app/(chat)/api/chat/route.ts
+
+import { Composio } from "@composio/core";
+import { VercelProvider } from "@composio/vercel";
 import { geolocation, ipAddress } from "@vercel/functions";
 import {
   convertToModelMessages,
   createUIMessageStream,
   createUIMessageStreamResponse,
-  type UIMessageStreamWriter,
   generateId,
   stepCountIs,
   streamText,
@@ -12,112 +14,105 @@ import {
 import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { auth, type UserType } from "@/app/(auth)/auth";
+import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import { allowedModelIds, DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
-import { guestRegex } from "@/lib/constants";
 import {
-  type RequestHints,
-  systemPrompt,
   getBasePrompt,
-  sessionTailPrompt,
   getRequestPromptFromHints,
+  type RequestHints,
+  sessionTailPrompt,
 } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
+import {
+  archiveSandbox,
+  createDirectory,
+  createSandbox,
+  deleteSandbox,
+  executeCommand,
+  getPreviewLink,
+  gitBranch,
+  gitClone,
+  gitCommit,
+  gitPull,
+  gitPush,
+  gitStatus,
+  listFiles,
+  listSandboxes,
+  lspDiagnostics,
+  readFile,
+  replaceInFiles,
+  runBackgroundProcess,
+  runCode,
+  searchFiles,
+  writeFile,
+} from "@/lib/ai/tools/daytona";
+import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 import { editDocument } from "@/lib/ai/tools/edit-document";
 import { generateImageTool } from "@/lib/ai/tools/generate-image";
 import { generateVideoTool } from "@/lib/ai/tools/generate-video";
 import { getWeather } from "@/lib/ai/tools/get-weather";
-import { renderChart } from "@/lib/ai/tools/render-chart";
-import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
-import { updateDocument } from "@/lib/ai/tools/update-document";
-import { wikiQuery, wikiIngest } from "@/lib/ai/tools/wiki";
 import {
-  saveMemory,
-  recallMemory,
-  updateMemory,
+  addGoal,
+  deleteGoal,
+  listGoals,
+  logGoalProgress,
+  updateGoal,
+} from "@/lib/ai/tools/goals";
+import {
+  addKnowledgeRelation,
+  deleteKnowledgeEntity,
+  deleteKnowledgeRelation,
+  getKnowledgeEntity,
+  searchKnowledgeGraph,
+  upsertKnowledgeEntity,
+} from "@/lib/ai/tools/knowledge-graph";
+import {
   deleteMemory,
+  recallMemory,
+  saveMemory,
+  updateMemory,
 } from "@/lib/ai/tools/memory";
-import { searchPastConversations } from "@/lib/ai/tools/search-history";
-import {
-  setReminder,
-  setCronJob,
-  listSchedules,
-  deleteSchedule,
-} from "@/lib/ai/tools/schedule";
-import {
-  setupTrigger,
-  listActiveTriggers,
-  removeTrigger,
-} from "@/lib/ai/tools/triggers";
-import {
-  delegateToSubAgent,
-  getSubAgentResult,
-  listSubAgents,
-} from "@/lib/ai/tools/subagents";
-import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
-import { launchMission, getMissionStatus } from "@/lib/ai/tools/missions";
-import { queueApproval } from "@/lib/ai/tools/queue-approval";
+import { getMissionStatus, launchMission } from "@/lib/ai/tools/missions";
+import { allOracleTools } from "@/lib/ai/tools/oracle-cloud";
+import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
 import {
   activateHeartbeat,
   getAgentSystemStatus,
   setMorningBriefingTime,
 } from "@/lib/ai/tools/proactive";
+import { queueApproval } from "@/lib/ai/tools/queue-approval";
+import { renderChart } from "@/lib/ai/tools/render-chart";
+import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import {
-  upsertKnowledgeEntity,
-  addKnowledgeRelation,
-  getKnowledgeEntity,
-  searchKnowledgeGraph,
-  deleteKnowledgeEntity,
-  deleteKnowledgeRelation,
-} from "@/lib/ai/tools/knowledge-graph";
+  deleteSchedule,
+  listSchedules,
+  setCronJob,
+  setReminder,
+} from "@/lib/ai/tools/schedule";
+import { searchPastConversations } from "@/lib/ai/tools/search-history";
 import {
-  addGoal,
-  updateGoal,
-  logGoalProgress,
-  listGoals,
-  deleteGoal,
-} from "@/lib/ai/tools/goals";
+  delegateToSubAgent,
+  getSubAgentResult,
+  listSubAgents,
+} from "@/lib/ai/tools/subagents";
 import {
-  tavilySearch,
-  tavilyExtract,
   tavilyCrawl,
+  tavilyExtract,
   tavilyMap,
+  tavilySearch,
 } from "@/lib/ai/tools/tavily-search";
+import {
+  listActiveTriggers,
+  removeTrigger,
+  setupTrigger,
+} from "@/lib/ai/tools/triggers";
 import * as twilioTools from "@/lib/ai/tools/twilio";
 import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
-import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
-import { allOracleTools } from "@/lib/ai/tools/oracle-cloud";
-import {
-  createSandbox,
-  listSandboxes,
-  deleteSandbox,
-  executeCommand,
-  runCode,
-  listFiles,
-  readFile,
-  writeFile,
-  createDirectory,
-  searchFiles,
-  replaceInFiles,
-  gitClone,
-  gitStatus,
-  gitCommit,
-  gitPush,
-  gitPull,
-  gitBranch,
-  getPreviewLink,
-  runBackgroundProcess,
-  lspDiagnostics,
-  archiveSandbox,
-} from "@/lib/ai/tools/daytona";
-import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
-import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
-import { touchUserActivity } from "@/lib/user-activity";
-import { getCachedSystemPrompt, setCachedSystemPrompt } from "@/lib/prompt-cache";
-import { Composio } from "@composio/core";
-import { VercelProvider } from "@composio/vercel";
-import { isProductionEnvironment } from "@/lib/constants";
+import { updateDocument } from "@/lib/ai/tools/update-document";
+import { wikiIngest, wikiQuery } from "@/lib/ai/tools/wiki";
+import { guestRegex, isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
   deleteChatById,
@@ -132,8 +127,14 @@ import {
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
+import {
+  getCachedSystemPrompt,
+  setCachedSystemPrompt,
+} from "@/lib/prompt-cache";
 import { checkIpRateLimit } from "@/lib/ratelimit";
+import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import type { ChatMessage } from "@/lib/types";
+import { touchUserActivity } from "@/lib/user-activity";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
@@ -218,9 +219,7 @@ export async function POST(request: Request) {
       titlePromise = generateTitleFromUserMessage({ message });
     }
 
-    let sessionTail = !chat
-      ? await getSessionTail(session.user.id)
-      : undefined;
+    let sessionTail = chat ? undefined : await getSessionTail(session.user.id);
 
     // Onboarding check for new users (no chat history) — Authenticated users only
     if (!chat && !isGuest) {
@@ -237,7 +236,9 @@ export async function POST(request: Request) {
             role: "assistant" as const,
             text: "SYSTEM: User is new. You MUST start with a guided setup: 'Hi! I'm Etles. Let's take 2 minutes to set you up. What do you do for work? what apps do you use (Gmail, Slack, GitHub, etc.)?' Proactively save every answer using saveMemory. When they finish, saveMemory with key 'onboarding_complete' to register their background jobs.",
           };
-          sessionTail = sessionTail ? [...sessionTail, onboardingTail] : [onboardingTail];
+          sessionTail = sessionTail
+            ? [...sessionTail, onboardingTail]
+            : [onboardingTail];
         }
       } catch (e) {
         console.error("Onboarding check failed:", e);
@@ -311,8 +312,8 @@ export async function POST(request: Request) {
 
         if (!basePrompt) {
           basePrompt = isOnboarding
-            ? getSubAgentBySlug("onboarding_specialist")?.systemPrompt ??
-              getBasePrompt({ selectedChatModel })
+            ? (getSubAgentBySlug("onboarding_specialist")?.systemPrompt ??
+              getBasePrompt({ selectedChatModel }))
             : getBasePrompt({ selectedChatModel });
 
           await setCachedSystemPrompt({
@@ -334,136 +335,136 @@ export async function POST(request: Request) {
           system: corePrompt,
           messages: modelMessages,
           stopWhen: stepCountIs(25),
-            experimental_activeTools: [
-                  "getWeather",
-                  "generateImage",
-                  "generateVideo",
-                  "renderChart",
-                  "createDocument",
-                "updateDocument",
-                "editDocument",
-                "requestSuggestions",
-                "saveMemory",
-                "recallMemory",
-                "searchPastConversations",
-                "updateMemory",
-                "deleteMemory",
-                "setReminder",
-                "setCronJob",
-                "listSchedules",
-                "deleteSchedule",
-                "setupTrigger",
-                "listActiveTriggers",
-                "removeTrigger",
-                "delegateToSubAgent",
-                "getSubAgentResult",
-                "listSubAgents",
-                "launchMission",
-                "getMissionStatus",
-                "queueApproval",
-                "activateHeartbeat",
-                "getAgentSystemStatus",
-                "setMorningBriefingTime",
-                "upsertKnowledgeEntity",
-                "addKnowledgeRelation",
-                "getKnowledgeEntity",
-                "searchKnowledgeGraph",
-                "deleteKnowledgeEntity",
-                "deleteKnowledgeRelation",
-                "addGoal",
-                "updateGoal",
-                "logGoalProgress",
-                "listGoals",
-                "deleteGoal",
-                "tavilySearch",
-                "tavilyExtract",
-                "tavilyCrawl",
-                "tavilyMap",
-                "wikiQuery",
-                "wikiIngest",
-                // Twilio tools
-                "twilioMakeCall",
-                "twilioGetCall",
-                "twilioListCalls",
-                "twilioModifyCall",
-                "twilioSendSMS",
-                "twilioGetMessage",
-                "twilioListMessages",
-                "twilioListMyNumbers",
-                "twilioSearchAvailableNumbers",
-                "twilioProvisionNumber",
-                "twilioReleaseNumber",
-                "twilioUpdateNumber",
-                "twilioWhatsAppSendMessage",
-                "twilioWhatsAppGetMessage",
-                "twilioWhatsAppListMessages",
-                "twilioWhatsAppSendTemplate",
-                "twilioWhatsAppCreateTemplate",
-                "twilioWhatsAppListTemplates",
-                "twilioWhatsAppGetTemplate",
-                "twilioWhatsAppDeleteTemplate",
-                "twilioWhatsAppSubmitApproval",
-                "twilioWhatsAppGetApprovalStatus",
-                "twilioWhatsAppListSenders",
-                "sandboxStatus",
-                "sandboxRun",
-                "sandboxWriteFile",
-                "sandboxReadFile",
-                "sandboxListFiles",
-                "sandboxInstall",
-                "sandboxStartService",
-                "sandboxReset",
-                "createSandbox",
-                "listSandboxes",
-                "deleteSandbox",
-                "executeCommand",
-                "runCode",
-                "listFiles",
-                "readFile",
-                "writeFile",
-                "createDirectory",
-                "searchFiles",
-                "replaceInFiles",
-                "gitClone",
-                "gitStatus",
-                "gitCommit",
-                "gitPush",
-                "gitPull",
-                "gitBranch",
-                "getPreviewLink",
-                "runBackgroundProcess",
-                "lspDiagnostics",
-                "archiveSandbox",
-                "browserSetup",
-                "browserNavigate",
-                "browserInteract",
-                "browserExtract",
-                "browserMultiTab",
-                "browserUploadFile",
-                "browserScreenshot",
-                "browserVisualInteract",
-                "oracleSSHExec",
-                "oracleSSHExecMany",
-                "oracleSSHReadFile",
-                "oracleSSHWriteFile",
-                "oracleSSHListFiles",
-                "oracleSSHFileOps",
-                "oracleSSHUploadFile",
-                "oracleSSHPM2",
-                "oracleSSHDeploy",
-                "oracleSSHGit",
-                "oracleSSHSystemStats",
-                "oracleSSHTailLogs",
-                "oracleSSHNginx",
-                "oracleSSHEnvManager",
-                "oracleSSHCron",
-                "oracleSSHNetwork",
-                "oracleSSHPackages",
-                "oracleSSHService",
-                "oracleSSHDiskCleanup",
-                "oracleSSHSSL",
-                ...Object.keys(composioTools),
-              ] as any,
+          experimental_activeTools: [
+            "getWeather",
+            "generateImage",
+            "generateVideo",
+            "renderChart",
+            "createDocument",
+            "updateDocument",
+            "editDocument",
+            "requestSuggestions",
+            "saveMemory",
+            "recallMemory",
+            "searchPastConversations",
+            "updateMemory",
+            "deleteMemory",
+            "setReminder",
+            "setCronJob",
+            "listSchedules",
+            "deleteSchedule",
+            "setupTrigger",
+            "listActiveTriggers",
+            "removeTrigger",
+            "delegateToSubAgent",
+            "getSubAgentResult",
+            "listSubAgents",
+            "launchMission",
+            "getMissionStatus",
+            "queueApproval",
+            "activateHeartbeat",
+            "getAgentSystemStatus",
+            "setMorningBriefingTime",
+            "upsertKnowledgeEntity",
+            "addKnowledgeRelation",
+            "getKnowledgeEntity",
+            "searchKnowledgeGraph",
+            "deleteKnowledgeEntity",
+            "deleteKnowledgeRelation",
+            "addGoal",
+            "updateGoal",
+            "logGoalProgress",
+            "listGoals",
+            "deleteGoal",
+            "tavilySearch",
+            "tavilyExtract",
+            "tavilyCrawl",
+            "tavilyMap",
+            "wikiQuery",
+            "wikiIngest",
+            // Twilio tools
+            "twilioMakeCall",
+            "twilioGetCall",
+            "twilioListCalls",
+            "twilioModifyCall",
+            "twilioSendSMS",
+            "twilioGetMessage",
+            "twilioListMessages",
+            "twilioListMyNumbers",
+            "twilioSearchAvailableNumbers",
+            "twilioProvisionNumber",
+            "twilioReleaseNumber",
+            "twilioUpdateNumber",
+            "twilioWhatsAppSendMessage",
+            "twilioWhatsAppGetMessage",
+            "twilioWhatsAppListMessages",
+            "twilioWhatsAppSendTemplate",
+            "twilioWhatsAppCreateTemplate",
+            "twilioWhatsAppListTemplates",
+            "twilioWhatsAppGetTemplate",
+            "twilioWhatsAppDeleteTemplate",
+            "twilioWhatsAppSubmitApproval",
+            "twilioWhatsAppGetApprovalStatus",
+            "twilioWhatsAppListSenders",
+            "sandboxStatus",
+            "sandboxRun",
+            "sandboxWriteFile",
+            "sandboxReadFile",
+            "sandboxListFiles",
+            "sandboxInstall",
+            "sandboxStartService",
+            "sandboxReset",
+            "createSandbox",
+            "listSandboxes",
+            "deleteSandbox",
+            "executeCommand",
+            "runCode",
+            "listFiles",
+            "readFile",
+            "writeFile",
+            "createDirectory",
+            "searchFiles",
+            "replaceInFiles",
+            "gitClone",
+            "gitStatus",
+            "gitCommit",
+            "gitPush",
+            "gitPull",
+            "gitBranch",
+            "getPreviewLink",
+            "runBackgroundProcess",
+            "lspDiagnostics",
+            "archiveSandbox",
+            "browserSetup",
+            "browserNavigate",
+            "browserInteract",
+            "browserExtract",
+            "browserMultiTab",
+            "browserUploadFile",
+            "browserScreenshot",
+            "browserVisualInteract",
+            "oracleSSHExec",
+            "oracleSSHExecMany",
+            "oracleSSHReadFile",
+            "oracleSSHWriteFile",
+            "oracleSSHListFiles",
+            "oracleSSHFileOps",
+            "oracleSSHUploadFile",
+            "oracleSSHPM2",
+            "oracleSSHDeploy",
+            "oracleSSHGit",
+            "oracleSSHSystemStats",
+            "oracleSSHTailLogs",
+            "oracleSSHNginx",
+            "oracleSSHEnvManager",
+            "oracleSSHCron",
+            "oracleSSHNetwork",
+            "oracleSSHPackages",
+            "oracleSSHService",
+            "oracleSSHDiskCleanup",
+            "oracleSSHSSL",
+            ...Object.keys(composioTools),
+          ] as any,
           providerOptions: isReasoningModel
             ? {
                 anthropic: {
@@ -498,7 +499,9 @@ export async function POST(request: Request) {
             // Memory tools (per-user Upstash Vector)
             saveMemory: saveMemory({ userId: session.user.id! }),
             recallMemory: recallMemory({ userId: session.user.id! }),
-            searchPastConversations: searchPastConversations({ userId: session.user.id! }),
+            searchPastConversations: searchPastConversations({
+              userId: session.user.id!,
+            }),
             updateMemory: updateMemory({ userId: session.user.id! }),
             deleteMemory: deleteMemory({ userId: session.user.id! }),
             // Scheduling tools (QStash)
@@ -514,7 +517,9 @@ export async function POST(request: Request) {
             deleteSchedule: deleteSchedule(),
             // Trigger management tools
             setupTrigger: setupTrigger({ userId: session.user.id! }),
-            listActiveTriggers: listActiveTriggers({ userId: session.user.id! }),
+            listActiveTriggers: listActiveTriggers({
+              userId: session.user.id!,
+            }),
             removeTrigger: removeTrigger(),
             // Sub-agent delegation (guest users get listSubAgents only)
             ...(isGuest
@@ -523,16 +528,22 @@ export async function POST(request: Request) {
                   delegateToSubAgent: delegateToSubAgent({
                     userId: session.user.id!,
                     chatId: id,
-                    baseUrl: process.env.BASE_URL || new URL(request.url).origin,
+                    baseUrl:
+                      process.env.BASE_URL || new URL(request.url).origin,
                   }),
-                  getSubAgentResult: getSubAgentResult({ userId: session.user.id! }),
+                  getSubAgentResult: getSubAgentResult({
+                    userId: session.user.id!,
+                  }),
                   listSubAgents: listSubAgents(),
                   launchMission: launchMission({
                     userId: session.user.id!,
                     chatId: id,
-                    baseUrl: process.env.BASE_URL || new URL(request.url).origin,
+                    baseUrl:
+                      process.env.BASE_URL || new URL(request.url).origin,
                   }),
-                  getMissionStatus: getMissionStatus({ userId: session.user.id! }),
+                  getMissionStatus: getMissionStatus({
+                    userId: session.user.id!,
+                  }),
                   queueApproval: queueApproval({
                     userId: session.user.id!,
                     chatId: id,
@@ -540,12 +551,16 @@ export async function POST(request: Request) {
                   }),
                   activateHeartbeat: activateHeartbeat({
                     userId: session.user.id!,
-                    baseUrl: process.env.BASE_URL || new URL(request.url).origin,
+                    baseUrl:
+                      process.env.BASE_URL || new URL(request.url).origin,
                   }),
-                  getAgentSystemStatus: getAgentSystemStatus({ userId: session.user.id! }),
+                  getAgentSystemStatus: getAgentSystemStatus({
+                    userId: session.user.id!,
+                  }),
                   setMorningBriefingTime: setMorningBriefingTime({
                     userId: session.user.id!,
-                    baseUrl: process.env.BASE_URL || new URL(request.url).origin,
+                    baseUrl:
+                      process.env.BASE_URL || new URL(request.url).origin,
                   }),
                   upsertKnowledgeEntity: upsertKnowledgeEntity({
                     userId: session.user.id!,
@@ -567,7 +582,9 @@ export async function POST(request: Request) {
                   }),
                   addGoal: addGoal({ userId: session.user.id! }),
                   updateGoal: updateGoal({ userId: session.user.id! }),
-                  logGoalProgress: logGoalProgress({ userId: session.user.id! }),
+                  logGoalProgress: logGoalProgress({
+                    userId: session.user.id!,
+                  }),
                   listGoals: listGoals({ userId: session.user.id! }),
                   deleteGoal: deleteGoal({ userId: session.user.id! }),
                   tavilySearch,
@@ -575,30 +592,88 @@ export async function POST(request: Request) {
                   tavilyCrawl,
                   tavilyMap,
                   // Twilio Tools
-                  twilioMakeCall: twilioTools.twilioMakeCall({ userId: session.user.id! }),
-                  twilioGetCall: twilioTools.twilioGetCall({ userId: session.user.id! }),
-                  twilioListCalls: twilioTools.twilioListCalls({ userId: session.user.id! }),
-                  twilioModifyCall: twilioTools.twilioModifyCall({ userId: session.user.id! }),
-                  twilioSendSMS: twilioTools.twilioSendSMS({ userId: session.user.id! }),
-                  twilioGetMessage: twilioTools.twilioGetMessage({ userId: session.user.id! }),
-                  twilioListMessages: twilioTools.twilioListMessages({ userId: session.user.id! }),
-                  twilioListMyNumbers: twilioTools.twilioListMyNumbers({ userId: session.user.id! }),
-                  twilioSearchAvailableNumbers: twilioTools.twilioSearchAvailableNumbers({ userId: session.user.id! }),
-                  twilioProvisionNumber: twilioTools.twilioProvisionNumber({ userId: session.user.id! }),
-                  twilioReleaseNumber: twilioTools.twilioReleaseNumber({ userId: session.user.id! }),
-                  twilioUpdateNumber: twilioTools.twilioUpdateNumber({ userId: session.user.id! }),
+                  twilioMakeCall: twilioTools.twilioMakeCall({
+                    userId: session.user.id!,
+                  }),
+                  twilioGetCall: twilioTools.twilioGetCall({
+                    userId: session.user.id!,
+                  }),
+                  twilioListCalls: twilioTools.twilioListCalls({
+                    userId: session.user.id!,
+                  }),
+                  twilioModifyCall: twilioTools.twilioModifyCall({
+                    userId: session.user.id!,
+                  }),
+                  twilioSendSMS: twilioTools.twilioSendSMS({
+                    userId: session.user.id!,
+                  }),
+                  twilioGetMessage: twilioTools.twilioGetMessage({
+                    userId: session.user.id!,
+                  }),
+                  twilioListMessages: twilioTools.twilioListMessages({
+                    userId: session.user.id!,
+                  }),
+                  twilioListMyNumbers: twilioTools.twilioListMyNumbers({
+                    userId: session.user.id!,
+                  }),
+                  twilioSearchAvailableNumbers:
+                    twilioTools.twilioSearchAvailableNumbers({
+                      userId: session.user.id!,
+                    }),
+                  twilioProvisionNumber: twilioTools.twilioProvisionNumber({
+                    userId: session.user.id!,
+                  }),
+                  twilioReleaseNumber: twilioTools.twilioReleaseNumber({
+                    userId: session.user.id!,
+                  }),
+                  twilioUpdateNumber: twilioTools.twilioUpdateNumber({
+                    userId: session.user.id!,
+                  }),
                   // Twilio WhatsApp Tools
-                  twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({ userId: session.user.id! }),
-                  twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({ userId: session.user.id! }),
-                  twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({ userId: session.user.id! }),
-                  twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({ userId: session.user.id! }),
-                  twilioWhatsAppCreateTemplate: twilioWhatsApp.twilioWhatsAppCreateTemplate({ userId: session.user.id! }),
-                  twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates({ userId: session.user.id! }),
-                  twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({ userId: session.user.id! }),
-                  twilioWhatsAppDeleteTemplate: twilioWhatsApp.twilioWhatsAppDeleteTemplate({ userId: session.user.id! }),
-                  twilioWhatsAppSubmitApproval: twilioWhatsApp.twilioWhatsAppSubmitApproval({ userId: session.user.id! }),
-                  twilioWhatsAppGetApprovalStatus: twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId: session.user.id! }),
-                  twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({ userId: session.user.id! }),
+                  twilioWhatsAppSendMessage:
+                    twilioWhatsApp.twilioWhatsAppSendMessage({
+                      userId: session.user.id!,
+                    }),
+                  twilioWhatsAppGetMessage:
+                    twilioWhatsApp.twilioWhatsAppGetMessage({
+                      userId: session.user.id!,
+                    }),
+                  twilioWhatsAppListMessages:
+                    twilioWhatsApp.twilioWhatsAppListMessages({
+                      userId: session.user.id!,
+                    }),
+                  twilioWhatsAppSendTemplate:
+                    twilioWhatsApp.twilioWhatsAppSendTemplate({
+                      userId: session.user.id!,
+                    }),
+                  twilioWhatsAppCreateTemplate:
+                    twilioWhatsApp.twilioWhatsAppCreateTemplate({
+                      userId: session.user.id!,
+                    }),
+                  twilioWhatsAppListTemplates:
+                    twilioWhatsApp.twilioWhatsAppListTemplates({
+                      userId: session.user.id!,
+                    }),
+                  twilioWhatsAppGetTemplate:
+                    twilioWhatsApp.twilioWhatsAppGetTemplate({
+                      userId: session.user.id!,
+                    }),
+                  twilioWhatsAppDeleteTemplate:
+                    twilioWhatsApp.twilioWhatsAppDeleteTemplate({
+                      userId: session.user.id!,
+                    }),
+                  twilioWhatsAppSubmitApproval:
+                    twilioWhatsApp.twilioWhatsAppSubmitApproval({
+                      userId: session.user.id!,
+                    }),
+                  twilioWhatsAppGetApprovalStatus:
+                    twilioWhatsApp.twilioWhatsAppGetApprovalStatus({
+                      userId: session.user.id!,
+                    }),
+                  twilioWhatsAppListSenders:
+                    twilioWhatsApp.twilioWhatsAppListSenders({
+                      userId: session.user.id!,
+                    }),
                   // Daytona Tools
                   createSandbox: createSandbox({ userId: session.user.id! }),
                   listSandboxes: listSandboxes({ userId: session.user.id! }),
@@ -608,7 +683,9 @@ export async function POST(request: Request) {
                   listFiles: listFiles({ userId: session.user.id! }),
                   readFile: readFile({ userId: session.user.id! }),
                   writeFile: writeFile({ userId: session.user.id! }),
-                  createDirectory: createDirectory({ userId: session.user.id! }),
+                  createDirectory: createDirectory({
+                    userId: session.user.id!,
+                  }),
                   searchFiles: searchFiles({ userId: session.user.id! }),
                   replaceInFiles: replaceInFiles({ userId: session.user.id! }),
                   gitClone: gitClone({ userId: session.user.id! }),
@@ -618,18 +695,37 @@ export async function POST(request: Request) {
                   gitPull: gitPull({ userId: session.user.id! }),
                   gitBranch: gitBranch({ userId: session.user.id! }),
                   getPreviewLink: getPreviewLink({ userId: session.user.id! }),
-                  runBackgroundProcess: runBackgroundProcess({ userId: session.user.id! }),
+                  runBackgroundProcess: runBackgroundProcess({
+                    userId: session.user.id!,
+                  }),
                   lspDiagnostics: lspDiagnostics({ userId: session.user.id! }),
                   archiveSandbox: archiveSandbox({ userId: session.user.id! }),
                   // Daytona Browser Tools
-                  browserSetup: daytonaBrowserTools.browserSetup({ userId: session.user.id! }),
-                  browserNavigate: daytonaBrowserTools.browserNavigate({ userId: session.user.id! }),
-                  browserInteract: daytonaBrowserTools.browserInteract({ userId: session.user.id! }),
-                  browserExtract: daytonaBrowserTools.browserExtract({ userId: session.user.id! }),
-                  browserMultiTab: daytonaBrowserTools.browserMultiTab({ userId: session.user.id! }),
-                  browserUploadFile: daytonaBrowserTools.browserUploadFile({ userId: session.user.id! }),
-                  browserScreenshot: daytonaBrowserTools.browserScreenshot({ userId: session.user.id! }),
-                  browserVisualInteract: daytonaBrowserTools.browserVisualInteract({ userId: session.user.id! }),
+                  browserSetup: daytonaBrowserTools.browserSetup({
+                    userId: session.user.id!,
+                  }),
+                  browserNavigate: daytonaBrowserTools.browserNavigate({
+                    userId: session.user.id!,
+                  }),
+                  browserInteract: daytonaBrowserTools.browserInteract({
+                    userId: session.user.id!,
+                  }),
+                  browserExtract: daytonaBrowserTools.browserExtract({
+                    userId: session.user.id!,
+                  }),
+                  browserMultiTab: daytonaBrowserTools.browserMultiTab({
+                    userId: session.user.id!,
+                  }),
+                  browserUploadFile: daytonaBrowserTools.browserUploadFile({
+                    userId: session.user.id!,
+                  }),
+                  browserScreenshot: daytonaBrowserTools.browserScreenshot({
+                    userId: session.user.id!,
+                  }),
+                  browserVisualInteract:
+                    daytonaBrowserTools.browserVisualInteract({
+                      userId: session.user.id!,
+                    }),
                   // Persistent sandbox — Etles's "home computer" that survives sessions
                   ...getPersistentSandboxTools({ userId: session.user.id! }),
                   // Oracle Cloud Tools

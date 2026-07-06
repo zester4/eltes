@@ -17,7 +17,10 @@ function getRedis() {
 }
 
 function promptCacheKey(userId: string, scope: string, signature: string) {
-  const hash = createHash("sha256").update(signature).digest("hex").slice(0, 24);
+  const hash = createHash("sha256")
+    .update(signature)
+    .digest("hex")
+    .slice(0, 24);
   return `prompt-cache:${userId}:${scope}:${hash}`;
 }
 
@@ -27,11 +30,15 @@ export async function getCachedSystemPrompt(args: {
   signature: string;
 }): Promise<string | null> {
   const redis = getRedis();
-  if (!redis) return null;
+  if (!redis) {
+    return null;
+  }
   const raw = await redis.get<string>(
-    promptCacheKey(args.userId, args.scope, args.signature),
+    promptCacheKey(args.userId, args.scope, args.signature)
   );
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   return typeof raw === "string" ? raw : null;
 }
 
@@ -42,12 +49,14 @@ export async function setCachedSystemPrompt(args: {
   prompt: string;
 }): Promise<void> {
   const redis = getRedis();
-  if (!redis) return;
+  if (!redis) {
+    return;
+  }
   await redis.set(
     promptCacheKey(args.userId, args.scope, args.signature),
     args.prompt,
     {
       ex: PROMPT_CACHE_TTL_SECONDS,
-    },
+    }
   );
 }

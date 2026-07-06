@@ -1,5 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "../../../(auth)/auth";
+import { type NextRequest, NextResponse } from "next/server";
 import {
   getBotIntegration,
   getUserBotIntegrations,
@@ -9,6 +8,7 @@ import {
   registerTelegramWebhook,
   validateTelegramToken,
 } from "@/lib/telegram/webhook-registration";
+import { auth } from "../../../(auth)/auth";
 
 const MASK_PREFIX = "••••••••";
 
@@ -38,24 +38,37 @@ function maskExtraConfig(extraConfig: unknown) {
   }
 
   return Object.fromEntries(
-    Object.entries(extraConfig as Record<string, unknown>).map(([key, value]) => {
-      const shouldMask =
-        typeof value === "string" &&
-        /(secret|token|privateKey|apiKey|password)/i.test(key);
+    Object.entries(extraConfig as Record<string, unknown>).map(
+      ([key, value]) => {
+        const shouldMask =
+          typeof value === "string" &&
+          /(secret|token|privateKey|apiKey|password)/i.test(key);
 
-      return [key, shouldMask ? maskSecret(value) : value];
-    }),
+        return [key, shouldMask ? maskSecret(value) : value];
+      }
+    )
   );
 }
 
 function validateExtraConfig(
   platform: string,
   signingSecret: string | null | undefined,
-  extraConfig: Record<string, unknown>,
+  extraConfig: Record<string, unknown>
 ) {
   const missing: string[] = [];
 
-  if (["slack", "discord", "teams", "github", "linear", "whatsapp", "resend"].includes(platform) && !signingSecret) {
+  if (
+    [
+      "slack",
+      "discord",
+      "teams",
+      "github",
+      "linear",
+      "whatsapp",
+      "resend",
+    ].includes(platform) &&
+    !signingSecret
+  ) {
     missing.push(
       platform === "discord"
         ? "public key"
@@ -63,7 +76,7 @@ function validateExtraConfig(
           ? "app password"
           : platform === "whatsapp"
             ? "verify token"
-            : "signing secret",
+            : "signing secret"
     );
   }
 
@@ -76,13 +89,21 @@ function validateExtraConfig(
   }
 
   if (platform === "whatsapp") {
-    if (!extraConfig.verifyToken) missing.push("verify token");
-    if (!extraConfig.phoneNumberId) missing.push("phone number ID");
+    if (!extraConfig.verifyToken) {
+      missing.push("verify token");
+    }
+    if (!extraConfig.phoneNumberId) {
+      missing.push("phone number ID");
+    }
   }
 
   if (platform === "resend") {
-    if (!extraConfig.fromAddress) missing.push("from address");
-    if (!extraConfig.fromName) missing.push("from name");
+    if (!extraConfig.fromAddress) {
+      missing.push("from address");
+    }
+    if (!extraConfig.fromName) {
+      missing.push("from name");
+    }
   }
 
   if (missing.length > 0) {
@@ -94,11 +115,15 @@ function validateExtraConfig(
 
 export async function GET() {
   const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
-    const integrations = await getUserBotIntegrations({ userId: session.user.id });
-    
+    const integrations = await getUserBotIntegrations({
+      userId: session.user.id,
+    });
+
     // Obfuscate tokens before sending to client for security
     const safeIntegrations = integrations.map((i: any) => ({
       ...i,
@@ -109,19 +134,27 @@ export async function GET() {
 
     return NextResponse.json(safeIntegrations);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch integrations" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch integrations" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     const { platform, botToken, signingSecret, extraConfig } = await req.json();
-    
+
     if (!platform || !SUPPORTED_PLATFORMS.has(platform)) {
-      return NextResponse.json({ error: "Unsupported bot platform" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Unsupported bot platform" },
+        { status: 400 }
+      );
     }
 
     const existing = await getBotIntegration({
@@ -144,25 +177,29 @@ export async function POST(req: NextRequest) {
     for (const [key, value] of Object.entries(resolvedExtraConfig)) {
       if (isMasked(value)) {
         resolvedExtraConfig[key] =
-          (existing?.extraConfig as Record<string, unknown> | null)?.[key] ?? "";
+          (existing?.extraConfig as Record<string, unknown> | null)?.[key] ??
+          "";
       }
     }
 
     if (!resolvedBotToken || isMasked(resolvedBotToken)) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     if (isMasked(resolvedSigningSecret)) {
       return NextResponse.json(
         { error: "Please enter new keys to update configuration." },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     const validationError = validateExtraConfig(
       platform,
       resolvedSigningSecret,
-      resolvedExtraConfig,
+      resolvedExtraConfig
     );
     if (validationError) {
       return NextResponse.json({ error: validationError }, { status: 400 });
@@ -174,7 +211,7 @@ export async function POST(req: NextRequest) {
       } catch {
         return NextResponse.json(
           { error: "Google Chat service account JSON is invalid." },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -185,7 +222,7 @@ export async function POST(req: NextRequest) {
       if (!validation.ok) {
         return NextResponse.json(
           { error: `Invalid Telegram bot token: ${validation.error}` },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -195,7 +232,7 @@ export async function POST(req: NextRequest) {
       platform,
       botToken: resolvedBotToken,
       signingSecret: resolvedSigningSecret,
-      extraConfig: resolvedExtraConfig
+      extraConfig: resolvedExtraConfig,
     });
 
     if (platform === "telegram") {
@@ -209,24 +246,27 @@ export async function POST(req: NextRequest) {
             error:
               "BASE_URL must be a public URL for Telegram. Set BASE_URL in .env to your ngrok or deployment URL (e.g. https://xxx.ngrok.io). Telegram cannot reach localhost.",
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
       const result = await registerTelegramWebhook(
         resolvedBotToken,
         session.user.id,
-        baseUrl,
+        baseUrl
       );
       if (!result.ok) {
         return NextResponse.json(
           { error: `Saved but webhook registration failed: ${result.error}` },
-          { status: 207 }, // Partial success
+          { status: 207 } // Partial success
         );
       }
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to save integration" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to save integration" },
+      { status: 500 }
+    );
   }
 }

@@ -20,13 +20,13 @@
  *   }
  */
 
-import { tool } from "ai";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { tool } from "ai";
 import { z } from "zod";
 import {
-  getUserSkillsByUserId,
   getUserSkillBySlug,
+  getUserSkillsByUserId,
   saveUserSkill,
 } from "@/lib/db/queries";
 
@@ -73,7 +73,7 @@ async function listAllPages(): Promise<string[]> {
           e.isFile() &&
           e.name.endsWith(".md") &&
           e.name !== "index.md" &&
-          e.name !== "instructions.md",
+          e.name !== "instructions.md"
       )
       .map((e) => e.name.replace(".md", ""));
   } catch {
@@ -95,14 +95,16 @@ export const wikiQuery = ({ userId }: { userId?: string } = {}) =>
     inputSchema: z.object({
       action: z
         .enum(["index", "read"])
-        .describe("'index' loads the master table of contents. 'read' loads a specific page."),
+        .describe(
+          "'index' loads the master table of contents. 'read' loads a specific page."
+        ),
       page: z
         .string()
         .optional()
         .describe(
           "Page name without .md extension. Required when action='read'. " +
-          "Examples: 'copywriting', 'ad-creative', 'research', 'content-creation', 'coding-craft'. " +
-          "Get the full list from action='index'."
+            "Examples: 'copywriting', 'ad-creative', 'research', 'content-creation', 'coding-craft'. " +
+            "Get the full list from action='index'."
         ),
     }),
     execute: async ({ action, page }) => {
@@ -122,7 +124,9 @@ export const wikiQuery = ({ userId }: { userId?: string } = {}) =>
         }
 
         const userSkillsSlugs = userSkillsData.map((s) => s.slug);
-        const allPages = Array.from(new Set([...defaultPages, ...userSkillsSlugs]));
+        const allPages = Array.from(
+          new Set([...defaultPages, ...userSkillsSlugs])
+        );
 
         // Construct a dynamic index that includes user skills
         let dynamicIndex = index ?? "# Etles Knowledge Wiki\n\n";
@@ -138,7 +142,7 @@ export const wikiQuery = ({ userId }: { userId?: string } = {}) =>
           index: dynamicIndex,
           availablePages: allPages,
           userSkills: userSkillsSlugs,
-          defaultPages: defaultPages,
+          defaultPages,
           message: `Wiki has ${defaultPages.length} default pages and ${userSkillsData.length} user-specific skills. Use action='read' with a page name to load content.`,
         };
       }
@@ -204,18 +208,20 @@ export const wikiIngest = ({ userId }: { userId?: string } = {}) =>
         .string()
         .describe(
           "Page name without .md extension. Use kebab-case. " +
-          "Examples: 'project-preferences', 'style-guide', 'technical-stack'."
+            "Examples: 'project-preferences', 'style-guide', 'technical-stack'."
         ),
       title: z
         .string()
         .optional()
-        .describe("Human-readable title for the skill. Default is capitalized page name."),
+        .describe(
+          "Human-readable title for the skill. Default is capitalized page name."
+        ),
       content: z
         .string()
         .max(MAX_WRITE_CHARS)
         .describe(
           "Full markdown content for the page. Must start with a # heading. " +
-          "Include: what works, what doesn't, specific examples, frameworks, rules."
+            "Include: what works, what doesn't, specific examples, frameworks, rules."
         ),
       description: z
         .string()
@@ -223,7 +229,9 @@ export const wikiIngest = ({ userId }: { userId?: string } = {}) =>
         .describe("One-sentence summary of what this skill covers."),
       reason: z
         .string()
-        .describe("Why this knowledge is being added or what triggered this update."),
+        .describe(
+          "Why this knowledge is being added or what triggered this update."
+        ),
     }),
     execute: async ({ page, title, content, description, reason }) => {
       if (!userId) {
@@ -236,10 +244,18 @@ export const wikiIngest = ({ userId }: { userId?: string } = {}) =>
       // Add timestamp if not present
       const timestamp = new Date().toISOString().split("T")[0];
       const finalContent = content.includes("Last updated by Etles")
-        ? content.replace(/\*Last updated by Etles:.*\*/, `*Last updated by Etles: ${timestamp}*`)
+        ? content.replace(
+            /\*Last updated by Etles:.*\*/,
+            `*Last updated by Etles: ${timestamp}*`
+          )
         : `${content}\n\n---\n*Last updated by Etles: ${timestamp}*`;
 
-      const humanTitle = title ?? page.split("-").map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(" ");
+      const humanTitle =
+        title ??
+        page
+          .split("-")
+          .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+          .join(" ");
 
       try {
         await saveUserSkill({

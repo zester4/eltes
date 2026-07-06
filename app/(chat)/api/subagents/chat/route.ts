@@ -5,24 +5,24 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
-import { guestRegex } from "@/lib/constants";
 import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
-import { ChatbotError } from "@/lib/errors";
-import { generateUUID } from "@/lib/utils";
-import {
-  getSubagentChatMessages,
-  saveSubagentChatMessages,
-} from "@/lib/subagent-redis";
+import { guestRegex } from "@/lib/constants";
 import {
   createAgentTask,
   getAgentTaskById,
   updateAgentTask,
 } from "@/lib/db/queries";
+import { ChatbotError } from "@/lib/errors";
+import {
+  getSubagentChatMessages,
+  saveSubagentChatMessages,
+} from "@/lib/subagent-redis";
+import type { ChatMessage } from "@/lib/types";
+import { generateUUID } from "@/lib/utils";
 import {
   isWorkflowEnabled,
   triggerSubagentChatWorkflow,
 } from "@/lib/workflow/client";
-import type { ChatMessage } from "@/lib/types";
 
 export const maxDuration = 60;
 
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (isGuest) {
       return new ChatbotError(
         "forbidden:chat",
-        "Guests cannot use subagents directly.",
+        "Guests cannot use subagents directly."
       ).toResponse();
     }
 
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     if (!definition) {
       return new ChatbotError(
         "bad_request:api",
-        `Unknown subagent slug: ${agentSlug}`,
+        `Unknown subagent slug: ${agentSlug}`
       ).toResponse();
     }
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     await createAgentTask({
       id: taskId,
       userId: session.user.id,
-      chatId: chatId, // Pass undefined if not present, now allowed by DB
+      chatId, // Pass undefined if not present, now allowed by DB
       agentType: agentSlug,
       task: extractLastUserText(messages),
     });
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       } catch (err) {
         console.error(
           "[Subagent Chat] Workflow trigger failed, falling back to inline:",
-          err,
+          err
         );
       }
     }
@@ -184,7 +184,9 @@ export async function GET(request: NextRequest) {
 
 function extractLastUserText(messages: ChatMessage[]): string {
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
-  if (!lastUser?.parts) return "";
+  if (!lastUser?.parts) {
+    return "";
+  }
   return lastUser.parts
     .filter((p: any) => p.type === "text")
     .map((p: any) => p.text)
@@ -206,7 +208,8 @@ async function runInlineSubagentChat(params: {
   // Run in background — don't block the response
   (async () => {
     try {
-      const { generateText, stepCountIs, convertToModelMessages } = await import("ai");
+      const { generateText, stepCountIs, convertToModelMessages } =
+        await import("ai");
       const { Composio } = await import("@composio/core");
       const { VercelProvider } = await import("@composio/vercel");
       const { getSubAgentBySlug } = await import(

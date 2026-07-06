@@ -1,7 +1,7 @@
-import { tool } from "ai";
 import { Index } from "@upstash/vector";
-import { z } from "zod";
+import { tool } from "ai";
 import { unstable_noStore as noStore } from "next/cache";
+import { z } from "zod";
 
 // Per-user memory stored in namespaced Upstash Vector index.
 // Each user gets their own namespace: `memory-{userId}`
@@ -76,13 +76,16 @@ export const saveMemory = ({ userId }: { userId: string }) =>
 
         // After setup steps, if key is "onboarding_complete", trigger the completion hook
         if (key === "onboarding_complete") {
-          const baseUrl = process.env.BASE_URL || (typeof window !== 'undefined' ? window.location.origin : "");
+          const baseUrl =
+            process.env.BASE_URL ||
+            (typeof window === "undefined" ? "" : window.location.origin);
           if (baseUrl) {
             void fetch(`${baseUrl}/api/onboarding/complete`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
-                "x-agent-secret": process.env.AGENT_DELEGATE_SECRET ?? "dev-internal",
+                "x-agent-secret":
+                  process.env.AGENT_DELEGATE_SECRET ?? "dev-internal",
               },
               body: JSON.stringify({ userId }),
             }).catch(() => {});
@@ -159,16 +162,9 @@ export const updateMemory = ({ userId }: { userId: string }) =>
       "new information that supersedes something previously remembered. " +
       "The key must match an existing saved memory.",
     inputSchema: z.object({
-      key: z
-        .string()
-        .describe("The exact key of the memory to update."),
-      newContent: z
-        .string()
-        .describe("The updated information to store."),
-      tags: z
-        .array(z.string())
-        .optional()
-        .describe("Updated tags (optional)."),
+      key: z.string().describe("The exact key of the memory to update."),
+      newContent: z.string().describe("The updated information to store."),
+      tags: z.array(z.string()).optional().describe("Updated tags (optional)."),
     }),
     execute: async ({ key, newContent, tags }) => {
       try {
@@ -205,9 +201,7 @@ export const deleteMemory = ({ userId }: { userId: string }) =>
       "Delete a specific memory by its key. Use this when the user explicitly asks " +
       "you to forget something, or when a memory is clearly outdated and no longer relevant.",
     inputSchema: z.object({
-      key: z
-        .string()
-        .describe("The exact key of the memory to delete."),
+      key: z.string().describe("The exact key of the memory to delete."),
     }),
     execute: async ({ key }) => {
       try {

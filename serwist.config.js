@@ -1,9 +1,11 @@
 // @ts-check
 import { spawnSync } from "node:child_process";
-import { serwist } from "@serwist/next/config";
 
 // A revision helps Serwist version a precached page.
-const revision = spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf-8" }).stdout?.trim() ?? crypto.randomUUID();
+const revision =
+  spawnSync("git", ["rev-parse", "HEAD"], {
+    encoding: "utf-8",
+  }).stdout?.trim() ?? crypto.randomUUID();
 
 export default {
   swSrc: "app/sw.ts",
@@ -19,8 +21,8 @@ export default {
     "components/**/*",
     "hooks/**/*",
     "*.ts",
-    "*.js"
+    "*.js",
   ],
   // Increase limit from default 2MB to 10MB to handle large chunks if they legitimately occur
-  maximumFileSizeToCacheInBytes: 10485760,
+  maximumFileSizeToCacheInBytes: 10_485_760,
 };

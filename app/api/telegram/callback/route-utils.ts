@@ -10,14 +10,14 @@ const redis =
 
 export type PendingApproval = {
   draftId: string;
-  type: string;              // "email" | "payment" | "post" | "task" | "generic"
-  summary: string;           // human-readable description
-  executionTool: string;     // composio tool name to call on approval
-  executionInput: Record<string, unknown>;  // args for the tool
-  editPrompt?: string;       // if present, shown to user on "Edit"
+  type: string; // "email" | "payment" | "post" | "task" | "generic"
+  summary: string; // human-readable description
+  executionTool: string; // composio tool name to call on approval
+  executionInput: Record<string, unknown>; // args for the tool
+  editPrompt?: string; // if present, shown to user on "Edit"
   chatId: string;
   telegramChatId: number;
-  messageId: number | null;  // Telegram message_id of the approval card
+  messageId: number | null; // Telegram message_id of the approval card
 };
 
 export function approvalKey(draftId: string) {
@@ -28,7 +28,9 @@ export async function storePendingApproval(
   approval: Omit<PendingApproval, "messageId">,
   messageId: number | null
 ): Promise<void> {
-  if (!redis) return;
+  if (!redis) {
+    return;
+  }
   await redis.set(
     approvalKey(approval.draftId),
     JSON.stringify({ ...approval, messageId }),

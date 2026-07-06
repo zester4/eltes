@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/app/(auth)/auth";
 import { Index } from "@upstash/vector";
+import { type NextRequest, NextResponse } from "next/server";
+import { auth } from "@/app/(auth)/auth";
 
 const index = new Index({
   url: process.env.UPSTASH_VECTOR_REST_URL!,
@@ -15,12 +15,12 @@ export async function GET(req: NextRequest) {
 
   try {
     const ns = index.namespace(`memory-${session.user.id}`);
-    
+
     // List memories by querying with an empty string or using range/list if supported.
     // For universal compatibility across Upstash versions, we'll use a wide query.
     // Or we can try the 'list' method which is standard in recent SDKs.
     const results = await ns.query({
-      data: " ", 
+      data: " ",
       topK: 100,
       includeMetadata: true,
     });
@@ -51,7 +51,10 @@ export async function DELETE(req: NextRequest) {
     const key = searchParams.get("key");
 
     if (!key) {
-      return NextResponse.json({ error: "Missing memory key" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing memory key" },
+        { status: 400 }
+      );
     }
 
     const ns = index.namespace(`memory-${session.user.id}`);

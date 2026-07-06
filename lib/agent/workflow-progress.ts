@@ -56,7 +56,9 @@ export function encodeWorkflowProgress(p: WorkflowProgress): string {
 
 export function decodeWorkflowProgress(text: string): WorkflowProgress | null {
   const trimmed = text.trim();
-  if (!trimmed.includes(WORKFLOW_PROGRESS_PREFIX)) return null;
+  if (!trimmed.includes(WORKFLOW_PROGRESS_PREFIX)) {
+    return null;
+  }
 
   try {
     const parts = trimmed.split(WORKFLOW_PROGRESS_PREFIX);
@@ -85,7 +87,7 @@ export function workflowProgressMessageId(taskId: string): string {
 export function makeRunningStep(
   stepIndex: number,
   name: string,
-  label: string,
+  label: string
 ): WorkflowStep {
   return {
     stepIndex,
@@ -98,14 +100,15 @@ export function makeRunningStep(
 
 export function completeStep(
   step: WorkflowStep,
-  opts: { output?: string; toolCallCount?: number } = {},
+  opts: { output?: string; toolCallCount?: number } = {}
 ): WorkflowStep {
   const completedAt = new Date().toISOString();
   return {
     ...step,
     status: "completed",
     completedAt,
-    durationMs: new Date(completedAt).getTime() - new Date(step.startedAt).getTime(),
+    durationMs:
+      new Date(completedAt).getTime() - new Date(step.startedAt).getTime(),
     ...opts,
   };
 }
@@ -116,7 +119,8 @@ export function failStep(step: WorkflowStep, error: string): WorkflowStep {
     ...step,
     status: "failed",
     completedAt,
-    durationMs: new Date(completedAt).getTime() - new Date(step.startedAt).getTime(),
+    durationMs:
+      new Date(completedAt).getTime() - new Date(step.startedAt).getTime(),
     error,
   };
 }

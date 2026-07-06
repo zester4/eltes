@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import { generateUUID } from "@/lib/utils";
 
@@ -47,7 +47,9 @@ function clampProgress(value: number) {
 
 async function readGoal(redis: Redis, userId: string, goalId: string) {
   const raw = await redis.get<string>(goalItemKey(userId, goalId));
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   return typeof raw === "string"
     ? (JSON.parse(raw) as GoalItem)
     : (raw as GoalItem);
@@ -69,13 +71,17 @@ export async function GET(req: NextRequest) {
 
   for (const id of ids ?? []) {
     const goal = await readGoal(redis, session.user.id, id);
-    if (!goal) continue;
-    if (status && goal.status !== status) continue;
+    if (!goal) {
+      continue;
+    }
+    if (status && goal.status !== status) {
+      continue;
+    }
     goals.push(goal);
   }
 
   goals.sort(
-    (a, b) => b.priority - a.priority || b.updatedAt.localeCompare(a.updatedAt),
+    (a, b) => b.priority - a.priority || b.updatedAt.localeCompare(a.updatedAt)
   );
   return NextResponse.json({ goals });
 }
@@ -141,28 +147,33 @@ export async function PATCH(req: NextRequest) {
 
   const updated: GoalItem = {
     ...current,
-    ...(body.title !== undefined ? { title: body.title } : {}),
-    ...(body.description !== undefined ? { description: body.description } : {}),
-    ...(body.status !== undefined ? { status: body.status } : {}),
-    ...(body.priority !== undefined ? { priority: body.priority } : {}),
-    ...(body.progress !== undefined
-      ? { progress: clampProgress(body.progress) }
-      : {}),
-    ...(body.targetDate !== undefined ? { targetDate: body.targetDate } : {}),
-    ...(body.successCriteria !== undefined
-      ? { successCriteria: body.successCriteria }
-      : {}),
-    ...(body.nextAction !== undefined ? { nextAction: body.nextAction } : {}),
-    ...(body.autonomousAllowed !== undefined
-      ? { autonomousAllowed: body.autonomousAllowed }
-      : {}),
+    ...(body.title === undefined ? {} : { title: body.title }),
+    ...(body.description === undefined
+      ? {}
+      : { description: body.description }),
+    ...(body.status === undefined ? {} : { status: body.status }),
+    ...(body.priority === undefined ? {} : { priority: body.priority }),
+    ...(body.progress === undefined
+      ? {}
+      : { progress: clampProgress(body.progress) }),
+    ...(body.targetDate === undefined ? {} : { targetDate: body.targetDate }),
+    ...(body.successCriteria === undefined
+      ? {}
+      : { successCriteria: body.successCriteria }),
+    ...(body.nextAction === undefined ? {} : { nextAction: body.nextAction }),
+    ...(body.autonomousAllowed === undefined
+      ? {}
+      : { autonomousAllowed: body.autonomousAllowed }),
     updatedAt: new Date().toISOString(),
   };
   if (updated.progress >= 100 && updated.status === "active") {
     updated.status = "completed";
   }
 
-  await redis.set(goalItemKey(session.user.id, body.goalId), JSON.stringify(updated));
+  await redis.set(
+    goalItemKey(session.user.id, body.goalId),
+    JSON.stringify(updated)
+  );
   return NextResponse.json({ goal: updated });
 }
 

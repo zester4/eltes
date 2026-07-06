@@ -1,6 +1,5 @@
+import { after, type NextRequest, NextResponse } from "next/server";
 import { buildUserBot } from "@/lib/bot";
-import { after } from "next/server";
-import { NextRequest, NextResponse } from "next/server";
 
 type RouteParams = { params: Promise<{ platform: string; userId: string }> };
 
@@ -13,7 +12,10 @@ async function handleWebhook(req: NextRequest, params: RouteParams["params"]) {
 
   if (!handler) {
     console.error(`[Webhook] No handler for platform: ${platform}`);
-    return NextResponse.json({ error: "Invalid platform webhook" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid platform webhook" },
+      { status: 400 }
+    );
   }
 
   console.log(`[Webhook] ${req.method} → ${platform} for user ${userId}`);
@@ -46,7 +48,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
         details: error.message,
         stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
         details: error.message,
         stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

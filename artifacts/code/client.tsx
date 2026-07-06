@@ -7,6 +7,7 @@ import {
 } from "@/components/console";
 import { Artifact } from "@/components/create-artifact";
 import {
+  CodeIcon,
   CopyIcon,
   EyeIcon,
   LogsIcon,
@@ -14,7 +15,6 @@ import {
   PlayIcon,
   RedoIcon,
   UndoIcon,
-  CodeIcon,
 } from "@/components/icons";
 import { generateUUID } from "@/lib/utils";
 

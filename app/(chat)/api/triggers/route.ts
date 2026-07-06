@@ -1,9 +1,9 @@
 //app/(chat)/api/triggers/route.ts
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
-import { auth } from "../../../(auth)/auth";
 import { SUPPORTED_TRIGGERS } from "@/lib/ai/triggers";
 import { guestRegex } from "@/lib/constants";
+import { auth } from "../../../(auth)/auth";
 
 const composio = new Composio({ provider: new VercelProvider() });
 
@@ -15,7 +15,10 @@ export async function GET() {
   }
   const isGuest = guestRegex.test(session?.user?.email ?? "");
   if (isGuest) {
-    return Response.json({ error: "Unauthorized: Guest access not allowed" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized: Guest access not allowed" },
+      { status: 401 }
+    );
   }
 
   try {
@@ -25,12 +28,15 @@ export async function GET() {
         userIds: [session.user.id],
       });
       const accountIds = userAccounts.items.map((a: any) => a.id);
-      
+
       if (accountIds.length > 0) {
         // Use listActive as a fallback if getActiveTriggers fails
         const triggerManager = composio.triggers as any;
-        const listMethod = triggerManager.getActiveTriggers || triggerManager.listActive || triggerManager.list;
-        
+        const listMethod =
+          triggerManager.getActiveTriggers ||
+          triggerManager.listActive ||
+          triggerManager.list;
+
         if (listMethod) {
           const activeTriggers = await listMethod.call(triggerManager, {
             connectedAccountIds: accountIds,
@@ -39,7 +45,10 @@ export async function GET() {
         }
       }
     } catch (innerError) {
-      console.error("Error fetching active triggers, continuing with empty list:", innerError);
+      console.error(
+        "Error fetching active triggers, continuing with empty list:",
+        innerError
+      );
     }
 
     return Response.json({
@@ -48,7 +57,10 @@ export async function GET() {
     });
   } catch (error: any) {
     console.error("Failed to fetch triggers:", error);
-    return Response.json({ error: "Failed to fetch triggers", details: error.message }, { status: 500 });
+    return Response.json(
+      { error: "Failed to fetch triggers", details: error.message },
+      { status: 500 }
+    );
   }
 }
 
@@ -60,47 +72,62 @@ export async function POST(req: Request) {
   }
   const isGuest = guestRegex.test(session?.user?.email ?? "");
   if (isGuest) {
-    return Response.json({ error: "Unauthorized: Guest access not allowed" }, { status: 401 });
+    return Response.json(
+      { error: "Unauthorized: Guest access not allowed" },
+      { status: 401 }
+    );
   }
 
   try {
     const { triggerSlug, config } = await req.json();
-    
+
     // Fetch connected accounts for this user
     const userAccounts = await composio.connectedAccounts.list({
       userIds: [session.user.id],
     });
 
     // Find the account matching the toolkit of the trigger (heuristic)
-    const toolkitHint = triggerSlug.split('_')[0].toLowerCase();
+    const toolkitHint = triggerSlug.split("_")[0].toLowerCase();
     const targetAccount = userAccounts.items.find((acc: any) => {
       const appName = String(acc.appName || acc.appId || "").toLowerCase();
-      const toolkit = String(acc.toolkit?.slug || acc.toolkit || "").toLowerCase();
+      const toolkit = String(
+        acc.toolkit?.slug || acc.toolkit || ""
+      ).toLowerCase();
       return appName.includes(toolkitHint) || toolkit.includes(toolkitHint);
     });
 
     if (!targetAccount) {
-      return Response.json({ error: `No connected account found for ${toolkitHint}` }, { status: 400 });
+      return Response.json(
+        { error: `No connected account found for ${toolkitHint}` },
+        { status: 400 }
+      );
     }
 
     // Dynamic config discovery - no hardcoded defaults
     const finalConfig = config || {};
 
     const triggerManager = composio.triggers as any;
-    const createMethod = triggerManager.create || triggerManager.subscribe || triggerManager.upsert;
+    const createMethod =
+      triggerManager.create ||
+      triggerManager.subscribe ||
+      triggerManager.upsert;
 
-    const trigger = await createMethod.call(triggerManager,
+    const trigger = await createMethod.call(
+      triggerManager,
       session.user.id,
       triggerSlug,
-      { 
+      {
         triggerConfig: finalConfig,
-        connected_account_id: targetAccount.id 
+        connected_account_id: targetAccount.id,
       }
     );
 
     return Response.json({ success: true, trigger });
   } catch (error: any) {
     console.error("Failed to create trigger:", error);
-    return Response.json({ error: "Failed to create trigger", details: error.message }, { status: 500 });
+    return Response.json(
+      { error: "Failed to create trigger", details: error.message },
+      { status: 500 }
+    );
   }
 }

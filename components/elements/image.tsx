@@ -1,8 +1,8 @@
 "use client";
 
 import type { Experimental_GeneratedImage } from "ai";
-import { cn } from "@/lib/utils";
 import { Download } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type ImageProps = Experimental_GeneratedImage & {
   className?: string;
@@ -29,13 +29,13 @@ export const Image = ({
         )}
         src={imageUrl}
       />
-      
+
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-      
+
       <a
-        href={imageUrl}
-        download={`etles-gen-${Date.now()}.png`}
         className="absolute bottom-2 right-2 flex size-8 items-center justify-center rounded-full bg-black/60 backdrop-blur-md text-white/80 opacity-0 transition-all duration-300 hover:bg-primary/20 hover:text-white group-hover:opacity-100 ring-1 ring-white/10 shadow-lg"
+        download={`etles-gen-${Date.now()}.png`}
+        href={imageUrl}
         title="Download Image"
       >
         <Download size={14} />

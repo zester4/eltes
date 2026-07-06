@@ -1,18 +1,23 @@
 //lib/ai/tools/generate-image.ts
 import { GoogleGenAI } from "@google/genai";
+import { put } from "@vercel/blob";
 import { tool, type UIMessageStreamWriter } from "ai";
 import { z } from "zod";
 import type { ChatMessage } from "@/lib/types";
-import { put } from "@vercel/blob";
 import { generateUUID } from "@/lib/utils";
 
 export const generateImageTool = (
   dataStream?: UIMessageStreamWriter<ChatMessage>
 ) =>
   tool({
-    description: "Generate an image or edit an existing image based on a prompt.",
+    description:
+      "Generate an image or edit an existing image based on a prompt.",
     inputSchema: z.object({
-      prompt: z.string().describe("The prompt to generate the image from. If editing, describe how to edit the image."),
+      prompt: z
+        .string()
+        .describe(
+          "The prompt to generate the image from. If editing, describe how to edit the image."
+        ),
       aspectRatio: z
         .enum([
           "1:1",
@@ -33,35 +38,49 @@ export const generateImageTool = (
         .enum(["1K", "2K", "4K"])
         .optional()
         .default("1K")
-        .describe("Resolution size of the generated image. Use 2K or 4K only if specified."),
+        .describe(
+          "Resolution size of the generated image. Use 2K or 4K only if specified."
+        ),
       editReferenceImageUrl: z
         .string()
         .url()
         .optional()
-        .describe("ONLY use this if the user wants to EDIT an existing image. Do NOT use this for generating a new image. Provide the exact URL the user specified."),
+        .describe(
+          "ONLY use this if the user wants to EDIT an existing image. Do NOT use this for generating a new image. Provide the exact URL the user specified."
+        ),
     }),
-    execute: async ({ prompt, aspectRatio, resolution, editReferenceImageUrl }) => {
+    execute: async ({
+      prompt,
+      aspectRatio,
+      resolution,
+      editReferenceImageUrl,
+    }) => {
       try {
-        const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY });
+        const ai = new GoogleGenAI({
+          apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+        });
 
         let contentsPayload: any = prompt;
 
         if (editReferenceImageUrl) {
           try {
-            console.log("Attempting to fetch source image URL:", editReferenceImageUrl);
+            console.log(
+              "Attempting to fetch source image URL:",
+              editReferenceImageUrl
+            );
             const res = await fetch(editReferenceImageUrl, {
-               headers: {
-                 "User-Agent": "Mozilla/5.0 (compatible; EtlesAgent/1.0)",
-               }
+              headers: {
+                "User-Agent": "Mozilla/5.0 (compatible; EtlesAgent/1.0)",
+              },
             });
-            
+
             if (!res.ok) {
               if (res.status === 403 || res.status === 401) {
                 throw new Error("HTTP_UNAUTHORIZED");
               }
               throw new Error(`HTTP ${res.status} ${res.statusText}`);
             }
-            
+
             const arrayBuffer = await res.arrayBuffer();
             const base64Image = Buffer.from(arrayBuffer).toString("base64");
             const mimeType = res.headers.get("content-type") || "image/png";
@@ -76,7 +95,10 @@ export const generateImageTool = (
               },
             ];
           } catch (e: any) {
-            console.error("Failed to load editReferenceImageUrl. Falling back to plain text-to-image:", e);
+            console.error(
+              "Failed to load editReferenceImageUrl. Falling back to plain text-to-image:",
+              e
+            );
             // Gracefully fallback to simple text generation if the URL was hallucinated or expired
             contentsPayload = prompt;
           }
@@ -87,7 +109,7 @@ export const generateImageTool = (
           contents: contentsPayload,
           config: {
             responseModalities: ["IMAGE"],
-            imageConfig: { 
+            imageConfig: {
               aspectRatio,
               imageSize: resolution,
             },
@@ -125,13 +147,12 @@ export const generateImageTool = (
           resolution,
           edited: !!editReferenceImageUrl && contentsPayload !== prompt, // true only if we successfully attached an image part
         };
-
       } catch (error) {
         console.error("Image generation failed:", error);
-        
+
         return {
           error: "Failed to generate image.",
-          details: error instanceof Error ? error.message : String(error)
+          details: error instanceof Error ? error.message : String(error),
         };
       }
     },

@@ -6,9 +6,9 @@ import { auth } from "@/app/(auth)/auth";
 import { Chat } from "@/components/chat";
 import { DataStreamHandler } from "@/components/data-stream-handler";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
+import { isUserOnboarded } from "@/lib/ai/tools/memory";
 import { getChatById, getMessagesByChatId } from "@/lib/db/queries";
 import { convertToUIMessages } from "@/lib/utils";
-import { isUserOnboarded } from "@/lib/ai/tools/memory";
 
 export default function Page(props: { params: Promise<{ id: string }> }) {
   return (

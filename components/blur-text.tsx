@@ -1,12 +1,12 @@
 "use client";
 
-import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { useRef } from "react";
 
 interface BlurTextProps {
-  text: string;
   className?: string;
   delay?: number;
+  text: string;
 }
 
 export function BlurText({ text, className = "", delay = 0 }: BlurTextProps) {
@@ -19,8 +19,8 @@ export function BlurText({ text, className = "", delay = 0 }: BlurTextProps) {
     hidden: { opacity: 0 },
     visible: (i = 1) => ({
       opacity: 1,
-      transition: { staggerChildren: 0.1, delayChildren: delay }
-    })
+      transition: { staggerChildren: 0.1, delayChildren: delay },
+    }),
   };
 
   const child = {
@@ -31,8 +31,8 @@ export function BlurText({ text, className = "", delay = 0 }: BlurTextProps) {
       transition: {
         type: "spring",
         damping: 12,
-        stiffness: 100
-      }
+        stiffness: 100,
+      },
     },
     hidden: {
       opacity: 0,
@@ -41,26 +41,26 @@ export function BlurText({ text, className = "", delay = 0 }: BlurTextProps) {
       transition: {
         type: "spring",
         damping: 12,
-        stiffness: 100
-      }
-    }
+        stiffness: 100,
+      },
+    },
   };
 
   return (
     <motion.div
+      animate={isInView ? "visible" : "hidden"}
+      className={className}
+      initial="hidden"
       ref={ref}
       style={{ display: "flex", flexWrap: "wrap", justifyContent: "center" }}
       variants={container}
-      initial="hidden"
-      animate={isInView ? "visible" : "hidden"}
-      className={className}
     >
       {words.map((word, index) => (
         <motion.span
-          variants={child}
           // biome-ignore lint/suspicious/noArrayIndexKey: using index for words is fine here without unique IDs
           key={index}
           style={{ marginRight: "0.25em" }}
+          variants={child}
         >
           {word}
         </motion.span>

@@ -131,10 +131,9 @@ export function Chat({
               return false;
             }
             const state = (part as { state?: string }).state;
-            return (
-              state === "approval-responded" || state === "output-denied"
-            );
-          }) ?? false);
+            return state === "approval-responded" || state === "output-denied";
+          }) ??
+            false);
 
         return {
           body: {

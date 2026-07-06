@@ -86,7 +86,9 @@ export const delegateToSubAgent = ({
       attachments: z
         .array(z.string().url())
         .optional()
-        .describe("Array of any file or image URLs the user provided that are necessary for the sub-agent to process"),
+        .describe(
+          "Array of any file or image URLs the user provided that are necessary for the sub-agent to process"
+        ),
     }),
     execute: async ({ agentType, task, attachments }) => {
       const definition = getSubAgentBySlug(agentType);
@@ -97,9 +99,10 @@ export const delegateToSubAgent = ({
         };
       }
 
-      const finalTask = attachments && attachments.length > 0 
-        ? `${task}\n###ATTACHMENTS###\n${JSON.stringify(attachments)}` 
-        : task;
+      const finalTask =
+        attachments && attachments.length > 0
+          ? `${task}\n###ATTACHMENTS###\n${JSON.stringify(attachments)}`
+          : task;
 
       const taskId = generateUUID();
       await createAgentTask({
@@ -113,7 +116,7 @@ export const delegateToSubAgent = ({
       const delegationPayload = {
         agentType: definition.name,
         slug: agentType,
-        task: task,
+        task,
         taskId,
         status: "running",
         timestamp: new Date().toISOString(),

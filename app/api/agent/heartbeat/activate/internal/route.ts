@@ -12,9 +12,9 @@
  * from the server-side activateHeartbeat tool.
  */
 
-import { NextRequest, NextResponse } from "next/server";
 import { Client } from "@upstash/qstash";
 import { Redis } from "@upstash/redis";
+import { type NextRequest, NextResponse } from "next/server";
 
 const HOURLY_CRON = "0 * * * *";
 const SYNTHESIS_CRON = "0 8 * * 1";
@@ -29,13 +29,19 @@ function scheduleIds(userId: string) {
 }
 
 function getQStash() {
-  if (!process.env.QSTASH_TOKEN) return null;
+  if (!process.env.QSTASH_TOKEN) {
+    return null;
+  }
   return new Client({ token: process.env.QSTASH_TOKEN });
 }
 
 function getRedis() {
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN)
+  if (
+    !process.env.UPSTASH_REDIS_REST_URL ||
+    !process.env.UPSTASH_REDIS_REST_TOKEN
+  ) {
     return null;
+  }
   return new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -53,7 +59,9 @@ function getBaseUrl(req: NextRequest) {
     (process.env.VERCEL_PROJECT_PRODUCTION_URL
       ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
       : undefined) ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : undefined) ||
     new URL(req.url).origin
   );
 }
@@ -75,22 +83,21 @@ export async function POST(req: NextRequest) {
   if (!qstash) {
     return NextResponse.json(
       { error: "QSTASH_TOKEN not configured" },
-      { status: 503 },
+      { status: 503 }
     );
   }
 
   const baseUrl = getBaseUrl(req);
   if (!baseUrl) {
-    return NextResponse.json(
-      { error: "BASE_URL not set" },
-      { status: 503 },
-    );
+    return NextResponse.json({ error: "BASE_URL not set" }, { status: 503 });
   }
 
   let body: { morningHour?: number } = {};
   try {
     body = await req.json();
-  } catch { /* optional */ }
+  } catch {
+    /* optional */
+  }
 
   const morningHour = body.morningHour ?? DEFAULT_MORNING_HOUR;
   const morningCron = `0 ${morningHour} * * *`;
@@ -131,7 +138,10 @@ export async function POST(req: NextRequest) {
     });
     results.synthesisScheduleId = synthesis.scheduleId;
   } catch (err: any) {
-    console.error("[Heartbeat Internal] Synthesis schedule error:", err?.message);
+    console.error(
+      "[Heartbeat Internal] Synthesis schedule error:",
+      err?.message
+    );
   }
 
   // Morning briefing

@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
-import { getSubagentChatMessages, clearSubagentChatMessages } from "@/lib/subagent-redis";
+import {
+  clearSubagentChatMessages,
+  getSubagentChatMessages,
+} from "@/lib/subagent-redis";
 
 export async function GET(request: NextRequest) {
   const session = await auth();

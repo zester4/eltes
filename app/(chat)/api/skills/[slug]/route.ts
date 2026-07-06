@@ -1,8 +1,8 @@
-import { auth } from "@/app/(auth)/auth";
-import { deleteUserSkill, getUserSkillBySlug } from "@/lib/db/queries";
-import { NextRequest, NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { type NextRequest, NextResponse } from "next/server";
+import { auth } from "@/app/(auth)/auth";
+import { deleteUserSkill, getUserSkillBySlug } from "@/lib/db/queries";
 
 const WIKI_ROOT = path.join(process.cwd(), ".wiki");
 
@@ -58,10 +58,16 @@ export async function DELETE(
   try {
     const result = await deleteUserSkill(session.user.id, slug);
     if (result.length === 0) {
-      return NextResponse.json({ error: "Skill not found or not owned by you" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Skill not found or not owned by you" },
+        { status: 404 }
+      );
     }
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to delete skill" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to delete skill" },
+      { status: 500 }
+    );
   }
 }

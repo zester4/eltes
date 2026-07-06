@@ -1,5 +1,5 @@
 //app/api/agent/workflow/failure/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { updateAgentTask } from "@/lib/db/queries";
 
 export async function POST(req: NextRequest) {

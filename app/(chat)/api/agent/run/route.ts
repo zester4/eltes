@@ -17,23 +17,22 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
+import { makeRunningStep } from "@/lib/agent/workflow-progress";
+import { upsertWorkflowProgress } from "@/lib/agent/workflow-progress.server";
+import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import {
   createAgentTask,
   getChatById,
   saveChat,
   saveMessages,
   updateAgentTask,
-  upsertMessages,
 } from "@/lib/db/queries";
+import type { DBMessage } from "@/lib/db/schema";
 import { generateUUID } from "@/lib/utils";
 import {
-  triggerAgentRunWorkflow,
   isWorkflowEnabled,
+  triggerAgentRunWorkflow,
 } from "@/lib/workflow/client";
-import { upsertWorkflowProgress } from "@/lib/agent/workflow-progress.server";
-import { makeRunningStep } from "@/lib/agent/workflow-progress";
-import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
-import type { DBMessage } from "@/lib/db/schema";
 
 export const maxDuration = 30;
 
@@ -124,11 +123,13 @@ export async function POST(req: NextRequest) {
       id: taskId,
       userId,
       status: "failed",
-      result: { error: "QSTASH_TOKEN not configured — cannot run durable workflow." },
+      result: {
+        error: "QSTASH_TOKEN not configured — cannot run durable workflow.",
+      },
     });
     return NextResponse.json(
       { error: "Workflow not configured. Set QSTASH_TOKEN and BASE_URL." },
-      { status: 503 },
+      { status: 503 }
     );
   }
 
@@ -169,7 +170,9 @@ export async function POST(req: NextRequest) {
       taskId,
       workflowRunId,
       task: taskText,
-      steps: [makeRunningStep(0, "recall-context", "Recalling relevant context")],
+      steps: [
+        makeRunningStep(0, "recall-context", "Recalling relevant context"),
+      ],
       overallStatus: "running",
       startedAt,
     });
@@ -179,9 +182,14 @@ export async function POST(req: NextRequest) {
       id: taskId,
       userId,
       status: "failed",
-      result: { error: err instanceof Error ? err.message : "Workflow trigger failed" },
+      result: {
+        error: err instanceof Error ? err.message : "Workflow trigger failed",
+      },
     });
-    return NextResponse.json({ error: "Workflow trigger failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Workflow trigger failed" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ taskId, workflowRunId });

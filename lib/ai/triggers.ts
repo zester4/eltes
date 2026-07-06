@@ -48,8 +48,22 @@ export const SUPPORTED_TRIGGERS: TriggerDefinition[] = [
     description: "Triggers when a new commit is pushed to a repository.",
     app: "github",
     configFields: [
-      { name: "owner", label: "Owner", type: "string", description: "GitHub username or organization", required: true, placeholder: "composio" },
-      { name: "repo", label: "Repository", type: "string", description: "Repository name", required: true, placeholder: "sdk" },
+      {
+        name: "owner",
+        label: "Owner",
+        type: "string",
+        description: "GitHub username or organization",
+        required: true,
+        placeholder: "composio",
+      },
+      {
+        name: "repo",
+        label: "Repository",
+        type: "string",
+        description: "Repository name",
+        required: true,
+        placeholder: "sdk",
+      },
     ],
   },
   {
@@ -58,8 +72,20 @@ export const SUPPORTED_TRIGGERS: TriggerDefinition[] = [
     description: "Triggers when a new issue is created.",
     app: "github",
     configFields: [
-      { name: "owner", label: "Owner", type: "string", description: "GitHub username or organization", required: true },
-      { name: "repo", label: "Repository", type: "string", description: "Repository name", required: true },
+      {
+        name: "owner",
+        label: "Owner",
+        type: "string",
+        description: "GitHub username or organization",
+        required: true,
+      },
+      {
+        name: "repo",
+        label: "Repository",
+        type: "string",
+        description: "Repository name",
+        required: true,
+      },
     ],
   },
   {
@@ -68,8 +94,20 @@ export const SUPPORTED_TRIGGERS: TriggerDefinition[] = [
     description: "Triggers when a new pull request is opened.",
     app: "github",
     configFields: [
-      { name: "owner", label: "Owner", type: "string", description: "GitHub username or organization", required: true },
-      { name: "repo", label: "Repository", type: "string", description: "Repository name", required: true },
+      {
+        name: "owner",
+        label: "Owner",
+        type: "string",
+        description: "GitHub username or organization",
+        required: true,
+      },
+      {
+        name: "repo",
+        label: "Repository",
+        type: "string",
+        description: "Repository name",
+        required: true,
+      },
     ],
   },
   {
@@ -78,8 +116,20 @@ export const SUPPORTED_TRIGGERS: TriggerDefinition[] = [
     description: "Triggers when someone stars the repository.",
     app: "github",
     configFields: [
-      { name: "owner", label: "Owner", type: "string", description: "GitHub username or organization", required: true },
-      { name: "repo", label: "Repository", type: "string", description: "Repository name", required: true },
+      {
+        name: "owner",
+        label: "Owner",
+        type: "string",
+        description: "GitHub username or organization",
+        required: true,
+      },
+      {
+        name: "repo",
+        label: "Repository",
+        type: "string",
+        description: "Repository name",
+        required: true,
+      },
     ],
   },
   {
@@ -88,8 +138,20 @@ export const SUPPORTED_TRIGGERS: TriggerDefinition[] = [
     description: "Triggers when a comment is added to an issue.",
     app: "github",
     configFields: [
-      { name: "owner", label: "Owner", type: "string", description: "GitHub username or organization", required: true },
-      { name: "repo", label: "Repository", type: "string", description: "Repository name", required: true },
+      {
+        name: "owner",
+        label: "Owner",
+        type: "string",
+        description: "GitHub username or organization",
+        required: true,
+      },
+      {
+        name: "repo",
+        label: "Repository",
+        type: "string",
+        description: "Repository name",
+        required: true,
+      },
     ],
   },
 
@@ -100,7 +162,14 @@ export const SUPPORTED_TRIGGERS: TriggerDefinition[] = [
     description: "Triggers when a new message is posted in a channel.",
     app: "slack",
     configFields: [
-      { name: "channelId", label: "Channel ID", type: "string", description: "The ID of the Slack channel", required: true, placeholder: "C123456" },
+      {
+        name: "channelId",
+        label: "Channel ID",
+        type: "string",
+        description: "The ID of the Slack channel",
+        required: true,
+        placeholder: "C123456",
+      },
     ],
   },
   {
@@ -116,7 +185,13 @@ export const SUPPORTED_TRIGGERS: TriggerDefinition[] = [
     description: "Triggers when a user joins a channel.",
     app: "slack",
     configFields: [
-      { name: "channelId", label: "Channel ID", type: "string", description: "The ID of the Slack channel", required: true },
+      {
+        name: "channelId",
+        label: "Channel ID",
+        type: "string",
+        description: "The ID of the Slack channel",
+        required: true,
+      },
     ],
   },
   {
@@ -141,7 +216,14 @@ export const SUPPORTED_TRIGGERS: TriggerDefinition[] = [
     description: "Triggers when a new email is received in the inbox.",
     app: "gmail",
     configFields: [
-      { name: "labelIds", label: "Labels", type: "string", description: "Comma-separated labels (e.g. INBOX, UNREAD)", required: false, placeholder: "INBOX" },
+      {
+        name: "labelIds",
+        label: "Labels",
+        type: "string",
+        description: "Comma-separated labels (e.g. INBOX, UNREAD)",
+        required: false,
+        placeholder: "INBOX",
+      },
     ],
   },
   {
@@ -164,7 +246,13 @@ export const SUPPORTED_TRIGGERS: TriggerDefinition[] = [
     description: "Triggers when a label is added to a message.",
     app: "gmail",
     configFields: [
-      { name: "labelId", label: "Label ID", type: "string", description: "Specific label to watch", required: false },
+      {
+        name: "labelId",
+        label: "Label ID",
+        type: "string",
+        description: "Specific label to watch",
+        required: false,
+      },
     ],
   },
   {

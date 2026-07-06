@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { Redis } from "@upstash/redis";
 import { Client as QStashClient } from "@upstash/qstash";
+import { Redis } from "@upstash/redis";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import { triggerHeartbeatWorkflow } from "@/lib/workflow/client";
 
@@ -18,7 +18,9 @@ function getRedis(): Redis | null {
 }
 
 function getQStash(): QStashClient | null {
-  if (!process.env.QSTASH_TOKEN) return null;
+  if (!process.env.QSTASH_TOKEN) {
+    return null;
+  }
   return new QStashClient({ token: process.env.QSTASH_TOKEN });
 }
 
@@ -54,13 +56,15 @@ async function setSchedulesPaused(userId: string, paused: boolean) {
     ids.map((schedule) =>
       paused
         ? qstash.schedules.pause({ schedule })
-        : qstash.schedules.resume({ schedule }),
-    ),
+        : qstash.schedules.resume({ schedule })
+    )
   );
 
   const failures = settled.filter((result) => result.status === "rejected");
   if (failures.length === ids.length) {
-    throw new Error(`Failed to ${paused ? "pause" : "resume"} heartbeat schedules`);
+    throw new Error(
+      `Failed to ${paused ? "pause" : "resume"} heartbeat schedules`
+    );
   }
 
   if (redis) {
@@ -75,7 +79,9 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = session.user.id;
-  const { action } = await req.json() as { action: "sync" | "pause" | "resume" };
+  const { action } = (await req.json()) as {
+    action: "sync" | "pause" | "resume";
+  };
 
   try {
     switch (action) {
@@ -83,7 +89,7 @@ export async function POST(req: NextRequest) {
         if (!process.env.QSTASH_TOKEN || !process.env.BASE_URL) {
           return NextResponse.json(
             { error: "QStash workflow is not configured" },
-            { status: 503 },
+            { status: 503 }
           );
         }
         {
@@ -91,7 +97,7 @@ export async function POST(req: NextRequest) {
           if (!triggered) {
             return NextResponse.json(
               { error: "Heartbeat workflow could not be triggered" },
-              { status: 503 },
+              { status: 503 }
             );
           }
         }

@@ -1,14 +1,14 @@
-import { Chat, ConsoleLogger } from "chat";
-import { createSlackAdapter } from "@chat-adapter/slack";
-import { createTeamsAdapter } from "@chat-adapter/teams";
-import { createGoogleChatAdapter } from "@chat-adapter/gchat";
 import { createDiscordAdapter } from "@chat-adapter/discord";
-import { createTelegramAdapter } from "@chat-adapter/telegram";
+import { createGoogleChatAdapter } from "@chat-adapter/gchat";
 import { createGitHubAdapter } from "@chat-adapter/github";
 import { createLinearAdapter } from "@chat-adapter/linear";
+import { createSlackAdapter } from "@chat-adapter/slack";
+import { createPostgresState } from "@chat-adapter/state-pg";
+import { createTeamsAdapter } from "@chat-adapter/teams";
+import { createTelegramAdapter } from "@chat-adapter/telegram";
 import { createWhatsAppAdapter } from "@chat-adapter/whatsapp";
 import { createResendAdapter } from "@resend/chat-sdk-adapter";
-import { createPostgresState } from "@chat-adapter/state-pg";
+import { Chat, ConsoleLogger } from "chat";
 import { getBotIntegration } from "@/lib/db/queries";
 import { attachHandlers } from "./bot-handlers";
 
@@ -37,12 +37,15 @@ export async function buildUserBot(userId: string, platform: string) {
   const integration = await getBotIntegration({ userId, platform });
 
   if (!integration) {
-    console.error(`[buildUserBot] No integration found for user ${userId} on ${platform}`);
-    throw new Error(`Integration missing`);
+    console.error(
+      `[buildUserBot] No integration found for user ${userId} on ${platform}`
+    );
+    throw new Error("Integration missing");
   }
 
   const state = getSharedState();
-  const extraConfig = (integration.extraConfig as Record<string, any> | null) ?? {};
+  const extraConfig =
+    (integration.extraConfig as Record<string, any> | null) ?? {};
   let adapter;
 
   switch (platform) {

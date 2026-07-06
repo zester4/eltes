@@ -1,15 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Loader2, Pause, Play, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { toast } from "sonner";
-import { 
-  Loader2, 
-  RefreshCw, 
-  Pause, 
-  Play 
-} from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type AgentStatusActionsProps = {
   status: "active" | "inactive" | "error" | "pending" | "paused";
@@ -21,8 +16,11 @@ export function AgentStatusActions({ status }: AgentStatusActionsProps) {
   const [toggling, setToggling] = useState(false);
 
   async function handleAction(action: "sync" | "pause" | "resume") {
-    if (action === "sync") setSyncing(true);
-    else setToggling(true);
+    if (action === "sync") {
+      setSyncing(true);
+    } else {
+      setToggling(true);
+    }
 
     try {
       const res = await fetch("/api/agent/status/action", {
@@ -31,14 +29,16 @@ export function AgentStatusActions({ status }: AgentStatusActionsProps) {
         body: JSON.stringify({ action }),
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
 
       toast.success(
-        action === "sync" 
-          ? "Heartbeat triggered successfully" 
+        action === "sync"
+          ? "Heartbeat triggered successfully"
           : `Agent ${action === "pause" ? "paused" : "resumed"} successfully`
       );
-      
+
       router.refresh();
     } catch (error: any) {
       toast.error(`Action failed: ${error.message}`);
@@ -51,11 +51,11 @@ export function AgentStatusActions({ status }: AgentStatusActionsProps) {
   return (
     <div className="flex items-center gap-2">
       <Button
-        variant="outline"
-        size="sm"
+        className="h-8 text-[10px] sm:text-xs"
         disabled={syncing || status === "paused"}
         onClick={() => handleAction("sync")}
-        className="h-8 text-[10px] sm:text-xs"
+        size="sm"
+        variant="outline"
       >
         {syncing ? (
           <Loader2 className="mr-2 h-3 w-3 animate-spin" />
@@ -67,11 +67,11 @@ export function AgentStatusActions({ status }: AgentStatusActionsProps) {
 
       {status === "paused" ? (
         <Button
-          variant="default"
-          size="sm"
+          className="h-8 text-[10px] sm:text-xs bg-emerald-600 hover:bg-emerald-700"
           disabled={toggling}
           onClick={() => handleAction("resume")}
-          className="h-8 text-[10px] sm:text-xs bg-emerald-600 hover:bg-emerald-700"
+          size="sm"
+          variant="default"
         >
           {toggling ? (
             <Loader2 className="mr-2 h-3 w-3 animate-spin" />
@@ -82,11 +82,11 @@ export function AgentStatusActions({ status }: AgentStatusActionsProps) {
         </Button>
       ) : (
         <Button
-          variant="secondary"
-          size="sm"
+          className="h-8 text-[10px] sm:text-xs"
           disabled={toggling || status === "inactive"}
           onClick={() => handleAction("pause")}
-          className="h-8 text-[10px] sm:text-xs"
+          size="sm"
+          variant="secondary"
         >
           {toggling ? (
             <Loader2 className="mr-2 h-3 w-3 animate-spin" />

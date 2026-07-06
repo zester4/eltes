@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
-
-import { useState } from "react";
-import { useSidebar } from "@/components/ui/sidebar";
+import { useEffect, useState } from "react";
 
 export function PwaUpdater() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -15,11 +11,15 @@ export function PwaUpdater() {
   const isMobile = false; // We can't rely on useSidebar if we are outside
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {
+      return;
+    }
 
     // Check if the app is installed (running in standalone mode)
     const mediaQuery = window.matchMedia("(display-mode: standalone)");
-    setIsStandalone(mediaQuery.matches || (navigator as any).standalone === true);
+    setIsStandalone(
+      mediaQuery.matches || (navigator as any).standalone === true
+    );
 
     mediaQuery.addEventListener("change", (e) => {
       setIsStandalone(e.matches);
@@ -49,7 +49,7 @@ export function PwaUpdater() {
   const handleUpdate = async () => {
     setIsUpdating(true);
     const serwist = (window as any).__serwist;
-    
+
     // Fallback: forcefully reload the window after 2 seconds no matter what,
     // to prevent infinite "Updating..." state if the controllerchange event fails
     // or if the service worker is stuck.
@@ -69,16 +69,20 @@ export function PwaUpdater() {
   };
 
   // Only display if there's an update AND the user has installed the app
-  if (!updateAvailable || !isStandalone) return null;
+  if (!updateAvailable || !isStandalone) {
+    return null;
+  }
 
   return (
     <div className="px-2 mt-4 mb-2">
       <button
-        onClick={handleUpdate}
-        disabled={isUpdating}
         className="flex w-full items-center justify-center gap-2 rounded-md bg-zinc-800 dark:bg-zinc-800/50 border border-zinc-700/50 px-3 py-1.5 text-xs font-medium text-zinc-100 hover:bg-zinc-700/80 transition-colors disabled:opacity-50"
+        disabled={isUpdating}
+        onClick={handleUpdate}
       >
-        <RefreshCw className={`h-3 w-3 text-emerald-400 ${isUpdating ? "animate-spin" : ""}`} />
+        <RefreshCw
+          className={`h-3 w-3 text-emerald-400 ${isUpdating ? "animate-spin" : ""}`}
+        />
         {isUpdating ? "Updating..." : "Update Available"}
       </button>
     </div>

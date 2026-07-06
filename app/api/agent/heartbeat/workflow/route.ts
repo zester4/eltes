@@ -12,24 +12,24 @@
  * 4. deliver         — save to chat + push Telegram if needed
  */
 
-import { serve } from "@upstash/workflow/nextjs";
-import { generateText, stepCountIs } from "ai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
-import {
-  getChatsByUserId,
-  getBotIntegration,
-  saveMessages,
-  getActiveAgentTasksByChatId,
-} from "@/lib/db/queries";
+import { serve } from "@upstash/workflow/nextjs";
+import { generateText, stepCountIs } from "ai";
 import { getGoogleModel } from "@/lib/ai/providers";
-import { generateUUID } from "@/lib/utils";
+import { getActiveGoalsSnapshot } from "@/lib/ai/tools/goals";
+import {
+  getActiveAgentTasksByChatId,
+  getBotIntegration,
+  getChatsByUserId,
+  saveMessages,
+} from "@/lib/db/queries";
 import { sendLongMessage } from "@/lib/telegram/api";
 import {
-  shouldSendSilenceCheckIn,
   markSilenceCheckInSent,
+  shouldSendSilenceCheckIn,
 } from "@/lib/user-activity";
-import { getActiveGoalsSnapshot } from "@/lib/ai/tools/goals";
+import { generateUUID } from "@/lib/utils";
 
 export const maxDuration = 300;
 
@@ -43,7 +43,7 @@ export const { POST } = serve<HeartbeatPayload>(async (context) => {
   const { userId } = context.requestPayload;
 
   console.log(`[Heartbeat] Starting workflow for user: ${userId}`);
-  
+
   // ── Step 1: Recall context ────────────────────────────────────────────────
   const memoryContext = await context.run("recall-context", async () => {
     try {
@@ -55,8 +55,16 @@ export const { POST } = serve<HeartbeatPayload>(async (context) => {
 
       // Recall recent priorities and weekly synthesis in parallel
       const [priorities, synthesis] = await Promise.all([
-        ns.query({ data: "priorities commitments urgent tasks deadlines", topK: 8, includeMetadata: true }),
-        ns.query({ data: "weekly_synthesis brief", topK: 1, includeMetadata: true }),
+        ns.query({
+          data: "priorities commitments urgent tasks deadlines",
+          topK: 8,
+          includeMetadata: true,
+        }),
+        ns.query({
+          data: "weekly_synthesis brief",
+          topK: 1,
+          includeMetadata: true,
+        }),
       ]);
 
       const memoryLines = priorities
@@ -80,7 +88,9 @@ export const { POST } = serve<HeartbeatPayload>(async (context) => {
       endingBefore: null,
     });
     const activeChat = chats[0];
-    if (!activeChat) return { chatId: null as string | null, openTasks: [] as string[] };
+    if (!activeChat) {
+      return { chatId: null as string | null, openTasks: [] as string[] };
+    }
 
     const tasks = await getActiveAgentTasksByChatId(activeChat.id, userId);
     const openTasks = tasks.map((t) => `[${t.agentType}] ${t.task}`);
@@ -93,7 +103,9 @@ export const { POST } = serve<HeartbeatPayload>(async (context) => {
     try {
       const session = await composio.create(userId);
       composioTools = await session.tools();
-    } catch { /* Composio optional */ }
+    } catch {
+      /* Composio optional */
+    }
 
     const result = await generateText({
       model: getGoogleModel("gemini-2.5-flash"),
@@ -135,7 +147,9 @@ Return ONLY the JSON object, no other text.`,
             token: process.env.UPSTASH_REDIS_REST_TOKEN,
           })
         : null;
-    if (!redis) return;
+    if (!redis) {
+      return;
+    }
 
     await redis.set(
       `agent:status:${userId}:heartbeat`,
@@ -143,17 +157,24 @@ Return ONLY the JSON object, no other text.`,
         lastRun: new Date().toISOString(),
         status: "success",
       }),
-      { ex: 86400 * 7 },
+      { ex: 86_400 * 7 }
     );
   });
 
   // ── Step 5: Gentle check-in if we have not heard from the user in a while ─
   await context.run("silence-check-in", async () => {
     const { should } = await shouldSendSilenceCheckIn(userId);
-    if (!should) return;
+    if (!should) {
+      return;
+    }
 
-    const integration = await getBotIntegration({ userId, platform: "telegram" });
-    if (!integration) return;
+    const integration = await getBotIntegration({
+      userId,
+      platform: "telegram",
+    });
+    if (!integration) {
+      return;
+    }
 
     const redis =
       process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
@@ -162,10 +183,14 @@ Return ONLY the JSON object, no other text.`,
             token: process.env.UPSTASH_REDIS_REST_TOKEN,
           })
         : null;
-    if (!redis) return;
+    if (!redis) {
+      return;
+    }
 
     const keys = await redis.keys(`tg:chat:${userId}:*`);
-    if (keys.length === 0) return;
+    if (keys.length === 0) {
+      return;
+    }
 
     const checkIn =
       "<b>Quick check-in</b>\n\n" +
@@ -182,7 +207,11 @@ Return ONLY the JSON object, no other text.`,
     for (const key of keys) {
       const telegramChatId = Number(key.split(":").at(-1));
       if (!Number.isNaN(telegramChatId)) {
-        await sendLongMessage(integration.botToken, telegramChatId, checkInWithGoals);
+        await sendLongMessage(
+          integration.botToken,
+          telegramChatId,
+          checkInWithGoals
+        );
       }
     }
 
@@ -195,7 +224,9 @@ Return ONLY the JSON object, no other text.`,
             id: generateUUID(),
             chatId: contextData.chatId,
             role: "assistant",
-            parts: [{ type: "text", text: checkInWithGoals.replace(/<\/?b>/g, "") }],
+            parts: [
+              { type: "text", text: checkInWithGoals.replace(/<\/?b>/g, "") },
+            ],
             attachments: [],
             createdAt: new Date(),
           },
@@ -204,10 +235,14 @@ Return ONLY the JSON object, no other text.`,
     }
   });
 
-  if (!contextData.chatId) return;
+  if (!contextData.chatId) {
+    return;
+  }
 
   // No urgent items — stop here, don't bother the user further
-  if (!signals.hasUrgentItems) return;
+  if (!signals.hasUrgentItems) {
+    return;
+  }
 
   // ── Step 6: Generate proactive message ────────────────────────────────────
   const proactiveMessage = await context.run("generate-message", async () => {
@@ -227,19 +262,26 @@ Use Telegram HTML formatting only: <b>bold</b>, <i>italic</i>.`,
   await context.run("deliver", async () => {
     // Save to chat
     await saveMessages({
-      messages: [{
-        id: generateUUID(),
-        chatId: contextData.chatId!,
-        role: "assistant",
-        parts: [{ type: "text", text: proactiveMessage }],
-        attachments: [],
-        createdAt: new Date(),
-      }] as any,
+      messages: [
+        {
+          id: generateUUID(),
+          chatId: contextData.chatId!,
+          role: "assistant",
+          parts: [{ type: "text", text: proactiveMessage }],
+          attachments: [],
+          createdAt: new Date(),
+        },
+      ] as any,
     });
 
     // Push via Telegram if connected
-    const integration = await getBotIntegration({ userId, platform: "telegram" });
-    if (!integration) return;
+    const integration = await getBotIntegration({
+      userId,
+      platform: "telegram",
+    });
+    if (!integration) {
+      return;
+    }
 
     // Get the user's Telegram chat ID from Redis
     const redis =
@@ -249,14 +291,20 @@ Use Telegram HTML formatting only: <b>bold</b>, <i>italic</i>.`,
             token: process.env.UPSTASH_REDIS_REST_TOKEN,
           })
         : null;
-    if (!redis) return;
+    if (!redis) {
+      return;
+    }
 
     // Scan for tg:chat:{userId}:* keys to find active Telegram chats
     const keys = await redis.keys(`tg:chat:${userId}:*`);
     for (const key of keys) {
       const telegramChatId = Number(key.split(":").at(-1));
       if (!isNaN(telegramChatId)) {
-        await sendLongMessage(integration.botToken, telegramChatId, proactiveMessage);
+        await sendLongMessage(
+          integration.botToken,
+          telegramChatId,
+          proactiveMessage
+        );
       }
     }
   });

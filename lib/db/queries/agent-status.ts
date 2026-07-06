@@ -1,11 +1,13 @@
 "use server";
 
-import { auth } from "@/app/(auth)/auth";
-import { Redis } from "@upstash/redis";
 import { Client as QStashClient } from "@upstash/qstash";
+import { Redis } from "@upstash/redis";
 import { Index } from "@upstash/vector";
-import { getRecentAgentTasksByUserId, getUserBotIntegrations } from "../queries";
-
+import { auth } from "@/app/(auth)/auth";
+import {
+  getRecentAgentTasksByUserId,
+  getUserBotIntegrations,
+} from "../queries";
 
 export type AgentStatusData = {
   heartbeat: {
@@ -31,7 +33,9 @@ export type AgentStatusData = {
   }[];
 };
 
-export async function getAgentStatus(serverUserId?: string): Promise<AgentStatusData> {
+export async function getAgentStatus(
+  serverUserId?: string
+): Promise<AgentStatusData> {
   let userId = serverUserId;
   if (!userId) {
     const session = await auth();
@@ -55,7 +59,7 @@ export async function getAgentStatus(serverUserId?: string): Promise<AgentStatus
   let lastHeartbeat: { lastRun?: string; status?: string } | null = null;
   let lastSynthesis: { lastRun?: string; status?: string } | null = null;
   let storedSchedules: Record<string, string> | null = null;
-  
+
   if (redis) {
     const [hb, syn, isPaused, schedules] = await Promise.all([
       redis.get(`agent:status:${userId}:heartbeat`),
@@ -63,8 +67,8 @@ export async function getAgentStatus(serverUserId?: string): Promise<AgentStatus
       redis.get(`agent:status:${userId}:paused`),
       redis.get<Record<string, string>>(`agent:heartbeat:schedules:${userId}`),
     ]);
-    lastHeartbeat = typeof hb === 'string' ? JSON.parse(hb) : (hb as any);
-    lastSynthesis = typeof syn === 'string' ? JSON.parse(syn) : (syn as any);
+    lastHeartbeat = typeof hb === "string" ? JSON.parse(hb) : (hb as any);
+    lastSynthesis = typeof syn === "string" ? JSON.parse(syn) : (syn as any);
     storedSchedules =
       typeof schedules === "string"
         ? JSON.parse(schedules)
@@ -76,7 +80,9 @@ export async function getAgentStatus(serverUserId?: string): Promise<AgentStatus
           status: "paused",
           lastRun: lastHeartbeat?.lastRun,
         },
-        synthesis: lastSynthesis?.lastRun ? { savedAt: lastSynthesis.lastRun } : {},
+        synthesis: lastSynthesis?.lastRun
+          ? { savedAt: lastSynthesis.lastRun }
+          : {},
         cronJobs: [],
         integrations: [],
       };
@@ -91,7 +97,9 @@ export async function getAgentStatus(serverUserId?: string): Promise<AgentStatus
       token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
     });
     const ns = index.namespace(`memory-${userId}`);
-    const results = await ns.fetch(["weekly_synthesis"], { includeMetadata: true });
+    const results = await ns.fetch(["weekly_synthesis"], {
+      includeMetadata: true,
+    });
     if (results && results.length > 0 && results[0]) {
       const m = results[0].metadata as any;
       synthesisData = {
@@ -99,9 +107,9 @@ export async function getAgentStatus(serverUserId?: string): Promise<AgentStatus
         savedAt: m?.savedAt || lastSynthesis?.lastRun,
       };
     } else if (lastSynthesis?.lastRun) {
-        synthesisData = {
-            savedAt: lastSynthesis.lastRun,
-        };
+      synthesisData = {
+        savedAt: lastSynthesis.lastRun,
+      };
     }
   } catch (e) {
     console.error("Failed to fetch synthesis:", e);
@@ -109,7 +117,7 @@ export async function getAgentStatus(serverUserId?: string): Promise<AgentStatus
 
   // 2. Fetch cron jobs (active tasks) from DB
   const recentTasks = await getRecentAgentTasksByUserId(userId, 5);
-  const cronJobs = recentTasks.map(t => ({
+  const cronJobs = recentTasks.map((t) => ({
     id: t.id,
     task: t.task,
     status: t.status,
@@ -118,7 +126,7 @@ export async function getAgentStatus(serverUserId?: string): Promise<AgentStatus
 
   // 3. Fetch integrations
   const integrations = await getUserBotIntegrations({ userId });
-  const integrationStatus = integrations.map(i => ({
+  const integrationStatus = integrations.map((i) => ({
     platform: i.platform,
     isConnected: true,
   }));
@@ -130,64 +138,70 @@ export async function getAgentStatus(serverUserId?: string): Promise<AgentStatus
   const activeCronJobs: AgentStatusData["cronJobs"] = [];
 
   const qstashToken = process.env.QSTASH_TOKEN;
-  
+
   if (qstashToken) {
     try {
       const qstash = new QStashClient({ token: qstashToken });
       const schedules = (await qstash.schedules.list()) as any[];
-        
+
       for (const s of schedules) {
-          try {
-            const body = JSON.parse(s.body || "{}");
-            if (body.userId !== userId) continue;
-
-            if (!body.type || body.type === "heartbeat") {
-              // Determine status: 
-              // - "active" if last run was success
-              // - "error" if last run failed
-              // - "pending" if it exists but hasn't run successfully yet
-              let status: AgentStatusData["heartbeat"]["status"] = "pending";
-              if (lastHeartbeat?.status === "success") status = "active";
-              else if (lastHeartbeat?.status === "error") status = "error";
-
-              heartbeatStatus = {
-                status,
-                lastRun: lastHeartbeat?.lastRun,
-                nextRun: (s.nextRun && typeof s.nextRun === "number") 
-                  ? new Date(s.nextRun * 1000).toISOString() 
-                  : undefined,
-              };
-            } else if (body.type === "weekly_synthesis") {
-              // Force synthesis savedAt if not from vector
-              if (!synthesisData.savedAt) {
-                 synthesisData.savedAt = lastSynthesis?.lastRun;
-              }
-            } else if (!body.type) {
-              // Skip non-typed schedules (old format)
-              continue;
-            } else if (body.type === "cron") {
-              const scheduleId =
-                typeof s.scheduleId === "string"
-                  ? s.scheduleId
-                  : typeof s.id === "string"
-                    ? s.id
-                    : String(s.scheduleId ?? s.id ?? "");
-              activeCronJobs.push({
-                id: scheduleId,
-                task: body.name || "Unnamed Job",
-                status: "active",
-                createdAt: (s.createdAt && typeof s.createdAt === "number") 
-                  ? new Date(s.createdAt * 1000) 
-                  : new Date(),
-                cron: s.cron,
-                nextRun: (s.nextRun && typeof s.nextRun === "number") 
-                  ? new Date(s.nextRun * 1000).toISOString() 
-                  : undefined,
-              });
-            }
-          } catch (err) {
-            console.error("Failed to parse schedule body:", err);
+        try {
+          const body = JSON.parse(s.body || "{}");
+          if (body.userId !== userId) {
+            continue;
           }
+
+          if (!body.type || body.type === "heartbeat") {
+            // Determine status:
+            // - "active" if last run was success
+            // - "error" if last run failed
+            // - "pending" if it exists but hasn't run successfully yet
+            let status: AgentStatusData["heartbeat"]["status"] = "pending";
+            if (lastHeartbeat?.status === "success") {
+              status = "active";
+            } else if (lastHeartbeat?.status === "error") {
+              status = "error";
+            }
+
+            heartbeatStatus = {
+              status,
+              lastRun: lastHeartbeat?.lastRun,
+              nextRun:
+                s.nextRun && typeof s.nextRun === "number"
+                  ? new Date(s.nextRun * 1000).toISOString()
+                  : undefined,
+            };
+          } else if (body.type === "weekly_synthesis") {
+            // Force synthesis savedAt if not from vector
+            if (!synthesisData.savedAt) {
+              synthesisData.savedAt = lastSynthesis?.lastRun;
+            }
+          } else if (!body.type) {
+          } else if (body.type === "cron") {
+            const scheduleId =
+              typeof s.scheduleId === "string"
+                ? s.scheduleId
+                : typeof s.id === "string"
+                  ? s.id
+                  : String(s.scheduleId ?? s.id ?? "");
+            activeCronJobs.push({
+              id: scheduleId,
+              task: body.name || "Unnamed Job",
+              status: "active",
+              createdAt:
+                s.createdAt && typeof s.createdAt === "number"
+                  ? new Date(s.createdAt * 1000)
+                  : new Date(),
+              cron: s.cron,
+              nextRun:
+                s.nextRun && typeof s.nextRun === "number"
+                  ? new Date(s.nextRun * 1000).toISOString()
+                  : undefined,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to parse schedule body:", err);
+        }
       }
     } catch (e) {
       console.error("Failed to fetch QStash schedules:", e);
@@ -209,7 +223,8 @@ export async function getAgentStatus(serverUserId?: string): Promise<AgentStatus
   if (
     lastHeartbeat?.status === "success" &&
     lastHeartbeat.lastRun &&
-    (heartbeatStatus.status === "inactive" || heartbeatStatus.status === "error")
+    (heartbeatStatus.status === "inactive" ||
+      heartbeatStatus.status === "error")
   ) {
     heartbeatStatus = {
       status: "active",
@@ -224,10 +239,11 @@ export async function getAgentStatus(serverUserId?: string): Promise<AgentStatus
   // - Recent completed tasks from DB for history
   const finalCronJobs = [
     ...activeCronJobs,
-    ...cronJobs.filter(tj => 
-      !activeCronJobs.some(aqj => aqj.id === tj.id) &&
-      (tj.status === "pending" || tj.status === "running")
-    )
+    ...cronJobs.filter(
+      (tj) =>
+        !activeCronJobs.some((aqj) => aqj.id === tj.id) &&
+        (tj.status === "pending" || tj.status === "running")
+    ),
   ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
   return {

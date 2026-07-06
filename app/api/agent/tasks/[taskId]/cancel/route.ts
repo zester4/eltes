@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import {
   getAgentTaskById,
@@ -9,7 +9,7 @@ import { cancelWorkflow } from "@/lib/workflow/client";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: Promise<{ taskId: string }> },
+  { params }: { params: Promise<{ taskId: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -32,7 +32,7 @@ export async function POST(
     if (task.status !== "pending" && task.status !== "running") {
       return NextResponse.json(
         { error: "Task is not running" },
-        { status: 400 },
+        { status: 400 }
       );
     }
     const workflowRunId = await getAgentTaskWorkflowRunId({
@@ -53,7 +53,7 @@ export async function POST(
     console.error("[Agent Cancel] Failed:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

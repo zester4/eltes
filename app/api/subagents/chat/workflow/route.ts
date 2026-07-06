@@ -2,39 +2,39 @@
 // Durable subagent chat execution via Upstash Workflow.
 // Mirrors app/api/agent/workflow/route.ts but tailored for interactive chat sessions.
 
-import { serve } from "@upstash/workflow/nextjs";
-import { generateText, stepCountIs } from "ai";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
+import { Index } from "@upstash/vector";
+import { serve } from "@upstash/workflow/nextjs";
+import { generateText, stepCountIs } from "ai";
 import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
+import * as browserUseTools from "@/lib/ai/tools/browser-use";
+import * as daytonaTools from "@/lib/ai/tools/daytona";
+import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 import {
-  saveMemory,
-  recallMemory,
-  updateMemory,
   deleteMemory,
+  recallMemory,
+  saveMemory,
+  updateMemory,
 } from "@/lib/ai/tools/memory";
 import {
-  setReminder,
-  setCronJob,
-  listSchedules,
   deleteSchedule,
+  listSchedules,
+  setCronJob,
+  setReminder,
 } from "@/lib/ai/tools/schedule";
-import * as daytonaTools from "@/lib/ai/tools/daytona";
-import * as browserUseTools from "@/lib/ai/tools/browser-use";
-import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 import * as twilio from "@/lib/ai/tools/twilio";
 import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
-import { updateAgentTask, saveMessages } from "@/lib/db/queries";
+import { saveMessages, updateAgentTask } from "@/lib/db/queries";
 import {
   getSubagentChatMessages,
   saveSubagentChatMessages,
 } from "@/lib/subagent-redis";
-import { generateUUID } from "@/lib/utils";
-import { Index } from "@upstash/vector";
-import type { SubagentChatWorkflowPayload } from "@/lib/workflow/client";
 import type { ChatMessage } from "@/lib/types";
+import { generateUUID } from "@/lib/utils";
+import type { SubagentChatWorkflowPayload } from "@/lib/workflow/client";
 
 export const maxDuration = 300;
 
@@ -42,7 +42,7 @@ const composio = new Composio({ provider: new VercelProvider() });
 
 async function recallRelevantMemory(
   userId: string,
-  query: string,
+  query: string
 ): Promise<string> {
   try {
     const index = new Index({
@@ -55,7 +55,9 @@ async function recallRelevantMemory(
       topK: 5,
       includeMetadata: true,
     });
-    if (!results.length) return "";
+    if (!results.length) {
+      return "";
+    }
     const lines = results.map((r) => {
       const meta = r.metadata as any;
       return `• [${meta?.key ?? "memory"}]: ${meta?.content ?? ""}`;
@@ -136,24 +138,49 @@ function buildTools(userId: string, agentSlug: string, baseUrl: string) {
     twilioGetMessage: twilio.twilioGetMessage({ userId }),
     twilioListMessages: twilio.twilioListMessages({ userId }),
     twilioListMyNumbers: twilio.twilioListMyNumbers({ userId }),
-    twilioSearchAvailableNumbers: twilio.twilioSearchAvailableNumbers({ userId }),
+    twilioSearchAvailableNumbers: twilio.twilioSearchAvailableNumbers({
+      userId,
+    }),
     twilioProvisionNumber: twilio.twilioProvisionNumber({ userId }),
     twilioReleaseNumber: twilio.twilioReleaseNumber({ userId }),
     twilioUpdateNumber: twilio.twilioUpdateNumber({ userId }),
 
     // Twilio WhatsApp
-    twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({ userId }),
-    twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({ userId }),
-    twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({ userId }),
-    twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({ userId }),
-    twilioWhatsAppCreateTemplate: twilioWhatsApp.twilioWhatsAppCreateTemplate({ userId }),
-    twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates({ userId }),
-    twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({ userId }),
-    twilioWhatsAppDeleteTemplate: twilioWhatsApp.twilioWhatsAppDeleteTemplate({ userId }),
-    twilioWhatsAppSubmitApproval: twilioWhatsApp.twilioWhatsAppSubmitApproval({ userId }),
-    twilioWhatsAppGetApprovalStatus: twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId }),
-    twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({ userId }),
-    twilioWhatsAppMarkMessageRead: twilioWhatsApp.twilioWhatsAppMarkMessageRead({ userId }),
+    twilioWhatsAppSendMessage: twilioWhatsApp.twilioWhatsAppSendMessage({
+      userId,
+    }),
+    twilioWhatsAppGetMessage: twilioWhatsApp.twilioWhatsAppGetMessage({
+      userId,
+    }),
+    twilioWhatsAppListMessages: twilioWhatsApp.twilioWhatsAppListMessages({
+      userId,
+    }),
+    twilioWhatsAppSendTemplate: twilioWhatsApp.twilioWhatsAppSendTemplate({
+      userId,
+    }),
+    twilioWhatsAppCreateTemplate: twilioWhatsApp.twilioWhatsAppCreateTemplate({
+      userId,
+    }),
+    twilioWhatsAppListTemplates: twilioWhatsApp.twilioWhatsAppListTemplates({
+      userId,
+    }),
+    twilioWhatsAppGetTemplate: twilioWhatsApp.twilioWhatsAppGetTemplate({
+      userId,
+    }),
+    twilioWhatsAppDeleteTemplate: twilioWhatsApp.twilioWhatsAppDeleteTemplate({
+      userId,
+    }),
+    twilioWhatsAppSubmitApproval: twilioWhatsApp.twilioWhatsAppSubmitApproval({
+      userId,
+    }),
+    twilioWhatsAppGetApprovalStatus:
+      twilioWhatsApp.twilioWhatsAppGetApprovalStatus({ userId }),
+    twilioWhatsAppListSenders: twilioWhatsApp.twilioWhatsAppListSenders({
+      userId,
+    }),
+    twilioWhatsAppMarkMessageRead: twilioWhatsApp.twilioWhatsAppMarkMessageRead(
+      { userId }
+    ),
   };
 }
 
@@ -178,9 +205,7 @@ export const { POST } = serve<SubagentChatWorkflowPayload>(async (context) => {
     const messages = await getSubagentChatMessages(userId, agentSlug);
 
     // Extract last user message for memory recall context
-    const lastUserMsg = [...messages]
-      .reverse()
-      .find((m) => m.role === "user");
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
     const queryText =
       lastUserMsg?.parts
         ?.filter((p: any) => p.type === "text")

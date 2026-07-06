@@ -16,7 +16,8 @@ function getRedis(): InstanceType<
   ) {
     return null;
   }
-  const { Redis } = require("@upstash/redis") as typeof import("@upstash/redis");
+  const { Redis } =
+    require("@upstash/redis") as typeof import("@upstash/redis");
   return new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -25,7 +26,9 @@ function getRedis(): InstanceType<
 
 export async function touchUserActivity(userId: string): Promise<void> {
   const redis = getRedis();
-  if (!redis) return;
+  if (!redis) {
+    return;
+  }
   const key = `${LAST_ACTIVITY_PREFIX}${userId}`;
   await redis.set(key, new Date().toISOString(), {
     ex: 60 * 60 * 24 * 90,
@@ -75,7 +78,9 @@ export async function shouldSendSilenceCheckIn(userId: string): Promise<{
 
 export async function markSilenceCheckInSent(userId: string): Promise<void> {
   const redis = getRedis();
-  if (!redis) return;
+  if (!redis) {
+    return;
+  }
   await redis.set(`${CHECKIN_COOLDOWN_PREFIX}${userId}`, "1", {
     ex: CHECKIN_COOLDOWN_SECONDS,
   });

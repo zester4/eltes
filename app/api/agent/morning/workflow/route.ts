@@ -18,20 +18,20 @@
  * Triggered by: per-user QStash cron (created via /api/agent/heartbeat/activate)
  */
 
-import { serve } from "@upstash/workflow/nextjs";
-import { generateText, stepCountIs } from "ai";
-import { Index } from "@upstash/vector";
-import { Redis } from "@upstash/redis";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
+import { Redis } from "@upstash/redis";
+import { Index } from "@upstash/vector";
+import { serve } from "@upstash/workflow/nextjs";
+import { generateText, stepCountIs } from "ai";
 import { getGoogleModel } from "@/lib/ai/providers";
 import {
-  getChatsByUserId,
   getBotIntegration,
+  getChatsByUserId,
   saveMessages,
 } from "@/lib/db/queries";
-import { generateUUID } from "@/lib/utils";
 import { sendLongMessage } from "@/lib/telegram/api";
+import { generateUUID } from "@/lib/utils";
 
 export const maxDuration = 300;
 
@@ -67,8 +67,16 @@ export const { POST } = serve<MorningPayload>(async (context) => {
           topK: 10,
           includeMetadata: true,
         }),
-        ns.query({ data: "weekly synthesis brief", topK: 1, includeMetadata: true }),
-        ns.query({ data: "goals objectives targets", topK: 5, includeMetadata: true }),
+        ns.query({
+          data: "weekly synthesis brief",
+          topK: 1,
+          includeMetadata: true,
+        }),
+        ns.query({
+          data: "goals objectives targets",
+          topK: 5,
+          includeMetadata: true,
+        }),
       ]);
 
       const memLines = priorities
@@ -88,42 +96,49 @@ export const { POST } = serve<MorningPayload>(async (context) => {
   });
 
   // ── Step 2: Load today's calendar + overnight email summary ──────────────
-  const externalSignals = await context.run("check-calendar-inbox", async () => {
-    let composioTools: Record<string, unknown> = {};
-    try {
-      const session = await composio.create(userId);
-      composioTools = await session.tools();
-    } catch {
-      return { calendarSummary: "", emailSummary: "" };
+  const externalSignals = await context.run(
+    "check-calendar-inbox",
+    async () => {
+      let composioTools: Record<string, unknown> = {};
+      try {
+        const session = await composio.create(userId);
+        composioTools = await session.tools();
+      } catch {
+        return { calendarSummary: "", emailSummary: "" };
+      }
+
+      const calendarPrompt =
+        "List all of today's calendar events. Include time, title, and attendees.";
+      const emailPrompt =
+        "List the 5 most important unread emails received in the last 12 hours. Include sender, subject, and a 1-sentence summary of each.";
+
+      const [calResult, emailResult] = await Promise.allSettled([
+        generateText({
+          model: getGoogleModel("gemini-2.5-flash"),
+          system:
+            "You are a calendar assistant. Return only the list of events, no other commentary.",
+          prompt: calendarPrompt,
+          tools: composioTools as any,
+          stopWhen: stepCountIs(3),
+        }),
+        generateText({
+          model: getGoogleModel("gemini-2.5-flash"),
+          system:
+            "You are an email assistant. Return only the list of important emails, no other commentary.",
+          prompt: emailPrompt,
+          tools: composioTools as any,
+          stopWhen: stepCountIs(3),
+        }),
+      ]);
+
+      return {
+        calendarSummary:
+          calResult.status === "fulfilled" ? calResult.value.text : "",
+        emailSummary:
+          emailResult.status === "fulfilled" ? emailResult.value.text : "",
+      };
     }
-
-    const calendarPrompt = "List all of today's calendar events. Include time, title, and attendees.";
-    const emailPrompt = "List the 5 most important unread emails received in the last 12 hours. Include sender, subject, and a 1-sentence summary of each.";
-
-    const [calResult, emailResult] = await Promise.allSettled([
-      generateText({
-        model: getGoogleModel("gemini-2.5-flash"),
-        system: "You are a calendar assistant. Return only the list of events, no other commentary.",
-        prompt: calendarPrompt,
-        tools: composioTools as any,
-        stopWhen: stepCountIs(3),
-      }),
-      generateText({
-        model: getGoogleModel("gemini-2.5-flash"),
-        system: "You are an email assistant. Return only the list of important emails, no other commentary.",
-        prompt: emailPrompt,
-        tools: composioTools as any,
-        stopWhen: stepCountIs(3),
-      }),
-    ]);
-
-    return {
-      calendarSummary:
-        calResult.status === "fulfilled" ? calResult.value.text : "",
-      emailSummary:
-        emailResult.status === "fulfilled" ? emailResult.value.text : "",
-    };
-  });
+  );
 
   // ── Step 3: Generate the morning brief ───────────────────────────────────
   const morningBrief = await context.run("generate-brief", async () => {
@@ -213,7 +228,9 @@ ${externalSignals.emailSummary || "(inbox not connected or empty)"}`,
       userId,
       platform: "telegram",
     });
-    if (!integration) return;
+    if (!integration) {
+      return;
+    }
 
     const redis =
       process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
@@ -222,13 +239,19 @@ ${externalSignals.emailSummary || "(inbox not connected or empty)"}`,
             token: process.env.UPSTASH_REDIS_REST_TOKEN,
           })
         : null;
-    if (!redis) return;
+    if (!redis) {
+      return;
+    }
 
     const keys = await redis.keys(`tg:chat:${userId}:*`);
     for (const key of keys) {
       const telegramChatId = Number(key.split(":").at(-1));
       if (!isNaN(telegramChatId)) {
-        await sendLongMessage(integration.botToken, telegramChatId, morningBrief);
+        await sendLongMessage(
+          integration.botToken,
+          telegramChatId,
+          morningBrief
+        );
       }
     }
 
@@ -244,7 +267,9 @@ ${externalSignals.emailSummary || "(inbox not connected or empty)"}`,
             token: process.env.UPSTASH_REDIS_REST_TOKEN,
           })
         : null;
-    if (!redis) return;
+    if (!redis) {
+      return;
+    }
 
     await redis.set(
       `agent:status:${userId}:morning`,
@@ -252,7 +277,7 @@ ${externalSignals.emailSummary || "(inbox not connected or empty)"}`,
         lastRun: new Date().toISOString(),
         status: "success",
       }),
-      { ex: 86400 * 2 },
+      { ex: 86_400 * 2 }
     );
   });
 });

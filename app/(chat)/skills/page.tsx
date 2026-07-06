@@ -1,5 +1,5 @@
-import { auth } from "@/app/(auth)/auth";
 import { redirect } from "next/navigation";
+import { auth } from "@/app/(auth)/auth";
 import { SkillsClient } from "@/components/skills-client";
 
 export default async function SkillsPage() {

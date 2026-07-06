@@ -14,7 +14,7 @@ export function buildSubAgentHandoffMarker(taskId: string): string {
 }
 
 export function parseSubAgentHandoffMarker(
-  text: string,
+  text: string
 ): SubAgentHandoffMarker | null {
   if (!text.startsWith(PREFIX)) {
     return null;
@@ -28,7 +28,7 @@ export function parseSubAgentHandoffMarker(
 
 export function messagePartsContainHandoffForTask(
   parts: unknown,
-  taskId: string,
+  taskId: string
 ): boolean {
   if (!Array.isArray(parts)) {
     return false;

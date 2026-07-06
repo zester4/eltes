@@ -31,9 +31,9 @@ function markdownToPlainText(markdown: string): string {
     .replace(/`([^`]+)`/g, "$1")
     .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/\*\*([^\*]+)\*\*/g, "$1")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/__([^_]+)__/g, "$1")
-    .replace(/\*([^\*]+)\*/g, "$1")
+    .replace(/\*([^*]+)\*/g, "$1")
     .replace(/_([^_]+)_/g, "$1")
     .replace(/~~([^~]+)~~/g, "$1")
     .replace(/\n{3,}/g, "\n\n")
@@ -57,18 +57,18 @@ function markdownToHTML(markdown: string): string {
       }
 
       // Unordered lists
-      if (/^[\*\-]\s+/.test(line)) {
-        return `<li>${line.replace(/^[\*\-]\s+/, "")}</li>`;
+      if (/^[*-]\s+/.test(line)) {
+        return `<li>${line.replace(/^[*-]\s+/, "")}</li>`;
       }
 
       // Bold
       let processed = line
-        .replace(/\*\*([^\*]+)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
         .replace(/__([^_]+)__/g, "<strong>$1</strong>");
 
       // Italic
       processed = processed
-        .replace(/\*([^\*]+)\*/g, "<em>$1</em>")
+        .replace(/\*([^*]+)\*/g, "<em>$1</em>")
         .replace(/_([^_]+)_/g, "<em>$1</em>");
 
       // Inline code
@@ -90,18 +90,9 @@ function markdownToHTML(markdown: string): string {
     .join("\n");
 
   // Wrap consecutive list items
-  html = html.replace(
-    /(<li>.*?<\/li>)\n(?=<li>)/g,
-    "$1\n"
-  );
-  html = html.replace(
-    /(?<=<li>.*<\/li>\n)(<li>)/,
-    "<ul>\n$1"
-  );
-  html = html.replace(
-    /(<\/li>)\n(?!<li>)/g,
-    "$1\n</ul>"
-  );
+  html = html.replace(/(<li>.*?<\/li>)\n(?=<li>)/g, "$1\n");
+  html = html.replace(/(?<=<li>.*<\/li>\n)(<li>)/, "<ul>\n$1");
+  html = html.replace(/(<\/li>)\n(?!<li>)/g, "$1\n</ul>");
 
   return html;
 }
@@ -322,16 +313,18 @@ export const textArtifact = new Artifact<"text", TextArtifactMetadata>({
 </html>`;
 
             try {
-              const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8" });
+              const blob = new Blob([htmlContent], {
+                type: "text/html;charset=utf-8",
+              });
               const url = URL.createObjectURL(blob);
               const popup = window.open(url, "_blank", "noopener,noreferrer");
-              
+
               if (!popup) {
                 toast.error("Could not open print window.");
                 URL.revokeObjectURL(url);
                 return;
               }
-              
+
               // Give the popup time to load before printing
               setTimeout(() => {
                 popup.focus();

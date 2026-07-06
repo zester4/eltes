@@ -1,20 +1,25 @@
-import { Chat, toAiMessages } from "chat";
 import type { SlackAdapter } from "@chat-adapter/slack";
 import { streamText } from "ai";
+import { type Chat, toAiMessages } from "chat";
 import { getGoogleModel } from "@/lib/ai/providers";
+import { getWeather } from "@/lib/ai/tools/get-weather";
 import { saveChat, saveMessages } from "@/lib/db/queries";
 import { generateUUID } from "@/lib/utils";
-import { getWeather } from "@/lib/ai/tools/get-weather";
 
 // Platforms where thread.post(stream) is unsupported — must await text and post markdown.
 // Source: Chat SDK feature matrix — GitHub ❌, Linear ❌, WhatsApp ❌, Resend (email) ❌
-const NON_STREAMING_PLATFORMS = new Set(["github", "linear", "whatsapp", "resend"]);
+const NON_STREAMING_PLATFORMS = new Set([
+  "github",
+  "linear",
+  "whatsapp",
+  "resend",
+]);
 
 async function postAIResponse(
   thread: any,
   fullStream: AsyncIterable<any>,
   textPromise: PromiseLike<string>,
-  platform: string,
+  platform: string
 ) {
   if (NON_STREAMING_PLATFORMS.has(platform)) {
     const text = await textPromise;
@@ -33,11 +38,13 @@ async function handleFirstMessage(
   thread: any,
   message: any,
   platform: string,
-  ownerUserId: string,
+  ownerUserId: string
 ) {
   try {
     await thread.startTyping("Thinking...");
-  } catch { /* best-effort — no-op on unsupported platforms */ }
+  } catch {
+    /* best-effort — no-op on unsupported platforms */
+  }
 
   await thread.subscribe();
 
@@ -93,7 +100,11 @@ async function handleFirstMessage(
   await postAIResponse(thread, response.fullStream, response.text, platform);
 }
 
-export function attachHandlers(bot: Chat, platform: string, ownerUserId: string) {
+export function attachHandlers(
+  bot: Chat,
+  platform: string,
+  ownerUserId: string
+) {
   // ── Slack Assistants API ────────────────────────────────────────────────────
   if (platform === "slack") {
     bot.onAssistantThreadStarted(async (event) => {
@@ -106,7 +117,11 @@ export function attachHandlers(bot: Chat, platform: string, ownerUserId: string)
 
     bot.onAssistantContextChanged(async (event) => {
       const slack = bot.getAdapter("slack") as SlackAdapter;
-      await slack.setAssistantStatus(event.channelId, event.threadTs, "Updating context...");
+      await slack.setAssistantStatus(
+        event.channelId,
+        event.threadTs,
+        "Updating context..."
+      );
     });
   }
 
@@ -138,7 +153,9 @@ export function attachHandlers(bot: Chat, platform: string, ownerUserId: string)
   bot.onSubscribedMessage(async (thread, message) => {
     try {
       await thread.startTyping("Thinking...");
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
 
     const state = (await thread.state) as { chatId: string } | null;
     const chatId = state?.chatId;

@@ -1,5 +1,5 @@
-import { tool } from "ai";
 import { Redis } from "@upstash/redis";
+import { tool } from "ai";
 import { z } from "zod";
 import { generateUUID } from "@/lib/utils";
 
@@ -47,18 +47,32 @@ function clampProgress(value: number) {
 }
 
 function normalizePriority(value: number): GoalItem["priority"] {
-  if (value <= 1) return 1;
-  if (value >= 5) return 5;
-  if (value < 2) return 1;
-  if (value < 3) return 2;
-  if (value < 4) return 3;
-  if (value < 5) return 4;
+  if (value <= 1) {
+    return 1;
+  }
+  if (value >= 5) {
+    return 5;
+  }
+  if (value < 2) {
+    return 1;
+  }
+  if (value < 3) {
+    return 2;
+  }
+  if (value < 4) {
+    return 3;
+  }
+  if (value < 5) {
+    return 4;
+  }
   return 5;
 }
 
 async function readGoal(redis: Redis, userId: string, goalId: string) {
   const raw = await redis.get<string>(goalItemKey(userId, goalId));
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   return typeof raw === "string"
     ? (JSON.parse(raw) as GoalItem)
     : (raw as GoalItem);
@@ -66,17 +80,23 @@ async function readGoal(redis: Redis, userId: string, goalId: string) {
 
 export async function getActiveGoalsSnapshot(
   userId: string,
-  limit = 5,
+  limit = 5
 ): Promise<GoalItem[]> {
   const redis = getRedis();
-  if (!redis) return [];
+  if (!redis) {
+    return [];
+  }
   const ids = await redis.smembers<string[]>(goalsSetKey(userId));
   const goals: GoalItem[] = [];
 
   for (const id of ids ?? []) {
     const goal = await readGoal(redis, userId, id);
-    if (!goal) continue;
-    if (goal.status !== "active") continue;
+    if (!goal) {
+      continue;
+    }
+    if (goal.status !== "active") {
+      continue;
+    }
     goals.push(goal);
   }
 
@@ -108,7 +128,9 @@ export const addGoal = ({ userId }: { userId: string }) =>
       autonomousAllowed,
     }) => {
       const redis = getRedis();
-      if (!redis) return { success: false, error: "Redis is not configured." };
+      if (!redis) {
+        return { success: false, error: "Redis is not configured." };
+      }
 
       const now = new Date().toISOString();
       const goal: GoalItem = {
@@ -143,9 +165,7 @@ export const updateGoal = ({ userId }: { userId: string }) =>
       goalId: z.string(),
       title: z.string().optional(),
       description: z.string().optional(),
-      status: z
-        .enum(["active", "paused", "completed", "archived"])
-        .optional(),
+      status: z.enum(["active", "paused", "completed", "archived"]).optional(),
       priority: z.number().int().min(1).max(5).optional(),
       progress: z.number().optional(),
       targetDate: z.string().optional(),
@@ -155,34 +175,47 @@ export const updateGoal = ({ userId }: { userId: string }) =>
     }),
     execute: async (input) => {
       const redis = getRedis();
-      if (!redis) return { success: false, error: "Redis is not configured." };
+      if (!redis) {
+        return { success: false, error: "Redis is not configured." };
+      }
 
       const current = await readGoal(redis, userId, input.goalId);
-      if (!current) return { success: false, error: "Goal not found." };
+      if (!current) {
+        return { success: false, error: "Goal not found." };
+      }
 
       const updated: GoalItem = {
         ...current,
-        ...(input.title !== undefined ? { title: input.title } : {}),
-        ...(input.description !== undefined ? { description: input.description } : {}),
-        ...(input.status !== undefined ? { status: input.status } : {}),
-        ...(input.priority !== undefined
-          ? { priority: normalizePriority(input.priority) }
-          : {}),
-        ...(input.progress !== undefined
-          ? { progress: clampProgress(input.progress) }
-          : {}),
-        ...(input.targetDate !== undefined ? { targetDate: input.targetDate } : {}),
-        ...(input.successCriteria !== undefined
-          ? { successCriteria: input.successCriteria }
-          : {}),
-        ...(input.nextAction !== undefined ? { nextAction: input.nextAction } : {}),
-        ...(input.autonomousAllowed !== undefined
-          ? { autonomousAllowed: input.autonomousAllowed }
-          : {}),
+        ...(input.title === undefined ? {} : { title: input.title }),
+        ...(input.description === undefined
+          ? {}
+          : { description: input.description }),
+        ...(input.status === undefined ? {} : { status: input.status }),
+        ...(input.priority === undefined
+          ? {}
+          : { priority: normalizePriority(input.priority) }),
+        ...(input.progress === undefined
+          ? {}
+          : { progress: clampProgress(input.progress) }),
+        ...(input.targetDate === undefined
+          ? {}
+          : { targetDate: input.targetDate }),
+        ...(input.successCriteria === undefined
+          ? {}
+          : { successCriteria: input.successCriteria }),
+        ...(input.nextAction === undefined
+          ? {}
+          : { nextAction: input.nextAction }),
+        ...(input.autonomousAllowed === undefined
+          ? {}
+          : { autonomousAllowed: input.autonomousAllowed }),
         updatedAt: new Date().toISOString(),
       };
 
-      await redis.set(goalItemKey(userId, input.goalId), JSON.stringify(updated));
+      await redis.set(
+        goalItemKey(userId, input.goalId),
+        JSON.stringify(updated)
+      );
       return { success: true, goal: updated };
     },
   });
@@ -200,15 +233,19 @@ export const logGoalProgress = ({ userId }: { userId: string }) =>
     }),
     execute: async ({ goalId, delta, progress, note, nextAction }) => {
       const redis = getRedis();
-      if (!redis) return { success: false, error: "Redis is not configured." };
+      if (!redis) {
+        return { success: false, error: "Redis is not configured." };
+      }
 
       const current = await readGoal(redis, userId, goalId);
-      if (!current) return { success: false, error: "Goal not found." };
+      if (!current) {
+        return { success: false, error: "Goal not found." };
+      }
 
       const computedProgress =
-        progress !== undefined
-          ? clampProgress(progress)
-          : clampProgress(current.progress + (delta ?? 0));
+        progress === undefined
+          ? clampProgress(current.progress + (delta ?? 0))
+          : clampProgress(progress);
 
       const now = new Date().toISOString();
       const updated: GoalItem = {
@@ -216,11 +253,14 @@ export const logGoalProgress = ({ userId }: { userId: string }) =>
         progress: computedProgress,
         updatedAt: now,
         lastWorkedAt: now,
-        ...(nextAction !== undefined ? { nextAction } : {}),
+        ...(nextAction === undefined ? {} : { nextAction }),
       };
 
       if (note) {
-        const enrichedCriteria = [...updated.successCriteria, `Progress note (${now}): ${note}`];
+        const enrichedCriteria = [
+          ...updated.successCriteria,
+          `Progress note (${now}): ${note}`,
+        ];
         updated.successCriteria = enrichedCriteria.slice(-20);
       }
       if (updated.progress >= 100 && updated.status === "active") {
@@ -241,19 +281,28 @@ export const listGoals = ({ userId }: { userId: string }) =>
     }),
     execute: async ({ status, limit }) => {
       const redis = getRedis();
-      if (!redis) return { success: false, error: "Redis is not configured." };
+      if (!redis) {
+        return { success: false, error: "Redis is not configured." };
+      }
 
       const ids = await redis.smembers<string[]>(goalsSetKey(userId));
       const goals: GoalItem[] = [];
       for (const id of ids ?? []) {
         const goal = await readGoal(redis, userId, id);
-        if (!goal) continue;
-        if (status && goal.status !== status) continue;
+        if (!goal) {
+          continue;
+        }
+        if (status && goal.status !== status) {
+          continue;
+        }
         goals.push(goal);
       }
 
       const sorted = goals
-        .sort((a, b) => b.priority - a.priority || b.updatedAt.localeCompare(a.updatedAt))
+        .sort(
+          (a, b) =>
+            b.priority - a.priority || b.updatedAt.localeCompare(a.updatedAt)
+        )
         .slice(0, limit);
 
       return { success: true, goals: sorted, count: sorted.length };
@@ -268,7 +317,9 @@ export const deleteGoal = ({ userId }: { userId: string }) =>
     }),
     execute: async ({ goalId }) => {
       const redis = getRedis();
-      if (!redis) return { success: false, error: "Redis is not configured." };
+      if (!redis) {
+        return { success: false, error: "Redis is not configured." };
+      }
 
       await Promise.all([
         redis.del(goalItemKey(userId, goalId)),

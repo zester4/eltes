@@ -22,22 +22,22 @@
 
 "use client";
 
-import { useState } from "react";
 import {
   CheckCircle2,
-  Circle,
-  XCircle,
-  Loader2,
   ChevronDown,
   ChevronUp,
+  Circle,
+  Loader2,
+  XCircle,
   Zap,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useState } from "react";
 import type {
   WorkflowProgress,
   WorkflowStep,
   WorkflowStepStatus,
 } from "@/lib/agent/workflow-progress";
+import { cn } from "@/lib/utils";
 
 // ── Step icon ─────────────────────────────────────────────────────────────────
 
@@ -59,7 +59,9 @@ function StepIcon({ status }: { status: WorkflowStepStatus }) {
 // ── Duration formatter ────────────────────────────────────────────────────────
 
 function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms} ms`;
+  if (ms < 1000) {
+    return `${ms} ms`;
+  }
   return `${(ms / 1000).toFixed(1)} s`;
 }
 
@@ -88,12 +90,11 @@ function StepRow({ step }: { step: WorkflowStep }) {
               <span className="font-mono text-[10px]">{step.currentTool}</span>
             </span>
           )}
-          {step.status === "running" &&
-            (step.toolCallCount ?? 0) > 0 && (
-              <span className="ml-1 text-muted-foreground/60 text-[10px]">
-                ({step.toolCallCount} call{step.toolCallCount === 1 ? "" : "s"})
-              </span>
-            )}
+          {step.status === "running" && (step.toolCallCount ?? 0) > 0 && (
+            <span className="ml-1 text-muted-foreground/60 text-[10px]">
+              ({step.toolCallCount} call{step.toolCallCount === 1 ? "" : "s"})
+            </span>
+          )}
         </span>
 
         {/* Duration or tool call count */}
@@ -103,19 +104,18 @@ function StepRow({ step }: { step: WorkflowStep }) {
               {formatDuration(step.durationMs)}
             </span>
           )}
-          {step.status === "completed" &&
-            (step.toolCallCount ?? 0) > 0 && (
-              <span className="text-[10px] text-muted-foreground/60">
-                {step.toolCallCount} tool
-                {step.toolCallCount === 1 ? "" : "s"}
-              </span>
-            )}
+          {step.status === "completed" && (step.toolCallCount ?? 0) > 0 && (
+            <span className="text-[10px] text-muted-foreground/60">
+              {step.toolCallCount} tool
+              {step.toolCallCount === 1 ? "" : "s"}
+            </span>
+          )}
           {hasOutput && step.status === "completed" && (
             <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              className="rounded p-0.5 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
               aria-label={expanded ? "Collapse output" : "Expand output"}
+              className="rounded p-0.5 text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+              onClick={() => setExpanded((v) => !v)}
+              type="button"
             >
               {expanded ? (
                 <ChevronUp className="size-3" />
@@ -161,10 +161,9 @@ export function WorkflowProgressCard({
   const totalSteps = steps.length;
 
   // Total elapsed / total wall-clock time
-  const elapsedMs =
-    completedAt
-      ? new Date(completedAt).getTime() - new Date(startedAt).getTime()
-      : Date.now() - new Date(startedAt).getTime();
+  const elapsedMs = completedAt
+    ? new Date(completedAt).getTime() - new Date(startedAt).getTime()
+    : Date.now() - new Date(startedAt).getTime();
 
   // Pending steps that haven't appeared in the steps array yet
   // We show them as grey placeholders so the card doesn't jump in height.
@@ -179,7 +178,7 @@ export function WorkflowProgressCard({
       label: ["Executing", "Finalising"][i] ?? "Pending",
       status: "pending",
       startedAt: "",
-    }),
+    })
   );
 
   const allRows = [...steps, ...pendingPlaceholders];
@@ -192,19 +191,16 @@ export function WorkflowProgressCard({
           "border-border": isRunning,
           "border-emerald-500/30": isCompleted,
           "border-destructive/30": isFailed,
-        },
+        }
       )}
     >
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div
-        className={cn(
-          "flex items-center gap-2 border-b px-3.5 py-2.5",
-          {
-            "border-border bg-muted/20": isRunning,
-            "border-emerald-500/20 bg-emerald-500/5": isCompleted,
-            "border-destructive/20 bg-destructive/5": isFailed,
-          },
-        )}
+        className={cn("flex items-center gap-2 border-b px-3.5 py-2.5", {
+          "border-border bg-muted/20": isRunning,
+          "border-emerald-500/20 bg-emerald-500/5": isCompleted,
+          "border-destructive/20 bg-destructive/5": isFailed,
+        })}
       >
         {isRunning ? (
           <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
@@ -235,7 +231,10 @@ export function WorkflowProgressCard({
       {/* ── Steps ──────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2.5 px-3.5 py-3">
         {allRows.map((step, idx) => (
-          <StepRow key={step.name === "pending" ? `pending-${idx}` : step.name} step={step} />
+          <StepRow
+            key={step.name === "pending" ? `pending-${idx}` : step.name}
+            step={step}
+          />
         ))}
       </div>
 
@@ -244,8 +243,8 @@ export function WorkflowProgressCard({
         {isRunning
           ? `Running · ${completedSteps} / ${TOTAL_EXPECTED_STEPS} steps complete`
           : isCompleted
-          ? `Completed · ${completedSteps} steps · ${formatDuration(elapsedMs)} total`
-          : `Failed · ${completedSteps} / ${totalSteps} steps completed`}
+            ? `Completed · ${completedSteps} steps · ${formatDuration(elapsedMs)} total`
+            : `Failed · ${completedSteps} / ${totalSteps} steps completed`}
       </div>
     </div>
   );

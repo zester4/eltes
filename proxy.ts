@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
-import { guestRegex, isDevelopmentEnvironment } from "./lib/constants";
+import { guestRegex } from "./lib/constants";
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   console.log(`[Proxy] Request: ${request.method} ${pathname}`);
-  
+
   if (pathname.startsWith("/ping")) {
     return new Response("pong", { status: 200 });
   }
@@ -41,9 +41,10 @@ export async function proxy(request: NextRequest) {
   }
 
   // Detect if we are on a secure connection (Vercel/Production)
-  const isSecure = request.nextUrl.protocol === "https:" || 
-                   request.headers.get("x-forwarded-proto") === "https" ||
-                   process.env.NODE_ENV === "production";
+  const isSecure =
+    request.nextUrl.protocol === "https:" ||
+    request.headers.get("x-forwarded-proto") === "https" ||
+    process.env.NODE_ENV === "production";
 
   const token = await getToken({
     req: request,
@@ -52,13 +53,18 @@ export async function proxy(request: NextRequest) {
   });
 
   if (!token) {
-    const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "localhost:3000";
+    const host =
+      request.headers.get("x-forwarded-host") ||
+      request.headers.get("host") ||
+      "localhost:3000";
     const protocol = isSecure ? "https" : "http";
     const baseUrl = process.env.BASE_URL || `${protocol}://${host}`;
-    
+
     const currentUrl = new URL(pathname, baseUrl);
-    if (request.nextUrl.search) currentUrl.search = request.nextUrl.search;
-    
+    if (request.nextUrl.search) {
+      currentUrl.search = request.nextUrl.search;
+    }
+
     const redirectUrl = encodeURIComponent(currentUrl.toString());
 
     // Redirect unauthenticated users to the login page

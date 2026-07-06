@@ -13,16 +13,17 @@
  *   setMorningBriefingTime — changes the morning briefing hour preference
  */
 
+import { Redis } from "@upstash/redis";
 import { tool } from "ai";
 import { z } from "zod";
-import { Redis } from "@upstash/redis";
 
 function getRedis() {
   if (
     !process.env.UPSTASH_REDIS_REST_URL ||
     !process.env.UPSTASH_REDIS_REST_TOKEN
-  )
+  ) {
     return null;
+  }
   return new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
@@ -53,7 +54,7 @@ export const activateHeartbeat = ({
         .default(7)
         .describe(
           "UTC hour for the morning briefing (0-23). Default 7 = 7am UTC. " +
-            "Adjust based on the user's timezone if known from memory.",
+            "Adjust based on the user's timezone if known from memory."
         ),
     }),
     execute: async ({ morningHour }) => {
@@ -73,7 +74,10 @@ export const activateHeartbeat = ({
 
         if (!res.ok) {
           const body = await res.text();
-          return { success: false, error: `Activation failed (${res.status}): ${body}` };
+          return {
+            success: false,
+            error: `Activation failed (${res.status}): ${body}`,
+          };
         }
 
         const data = (await res.json()) as {
@@ -86,7 +90,7 @@ export const activateHeartbeat = ({
           success: data.ok,
           message: data.message,
           schedulesCreated: Object.keys(data.schedules ?? {}).filter((k) =>
-            k.endsWith("ScheduleId"),
+            k.endsWith("ScheduleId")
           ).length,
         };
       } catch (err: any) {
@@ -117,12 +121,12 @@ export const getAgentSystemStatus = ({ userId }: { userId: string }) =>
       const [heartbeat, synthesis, schedules] = await Promise.all([
         redis
           .get<{ lastRun: string; status: string }>(
-            `agent:status:${userId}:heartbeat`,
+            `agent:status:${userId}:heartbeat`
           )
           .catch(() => null),
         redis
           .get<{ lastRun: string; status: string }>(
-            `agent:status:${userId}:synthesis`,
+            `agent:status:${userId}:synthesis`
           )
           .catch(() => null),
         redis
@@ -147,7 +151,7 @@ export const getAgentSystemStatus = ({ userId }: { userId: string }) =>
         },
         {
           name: "Morning Briefing",
-          description: `Daily at configured morning hour: focused day briefing`,
+          description: "Daily at configured morning hour: focused day briefing",
           lastRun: null,
           status: schedules?.morningScheduleId ? "scheduled" : "not_configured",
           schedulesActive: !!schedules?.morningScheduleId,
@@ -166,7 +170,7 @@ export const getAgentSystemStatus = ({ userId }: { userId: string }) =>
             ? "ACTIVE — all background systems running"
             : "PARTIAL — some systems not scheduled",
         workflowEnabled: Boolean(
-          process.env.QSTASH_TOKEN && process.env.BASE_URL,
+          process.env.QSTASH_TOKEN && process.env.BASE_URL
         ),
       };
     },
@@ -193,13 +197,13 @@ export const setMorningBriefingTime = ({
         .max(23)
         .describe(
           "UTC hour for morning briefing (0-23). " +
-            "Convert from user's local time if their timezone is known from memory.",
+            "Convert from user's local time if their timezone is known from memory."
         ),
       timezoneNote: z
         .string()
         .optional()
         .describe(
-          "Optional note about the timezone conversion for the user's benefit.",
+          "Optional note about the timezone conversion for the user's benefit."
         ),
     }),
     execute: async ({ morningHour, timezoneNote }) => {

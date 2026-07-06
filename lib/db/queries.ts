@@ -12,8 +12,8 @@ import {
   lt,
   lte,
   or,
-  sql,
   type SQL,
+  sql,
 } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
@@ -22,26 +22,23 @@ import type { VisibilityType } from "@/components/visibility-selector";
 import { ChatbotError } from "../errors";
 import { generateUUID } from "../utils";
 import {
+  agentTask,
+  botIntegration,
   type Chat,
   chat,
   type DBMessage,
   document,
+  event,
   message,
+  messageDeprecated,
   type Suggestion,
   stream,
   suggestion,
   type User,
   user,
-  vote,
-  event,
-  botIntegration,
-  type BotIntegration,
-  agentTask,
-  type AgentTask,
-  messageDeprecated,
-  voteDeprecated,
   userSkill,
-  type UserSkill,
+  vote,
+  voteDeprecated,
 } from "./schema";
 import { generateHashedPassword } from "./utils";
 
@@ -87,7 +84,7 @@ const agentTaskListColumns = {
 
 const activeAgentStatusFilter = or(
   eq(agentTask.status, "pending"),
-  eq(agentTask.status, "running"),
+  eq(agentTask.status, "running")
 );
 
 export async function getUser(email: string): Promise<User[]> {
@@ -161,7 +158,9 @@ export async function deleteChatById({ id }: { id: string }) {
       await tx.delete(vote).where(eq(vote.chatId, id));
       await tx.delete(message).where(eq(message.chatId, id));
       await tx.delete(voteDeprecated).where(eq(voteDeprecated.chatId, id));
-      await tx.delete(messageDeprecated).where(eq(messageDeprecated.chatId, id));
+      await tx
+        .delete(messageDeprecated)
+        .where(eq(messageDeprecated.chatId, id));
       await tx.delete(stream).where(eq(stream.chatId, id));
       await tx.delete(agentTask).where(eq(agentTask.chatId, id));
 
@@ -195,8 +194,12 @@ export async function deleteAllChatsByUserId({ userId }: { userId: string }) {
 
       await tx.delete(vote).where(inArray(vote.chatId, chatIds));
       await tx.delete(message).where(inArray(message.chatId, chatIds));
-      await tx.delete(voteDeprecated).where(inArray(voteDeprecated.chatId, chatIds));
-      await tx.delete(messageDeprecated).where(inArray(messageDeprecated.chatId, chatIds));
+      await tx
+        .delete(voteDeprecated)
+        .where(inArray(voteDeprecated.chatId, chatIds));
+      await tx
+        .delete(messageDeprecated)
+        .where(inArray(messageDeprecated.chatId, chatIds));
       await tx.delete(stream).where(inArray(stream.chatId, chatIds));
       await tx.delete(agentTask).where(inArray(agentTask.chatId, chatIds));
 
@@ -306,10 +309,7 @@ export async function getChatById({ id }: { id: string }) {
 
 export async function saveMessages({ messages }: { messages: DBMessage[] }) {
   try {
-    return await db
-      .insert(message)
-      .values(messages)
-      .onConflictDoNothing();
+    return await db.insert(message).values(messages).onConflictDoNothing();
   } catch (_error) {
     throw new ChatbotError("bad_request:database", "Failed to save messages");
   }
@@ -642,9 +642,7 @@ export async function getMessageCountByUserId({
   differenceInHours: number;
 }) {
   try {
-    const timeAgo = new Date(
-      Date.now() - differenceInHours * 60 * 60 * 1000
-    );
+    const timeAgo = new Date(Date.now() - differenceInHours * 60 * 60 * 1000);
 
     const [stats] = await db
       .select({ count: count(message.id) })
@@ -762,7 +760,10 @@ export async function updateEventStatus({
   try {
     return await db.update(event).set({ status }).where(eq(event.id, id));
   } catch (_error) {
-    throw new ChatbotError("bad_request:database", "Failed to update event status");
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to update event status"
+    );
   }
 }
 
@@ -783,12 +784,21 @@ export async function saveBotIntegration({
     const [existing] = await db
       .select()
       .from(botIntegration)
-      .where(and(eq(botIntegration.userId, userId), eq(botIntegration.platform, platform)));
+      .where(
+        and(
+          eq(botIntegration.userId, userId),
+          eq(botIntegration.platform, platform)
+        )
+      );
 
     if (existing) {
       const updates: Record<string, unknown> = { botToken };
-      if (signingSecret !== undefined) updates.signingSecret = signingSecret;
-      if (extraConfig !== undefined) updates.extraConfig = extraConfig;
+      if (signingSecret !== undefined) {
+        updates.signingSecret = signingSecret;
+      }
+      if (extraConfig !== undefined) {
+        updates.extraConfig = extraConfig;
+      }
       return await db
         .update(botIntegration)
         .set(updates as any)
@@ -807,7 +817,10 @@ export async function saveBotIntegration({
       })
       .returning();
   } catch (error) {
-    throw new ChatbotError("bad_request:database", "Failed to save bot integration");
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to save bot integration"
+    );
   }
 }
 
@@ -822,10 +835,18 @@ export async function getBotIntegration({
     const [integration] = await db
       .select()
       .from(botIntegration)
-      .where(and(eq(botIntegration.userId, userId), eq(botIntegration.platform, platform)));
+      .where(
+        and(
+          eq(botIntegration.userId, userId),
+          eq(botIntegration.platform, platform)
+        )
+      );
     return integration;
   } catch (error) {
-    throw new ChatbotError("bad_request:database", "Failed to get bot integration");
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get bot integration"
+    );
   }
 }
 
@@ -836,7 +857,10 @@ export async function getUserBotIntegrations({ userId }: { userId: string }) {
       .from(botIntegration)
       .where(eq(botIntegration.userId, userId));
   } catch (error) {
-    throw new ChatbotError("bad_request:database", "Failed to get user bot integrations");
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get user bot integrations"
+    );
   }
 }
 
@@ -863,14 +887,23 @@ export async function createAgentTask({
     if (isPostgresUndefinedAgentTaskError(error)) {
       throw new ChatbotError(
         "bad_request:database",
-        "AgentTask table is missing. Run pnpm db:migrate against this database.",
+        "AgentTask table is missing. Run pnpm db:migrate against this database."
       );
     }
-    throw new ChatbotError("bad_request:database", "Failed to create agent task");
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to create agent task"
+    );
   }
 }
 
-export async function getAgentTaskById({ id, userId }: { id: string; userId: string }) {
+export async function getAgentTaskById({
+  id,
+  userId,
+}: {
+  id: string;
+  userId: string;
+}) {
   try {
     const [task] = await db
       .select(agentTaskListColumns)
@@ -934,9 +967,15 @@ export async function updateAgentTask({
 }) {
   try {
     const updates: Record<string, unknown> = { updatedAt: new Date() };
-    if (status !== undefined) updates.status = status;
-    if (result !== undefined) updates.result = result;
-    if (workflowRunId !== undefined) updates.workflowRunId = workflowRunId;
+    if (status !== undefined) {
+      updates.status = status;
+    }
+    if (result !== undefined) {
+      updates.result = result;
+    }
+    if (workflowRunId !== undefined) {
+      updates.workflowRunId = workflowRunId;
+    }
     const [updated] = await db
       .update(agentTask)
       .set(updates as any)
@@ -947,10 +986,13 @@ export async function updateAgentTask({
     if (isPostgresUndefinedAgentTaskError(error)) {
       throw new ChatbotError(
         "bad_request:database",
-        "AgentTask table is missing. Run pnpm db:migrate against this database.",
+        "AgentTask table is missing. Run pnpm db:migrate against this database."
       );
     }
-    throw new ChatbotError("bad_request:database", "Failed to update agent task");
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to update agent task"
+    );
   }
 }
 
@@ -969,7 +1011,10 @@ export async function getActiveAgentTasksByUserId(userId: string) {
   }
 }
 
-export async function getActiveAgentTasksByChatId(chatId: string, userId: string) {
+export async function getActiveAgentTasksByChatId(
+  chatId: string,
+  userId: string
+) {
   try {
     return await db
       .select(agentTaskListColumns)
@@ -978,8 +1023,8 @@ export async function getActiveAgentTasksByChatId(chatId: string, userId: string
         and(
           eq(agentTask.chatId, chatId),
           eq(agentTask.userId, userId),
-          activeAgentStatusFilter,
-        ),
+          activeAgentStatusFilter
+        )
       )
       .orderBy(desc(agentTask.createdAt));
   } catch (error) {
@@ -1054,7 +1099,10 @@ export async function getUserSkillBySlug(userId: string, slug: string) {
       .where(and(eq(userSkill.userId, userId), eq(userSkill.slug, slug)));
     return skill;
   } catch (error) {
-    throw new ChatbotError("bad_request:database", "Failed to get user skill by slug");
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to get user skill by slug"
+    );
   }
 }
 
@@ -1065,14 +1113,14 @@ export async function deleteUserSkill(userId: string, slug: string) {
       .where(and(eq(userSkill.userId, userId), eq(userSkill.slug, slug)))
       .returning();
   } catch (error) {
-    throw new ChatbotError("bad_request:database", "Failed to delete user skill");
+    throw new ChatbotError(
+      "bad_request:database",
+      "Failed to delete user skill"
+    );
   }
 }
 
-export async function getRecentAgentTasksByUserId(
-  userId: string,
-  limit = 100,
-) {
+export async function getRecentAgentTasksByUserId(userId: string, limit = 100) {
   try {
     return await db
       .select(agentTaskListColumns)
@@ -1119,14 +1167,14 @@ export async function searchUserMessages({
     // We use @? with a jsonpath that scans all elements and values.
     // The regex '(?i)' prefix makes it case-insensitive in Postgres jsonpath.
     const searchFilter = sql`${message.parts} @@ ${`$.** ? (@.type == "text" && @.text like_regex ${JSON.stringify("(?i)" + query)}) || (exists(@.result) && @.result.toString() like_regex ${JSON.stringify("(?i)" + query)}) || (exists(@.args) && @.args.toString() like_regex ${JSON.stringify("(?i)" + query)})`}`;
-    
-    // Simpler fallback for Neon if the above is too complex: 
+
+    // Simpler fallback for Neon if the above is too complex:
     // We'll use a string-based ILIKE on the whole JSONB for maximum "catch-all"
     const fallbackSearch = sql`${message.parts}::text ILIKE ${`%${query}%`}`;
 
     const results = await db
       .select({
-        message: message,
+        message,
         chatTitle: chat.title,
       })
       .from(message)

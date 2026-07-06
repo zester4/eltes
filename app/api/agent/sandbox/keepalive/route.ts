@@ -23,9 +23,9 @@
  *   { all: true }                   — keep-alive for all users with a sandbox (admin only)
  */
 
-import { NextRequest, NextResponse } from "next/server";
 import { Receiver } from "@upstash/qstash";
 import { Redis } from "@upstash/redis";
+import { type NextRequest, NextResponse } from "next/server";
 import { keepAlive } from "@/lib/persistent-sandbox/client";
 
 const receiver = process.env.QSTASH_CURRENT_SIGNING_KEY
@@ -78,17 +78,24 @@ export async function POST(req: NextRequest) {
 
   if (parsed.all && redis) {
     // Find all users with a sandbox key and ping them
-    const keys = await redis.keys("agent:sandbox:*").catch(() => [] as string[]);
+    const keys = await redis
+      .keys("agent:sandbox:*")
+      .catch(() => [] as string[]);
     const userIds = keys
       .filter((k) => !k.includes("keepalive"))
       .map((k) => k.replace("agent:sandbox:", ""));
 
     const results = await Promise.allSettled(
       userIds.map(async (uid) => {
-        if (!redis) return;
+        if (!redis) {
+          return;
+        }
         // Check if we already pinged this user recently
         const lastPing = await redis.get<number>(lastKeepaliveKey(uid));
-        if (lastPing && Date.now() / 1000 - lastPing < KEEPALIVE_INTERVAL_SECONDS) {
+        if (
+          lastPing &&
+          Date.now() / 1000 - lastPing < KEEPALIVE_INTERVAL_SECONDS
+        ) {
           return { uid, skipped: true };
         }
         await keepAlive(uid);
@@ -116,7 +123,11 @@ export async function POST(req: NextRequest) {
   if (redis) {
     const lastPing = await redis.get<number>(lastKeepaliveKey(parsed.userId));
     if (lastPing && Date.now() / 1000 - lastPing < KEEPALIVE_INTERVAL_SECONDS) {
-      return NextResponse.json({ ok: true, skipped: true, reason: "Pinged recently" });
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        reason: "Pinged recently",
+      });
     }
   }
 

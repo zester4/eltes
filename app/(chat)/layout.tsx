@@ -1,11 +1,10 @@
 import { cookies } from "next/headers";
 import Script from "next/script";
 import { Suspense } from "react";
+import { auth } from "@/app/(auth)/auth";
 import { AppSidebar } from "@/components/app-sidebar";
 import { DataStreamProvider } from "@/components/data-stream-provider";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { auth } from "@/app/(auth)/auth";
-import { headers } from "next/headers";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (

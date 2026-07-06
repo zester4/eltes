@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
 import { Redis } from "@upstash/redis";
+import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/(auth)/auth";
 import { generateUUID } from "@/lib/utils";
 
@@ -59,7 +59,9 @@ function inKey(userId: string, entityId: string) {
 
 async function parseEntity(redis: Redis, userId: string, entityId: string) {
   const raw = await redis.get<string>(entityKey(userId, entityId));
-  if (!raw) return null;
+  if (!raw) {
+    return null;
+  }
   return typeof raw === "string"
     ? (JSON.parse(raw) as GraphEntity)
     : (raw as GraphEntity);
@@ -78,7 +80,9 @@ export async function GET(req: NextRequest) {
   const entityId = req.nextUrl.searchParams.get("entityId");
   if (entityId) {
     const entity = await parseEntity(redis, session.user.id, entityId);
-    if (!entity) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!entity) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
     const [outIds, inIds] = await Promise.all([
       redis.smembers<string[]>(outKey(session.user.id, entityId)),
       redis.smembers<string[]>(inKey(session.user.id, entityId)),
@@ -87,21 +91,27 @@ export async function GET(req: NextRequest) {
     const relations: GraphRelation[] = [];
     for (const rid of relationIds) {
       const raw = await redis.get<string>(relationKey(session.user.id, rid));
-      if (!raw) continue;
+      if (!raw) {
+        continue;
+      }
       relations.push(
         typeof raw === "string"
           ? (JSON.parse(raw) as GraphRelation)
-          : (raw as GraphRelation),
+          : (raw as GraphRelation)
       );
     }
     return NextResponse.json({ entity, relations });
   }
 
-  const entityIds = await redis.smembers<string[]>(entitySetKey(session.user.id));
+  const entityIds = await redis.smembers<string[]>(
+    entitySetKey(session.user.id)
+  );
   const entities: GraphEntity[] = [];
   for (const id of entityIds ?? []) {
     const entity = await parseEntity(redis, session.user.id, id);
-    if (entity) entities.push(entity);
+    if (entity) {
+      entities.push(entity);
+    }
   }
   entities.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   return NextResponse.json({ entities });
@@ -124,7 +134,10 @@ export async function POST(req: NextRequest) {
   if (body.kind === "relation") {
     const rel = body.relation;
     if (!rel?.fromEntityId || !rel.toEntityId || !rel.relationType) {
-      return NextResponse.json({ error: "Missing relation fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing relation fields" },
+        { status: 400 }
+      );
     }
     const relation: GraphRelation = {
       id: rel.id ?? generateUUID(),
@@ -138,7 +151,7 @@ export async function POST(req: NextRequest) {
     await Promise.all([
       redis.set(
         relationKey(session.user.id, relation.id),
-        JSON.stringify(relation),
+        JSON.stringify(relation)
       ),
       redis.sadd(relationSetKey(session.user.id), relation.id),
       redis.sadd(outKey(session.user.id, relation.fromEntityId), relation.id),
@@ -148,7 +161,8 @@ export async function POST(req: NextRequest) {
   }
 
   const entityInput =
-    (body as { entity?: Partial<GraphEntity> }).entity ?? ({} as Partial<GraphEntity>);
+    (body as { entity?: Partial<GraphEntity> }).entity ??
+    ({} as Partial<GraphEntity>);
   if (!entityInput.name) {
     return NextResponse.json({ error: "Missing entity name" }, { status: 400 });
   }
@@ -185,7 +199,9 @@ export async function DELETE(req: NextRequest) {
   const relationId = req.nextUrl.searchParams.get("relationId");
 
   if (relationId) {
-    const relRaw = await redis.get<string>(relationKey(session.user.id, relationId));
+    const relRaw = await redis.get<string>(
+      relationKey(session.user.id, relationId)
+    );
     if (relRaw) {
       const rel =
         typeof relRaw === "string"
@@ -223,6 +239,6 @@ export async function DELETE(req: NextRequest) {
 
   return NextResponse.json(
     { error: "Provide entityId or relationId" },
-    { status: 400 },
+    { status: 400 }
   );
 }

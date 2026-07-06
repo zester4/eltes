@@ -5,7 +5,7 @@ import { convertToUIMessages } from "@/lib/utils";
 
 export async function GET(
   _request: Request,
-  context: { params: Promise<{ id: string }> },
+  context: { params: Promise<{ id: string }> }
 ) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -19,10 +19,11 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (chat.visibility === "private") {
-    if (!session.user || session.user.id !== chat.userId) {
-      return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
+  if (
+    chat.visibility === "private" &&
+    (!session.user || session.user.id !== chat.userId)
+  ) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
   const rows = await getMessagesByChatId({ id: chatId });

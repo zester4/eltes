@@ -1,15 +1,14 @@
 "use client";
 
 import { Download, PlayCircle } from "lucide-react";
+import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-import { useState, useRef } from "react";
-import { Button } from "@/components/ui/button";
 
 export interface VideoProps {
-  url: string;
+  aspectRatio?: "video" | "square" | "portrait";
   className?: string;
   poster?: string;
-  aspectRatio?: "video" | "square" | "portrait";
+  url: string;
 }
 
 export const Video = ({
@@ -50,7 +49,7 @@ export const Video = ({
   };
 
   return (
-    <div 
+    <div
       className={cn(
         "group relative overflow-hidden rounded-xl border border-white/10 bg-black shadow-2xl transition-all duration-500 hover:ring-1 hover:ring-primary/40",
         aspectRatio === "video" && "aspect-video",
@@ -60,23 +59,23 @@ export const Video = ({
       )}
     >
       <video
+        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+        controls={isPlaying}
+        onPause={() => setIsPlaying(false)}
+        onPlay={() => setIsPlaying(true)}
+        playsInline
+        poster={poster || `${url}#t=0.1`}
         ref={videoRef}
         src={url}
-        poster={poster || `${url}#t=0.1`}
-        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        controls={isPlaying}
-        playsInline
       />
 
       {!isPlaying && (
-        <div 
+        <div
           className="absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px] transition-all duration-300 group-hover:bg-black/40 cursor-pointer"
           onClick={togglePlay}
         >
           <div className="flex size-16 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-xl ring-1 ring-white/20 transition-all duration-300 group-hover:scale-110 group-hover:bg-primary/20 group-hover:text-primary group-hover:ring-primary/40">
-            <PlayCircle size={32} fill="currentColor" fillOpacity={0.2} />
+            <PlayCircle fill="currentColor" fillOpacity={0.2} size={32} />
           </div>
         </div>
       )}
@@ -92,8 +91,8 @@ export const Video = ({
       <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none">
         <div className="flex justify-end pointer-events-auto">
           <button
-            onClick={handleDownload}
             className="flex size-9 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur-md ring-1 ring-white/20 transition-all duration-300 hover:bg-primary/20 hover:text-white hover:ring-primary/40 shadow-lg"
+            onClick={handleDownload}
             title="Download Video"
           >
             <Download size={16} />

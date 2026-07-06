@@ -1,13 +1,13 @@
 //components/bot-integrations-panel.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { Bot, Check, Save } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { Bot, Save, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 
 const PLATFORMS = [
   { id: "slack", label: "Slack" },
@@ -18,25 +18,39 @@ const PLATFORMS = [
   { id: "github", label: "GitHub" },
   { id: "linear", label: "Linear" },
   { id: "whatsapp", label: "WhatsApp" },
-  { id: "resend", label: "Resend (Email)" }
+  { id: "resend", label: "Resend (Email)" },
 ];
 
 const MASK_PREFIX = "••••••••";
 
-const PLATFORM_CONFIGS: Record<string, {
-  tokenLabel: string;
-  tokenPlaceholder: string;
-  secretLabel?: string;
-  secretPlaceholder?: string;
-  extraFields?: { id: string; label: string; placeholder: string }[];
-}> = {
-  slack: { tokenLabel: "Bot Token", tokenPlaceholder: "xoxb-...", secretLabel: "Signing Secret", secretPlaceholder: "..." },
+const PLATFORM_CONFIGS: Record<
+  string,
+  {
+    tokenLabel: string;
+    tokenPlaceholder: string;
+    secretLabel?: string;
+    secretPlaceholder?: string;
+    extraFields?: { id: string; label: string; placeholder: string }[];
+  }
+> = {
+  slack: {
+    tokenLabel: "Bot Token",
+    tokenPlaceholder: "xoxb-...",
+    secretLabel: "Signing Secret",
+    secretPlaceholder: "...",
+  },
   discord: {
     tokenLabel: "Bot Token",
     tokenPlaceholder: "MT...",
     secretLabel: "Public Key",
     secretPlaceholder: "For webhook signature verification",
-    extraFields: [{ id: "applicationId", label: "Application ID", placeholder: "Discord app/client ID" }],
+    extraFields: [
+      {
+        id: "applicationId",
+        label: "Application ID",
+        placeholder: "Discord app/client ID",
+      },
+    ],
   },
   teams: {
     tokenLabel: "App ID",
@@ -45,7 +59,11 @@ const PLATFORM_CONFIGS: Record<string, {
     secretPlaceholder: "Client secret",
     extraFields: [
       { id: "appTenantId", label: "Tenant ID", placeholder: "Azure tenant ID" },
-      { id: "appType", label: "App Type", placeholder: "SingleTenant or MultiTenant" },
+      {
+        id: "appType",
+        label: "App Type",
+        placeholder: "SingleTenant or MultiTenant",
+      },
     ],
   },
   gchat: {
@@ -53,33 +71,79 @@ const PLATFORM_CONFIGS: Record<string, {
     tokenPlaceholder: '{"type": "service_account", ...}',
     secretLabel: undefined,
     extraFields: [
-      { id: "googleChatProjectNumber", label: "Project Number", placeholder: "Required for direct webhook JWT verification" },
+      {
+        id: "googleChatProjectNumber",
+        label: "Project Number",
+        placeholder: "Required for direct webhook JWT verification",
+      },
     ],
   },
-  telegram: { tokenLabel: "Bot Token", tokenPlaceholder: "123456:ABC-DEF...", secretLabel: undefined },
+  telegram: {
+    tokenLabel: "Bot Token",
+    tokenPlaceholder: "123456:ABC-DEF...",
+    secretLabel: undefined,
+  },
   github: {
     tokenLabel: "Token or App ID",
     tokenPlaceholder: "ghp_... or GitHub App ID",
     secretLabel: "Private Key",
     secretPlaceholder: "Leave blank when using a PAT",
     extraFields: [
-      { id: "webhookSecret", label: "Webhook Secret", placeholder: "e.g. my-secret" },
-      { id: "installationId", label: "Installation ID", placeholder: "Required for single-install GitHub Apps" },
-      { id: "botUserId", label: "Bot User ID", placeholder: "Optional numeric GitHub bot user ID" },
+      {
+        id: "webhookSecret",
+        label: "Webhook Secret",
+        placeholder: "e.g. my-secret",
+      },
+      {
+        id: "installationId",
+        label: "Installation ID",
+        placeholder: "Required for single-install GitHub Apps",
+      },
+      {
+        id: "botUserId",
+        label: "Bot User ID",
+        placeholder: "Optional numeric GitHub bot user ID",
+      },
     ],
   },
-  linear: { tokenLabel: "API Key", tokenPlaceholder: "lin_api_...", secretLabel: "Webhook Secret", secretPlaceholder: "..." },
+  linear: {
+    tokenLabel: "API Key",
+    tokenPlaceholder: "lin_api_...",
+    secretLabel: "Webhook Secret",
+    secretPlaceholder: "...",
+  },
   whatsapp: {
     tokenLabel: "System Access Token",
     tokenPlaceholder: "EAA...",
     secretLabel: "App Secret",
     secretPlaceholder: "Meta app secret for signature verification",
     extraFields: [
-      { id: "verifyToken", label: "Verify Token", placeholder: "Custom webhook verification token" },
-      { id: "phoneNumberId", label: "Phone Number ID", placeholder: "123456789" },
+      {
+        id: "verifyToken",
+        label: "Verify Token",
+        placeholder: "Custom webhook verification token",
+      },
+      {
+        id: "phoneNumberId",
+        label: "Phone Number ID",
+        placeholder: "123456789",
+      },
     ],
   },
-  resend: { tokenLabel: "API Key", tokenPlaceholder: "re_...", secretLabel: "Webhook Secret", secretPlaceholder: "whsec_...", extraFields: [{ id: "fromAddress", label: "From Address", placeholder: "bot@domain.com" }, { id: "fromName", label: "From Name", placeholder: "Etles AI" }] }
+  resend: {
+    tokenLabel: "API Key",
+    tokenPlaceholder: "re_...",
+    secretLabel: "Webhook Secret",
+    secretPlaceholder: "whsec_...",
+    extraFields: [
+      {
+        id: "fromAddress",
+        label: "From Address",
+        placeholder: "bot@domain.com",
+      },
+      { id: "fromName", label: "From Name", placeholder: "Etles AI" },
+    ],
+  },
 };
 
 function getWebhookUrl(originUrl: string, platform: string, userId: string) {
@@ -93,7 +157,7 @@ function getWebhookUrl(originUrl: string, platform: string, userId: string) {
 export function BotIntegrationsPanel() {
   const { data: session } = useSession();
   const userId = session?.user?.id || "your-user-id";
-  
+
   const [integrations, setIntegrations] = useState<any[]>([]);
   const [activePlatform, setActivePlatform] = useState<string | null>(null);
 
@@ -103,33 +167,35 @@ export function BotIntegrationsPanel() {
 
   useEffect(() => {
     fetch("/api/bot-integrations")
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setIntegrations(data);
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setIntegrations(data);
+        }
       })
       .catch(() => {});
   }, []);
 
   const openConfig = (platform: string) => {
     setActivePlatform(platform);
-    const existing = integrations.find(i => i.platform === platform);
+    const existing = integrations.find((i) => i.platform === platform);
     setBotToken(existing ? existing.botToken : "");
     setSigningSecret(existing ? existing.signingSecret || "" : "");
-    
+
     // Initialize extra config
     const configData = existing?.extraConfig || {};
-    
+
     // Apply defaults for specific apps if they are completely new
     if (platform === "resend" && !existing) {
-       configData.fromAddress = "bot@yourdomain.com";
-       configData.fromName = "Etles AI";
+      configData.fromAddress = "bot@yourdomain.com";
+      configData.fromName = "Etles AI";
     }
 
     setExtraConfig(configData);
   };
 
   const handleExtraUpdate = (id: string, value: string) => {
-    setExtraConfig(prev => ({ ...prev, [id]: value }));
+    setExtraConfig((prev) => ({ ...prev, [id]: value }));
   };
 
   const handleSave = async () => {
@@ -137,19 +203,30 @@ export function BotIntegrationsPanel() {
       toast.error("Primary Key/Token is strictly required.");
       return;
     }
-    
+
     // Prevent saving obfuscated dots explicitly
-    if (botToken === MASK_PREFIX || signingSecret === MASK_PREFIX || Object.values(extraConfig).some(val => val === MASK_PREFIX)) {
-      toast.error("Please insert a completely unmasked secret value before saving.");
+    if (
+      botToken === MASK_PREFIX ||
+      signingSecret === MASK_PREFIX ||
+      Object.values(extraConfig).some((val) => val === MASK_PREFIX)
+    ) {
+      toast.error(
+        "Please insert a completely unmasked secret value before saving."
+      );
       return;
     }
 
-    const payload: any = { platform: activePlatform, botToken, signingSecret, extraConfig };
+    const payload: any = {
+      platform: activePlatform,
+      botToken,
+      signingSecret,
+      extraConfig,
+    };
 
     const res = await fetch("/api/bot-integrations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     if (res.ok) {
@@ -164,7 +241,9 @@ export function BotIntegrationsPanel() {
       }
       // ─── END ADD ────────────────────────────────────────────────────────────
 
-      const updated = await fetch("/api/bot-integrations").then(r => r.json());
+      const updated = await fetch("/api/bot-integrations").then((r) =>
+        r.json()
+      );
       setIntegrations(updated);
       setActivePlatform(null); // Fold the UI
     } else {
@@ -173,7 +252,10 @@ export function BotIntegrationsPanel() {
     }
   };
 
-  const originUrl = typeof window !== "undefined" ? window.location.origin : "https://etles.app";
+  const originUrl =
+    typeof window === "undefined"
+      ? "https://etles.app"
+      : window.location.origin;
   const mapConfig = activePlatform ? PLATFORM_CONFIGS[activePlatform] : null;
 
   return (
@@ -184,17 +266,21 @@ export function BotIntegrationsPanel() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6">
-        {PLATFORMS.map(p => {
-          const isConfigured = integrations.some(i => i.platform === p.id);
+        {PLATFORMS.map((p) => {
+          const isConfigured = integrations.some((i) => i.platform === p.id);
           return (
-            <div 
+            <div
+              className={`p-4 rounded-2xl border cursor-pointer hover:bg-white/5 transition-all outline-none ${activePlatform === p.id ? "border-primary/50 bg-primary/10 ring-2 ring-primary/20 shadow-lg" : "border-white/10 bg-[#0a0a0a]"}`}
               key={p.id}
               onClick={() => openConfig(p.id)}
-              className={`p-4 rounded-2xl border cursor-pointer hover:bg-white/5 transition-all outline-none ${activePlatform === p.id ? "border-primary/50 bg-primary/10 ring-2 ring-primary/20 shadow-lg" : "border-white/10 bg-[#0a0a0a]"}`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-zinc-300 text-sm tracking-wide">{p.label}</span>
-                {isConfigured && <Check className="size-4 text-emerald-500 shrink-0" />}
+                <span className="font-semibold text-zinc-300 text-sm tracking-wide">
+                  {p.label}
+                </span>
+                {isConfigured && (
+                  <Check className="size-4 text-emerald-500 shrink-0" />
+                )}
               </div>
             </div>
           );
@@ -204,67 +290,84 @@ export function BotIntegrationsPanel() {
       {activePlatform && mapConfig && (
         <div className="p-5 sm:p-6 border border-white/10 rounded-2xl bg-[#0a0a0a] space-y-5 animate-in fade-in zoom-in-95 duration-200">
           <div className="flex justify-between items-center mb-2">
-             <h4 className="font-extrabold text-white text-lg tracking-tight capitalize">{activePlatform} Configuration</h4>
+            <h4 className="font-extrabold text-white text-lg tracking-tight capitalize">
+              {activePlatform} Configuration
+            </h4>
           </div>
-          
+
           <div className="space-y-4">
-             <div className="space-y-2">
-               <Label className="text-zinc-400 font-medium text-xs uppercase tracking-wider">Webhook Target URL</Label>
-               <Input
-                 readOnly
-                 value={getWebhookUrl(originUrl, activePlatform, userId)}
-                 className="bg-black/50 font-mono text-xs sm:text-sm text-primary border-primary/20 selection:bg-primary/30"
-               />
-               <p className="text-[11px] text-zinc-500">
-                 {activePlatform === "telegram"
-                   ? "This URL is auto-registered with Telegram when you save. No manual setup needed."
-                   : `Paste this URL directly into your ${activePlatform} developer configuration dashboard.`}
-               </p>
-             </div>
+            <div className="space-y-2">
+              <Label className="text-zinc-400 font-medium text-xs uppercase tracking-wider">
+                Webhook Target URL
+              </Label>
+              <Input
+                className="bg-black/50 font-mono text-xs sm:text-sm text-primary border-primary/20 selection:bg-primary/30"
+                readOnly
+                value={getWebhookUrl(originUrl, activePlatform, userId)}
+              />
+              <p className="text-[11px] text-zinc-500">
+                {activePlatform === "telegram"
+                  ? "This URL is auto-registered with Telegram when you save. No manual setup needed."
+                  : `Paste this URL directly into your ${activePlatform} developer configuration dashboard.`}
+              </p>
+            </div>
 
-             <div className="space-y-2 pt-2 border-t border-white/5">
-               <Label className="text-zinc-400 font-medium text-xs uppercase tracking-wider">{mapConfig.tokenLabel}</Label>
-               <Input 
-                 type="password"
-                 value={botToken} 
-                 onChange={e => setBotToken(e.target.value)} 
-                 placeholder={mapConfig.tokenPlaceholder}
-                 className="bg-black/50 text-white" 
-               />
-             </div>
+            <div className="space-y-2 pt-2 border-t border-white/5">
+              <Label className="text-zinc-400 font-medium text-xs uppercase tracking-wider">
+                {mapConfig.tokenLabel}
+              </Label>
+              <Input
+                className="bg-black/50 text-white"
+                onChange={(e) => setBotToken(e.target.value)}
+                placeholder={mapConfig.tokenPlaceholder}
+                type="password"
+                value={botToken}
+              />
+            </div>
 
-             {mapConfig.secretLabel && (
-                <div className="space-y-2">
-                  <Label className="text-zinc-400 font-medium text-xs uppercase tracking-wider">{mapConfig.secretLabel}</Label>
-                  <Input 
-                    type="password"
-                    value={signingSecret} 
-                    onChange={e => setSigningSecret(e.target.value)} 
-                    placeholder={mapConfig.secretPlaceholder}
-                    className="bg-black/50 text-white" 
-                  />
-                </div>
-             )}
+            {mapConfig.secretLabel && (
+              <div className="space-y-2">
+                <Label className="text-zinc-400 font-medium text-xs uppercase tracking-wider">
+                  {mapConfig.secretLabel}
+                </Label>
+                <Input
+                  className="bg-black/50 text-white"
+                  onChange={(e) => setSigningSecret(e.target.value)}
+                  placeholder={mapConfig.secretPlaceholder}
+                  type="password"
+                  value={signingSecret}
+                />
+              </div>
+            )}
 
-             {mapConfig.extraFields && mapConfig.extraFields.length > 0 && (
-               <div className={`grid grid-cols-1 ${mapConfig.extraFields.length > 1 ? "sm:grid-cols-2" : ""} gap-4 pt-2 border-t border-white/5`}>
-                 {mapConfig.extraFields.map(field => (
-                   <div key={field.id} className="space-y-2">
-                     <Label className="text-zinc-400 font-medium text-xs uppercase tracking-wider">{field.label}</Label>
-                     <Input 
-                       value={extraConfig[field.id] || ""} 
-                       onChange={e => handleExtraUpdate(field.id, e.target.value)} 
-                       className="bg-black/50 text-white"
-                       placeholder={field.placeholder} 
-                     />
-                   </div>
-                 ))}
-               </div>
-             )}
+            {mapConfig.extraFields && mapConfig.extraFields.length > 0 && (
+              <div
+                className={`grid grid-cols-1 ${mapConfig.extraFields.length > 1 ? "sm:grid-cols-2" : ""} gap-4 pt-2 border-t border-white/5`}
+              >
+                {mapConfig.extraFields.map((field) => (
+                  <div className="space-y-2" key={field.id}>
+                    <Label className="text-zinc-400 font-medium text-xs uppercase tracking-wider">
+                      {field.label}
+                    </Label>
+                    <Input
+                      className="bg-black/50 text-white"
+                      onChange={(e) =>
+                        handleExtraUpdate(field.id, e.target.value)
+                      }
+                      placeholder={field.placeholder}
+                      value={extraConfig[field.id] || ""}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
 
-             <Button onClick={handleSave} className="w-full mt-4 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-lg gap-2 transition-all">
-               <Save className="size-4" /> Save Configuration
-             </Button>
+            <Button
+              className="w-full mt-4 h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-lg gap-2 transition-all"
+              onClick={handleSave}
+            >
+              <Save className="size-4" /> Save Configuration
+            </Button>
           </div>
         </div>
       )}

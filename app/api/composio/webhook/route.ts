@@ -9,30 +9,30 @@
  *   when a lead replies to outreach email, so they resume instantly.
  */
 
-import { NextRequest, NextResponse } from "next/server";
 import { Composio } from "@composio/core";
 import { VercelProvider } from "@composio/vercel";
 import { generateText, stepCountIs } from "ai";
-import { getGoogleModel, getLanguageModel } from "@/lib/ai/providers";
-import {
-  getChatsByUserId,
-  saveMessages,
-  saveEvent,
-  updateEventStatus,
-} from "@/lib/db/queries";
+import { type NextRequest, NextResponse } from "next/server";
+import { getGoogleModel } from "@/lib/ai/providers";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import {
-  saveMemory,
-  recallMemory,
-  updateMemory,
   deleteMemory,
+  recallMemory,
+  saveMemory,
+  updateMemory,
 } from "@/lib/ai/tools/memory";
-import { generateUUID } from "@/lib/utils";
 import { SUPPORTED_TRIGGERS } from "@/lib/ai/triggers";
 import {
+  getChatsByUserId,
+  saveEvent,
+  saveMessages,
+  updateEventStatus,
+} from "@/lib/db/queries";
+import { generateUUID } from "@/lib/utils";
+import {
+  getWorkflowClient,
   isWorkflowEnabled,
   triggerComposioWebhookWorkflow,
-  getWorkflowClient,
 } from "@/lib/workflow/client";
 
 const composio = new Composio({ provider: new VercelProvider() });
@@ -47,17 +47,22 @@ async function tryNotifyMissionBridge(
   triggerSlug: string,
   payload: Record<string, unknown>
 ): Promise<void> {
-  if (!isWorkflowEnabled()) return;
+  if (!isWorkflowEnabled()) {
+    return;
+  }
 
   const workflowClient = getWorkflowClient();
-  if (!workflowClient) return;
+  if (!workflowClient) {
+    return;
+  }
 
   // ── Email reply → wake up paused lead sequence ────────────────────────────
   if (triggerSlug === "GMAIL_NEW_GMAIL_MESSAGE") {
     const fromRaw = payload?.from ?? (payload as any)?.sender ?? "";
-    const emailFrom = typeof fromRaw === "string"
-      ? fromRaw.toLowerCase()
-      : (fromRaw as any)?.email?.toLowerCase() ?? "";
+    const emailFrom =
+      typeof fromRaw === "string"
+        ? fromRaw.toLowerCase()
+        : ((fromRaw as any)?.email?.toLowerCase() ?? "");
     const subject = (payload?.subject as string) ?? "";
     const isReply =
       subject.toLowerCase().startsWith("re:") ||
@@ -69,7 +74,7 @@ async function tryNotifyMissionBridge(
         // listens on `lead-reply:{missionId}:{email}`. We also try the
         // userId-scoped key so we don't need to know missionId at webhook time.
         await (workflowClient as any).notify({
-          eventId: `lead-reply-${userId}-${emailFrom.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`,
+          eventId: `lead-reply-${userId}-${emailFrom.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`,
           eventData: {
             from: emailFrom,
             subject,
@@ -77,7 +82,9 @@ async function tryNotifyMissionBridge(
             timestamp: new Date().toISOString(),
           },
         });
-        console.log(`[MissionBridge] Notified lead workflow for reply from ${emailFrom}`);
+        console.log(
+          `[MissionBridge] Notified lead workflow for reply from ${emailFrom}`
+        );
       } catch (e) {
         console.error("[MissionBridge] notify failed:", e);
       }
@@ -95,8 +102,12 @@ async function tryNotifyMissionBridge(
     if (customerId) {
       try {
         await (workflowClient as any).notify({
-          eventId: `stripe-event-${userId}-${customerId.replace(/[^a-zA-Z0-9.\-_]/g, '_')}`,
-          eventData: { triggerSlug, payload, timestamp: new Date().toISOString() },
+          eventId: `stripe-event-${userId}-${customerId.replace(/[^a-zA-Z0-9.\-_]/g, "_")}`,
+          eventData: {
+            triggerSlug,
+            payload,
+            timestamp: new Date().toISOString(),
+          },
         });
       } catch {
         // non-fatal
@@ -111,8 +122,7 @@ export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
     const webhookId =
-      req.headers.get("x-composio-webhook-id") ||
-      req.headers.get("webhook-id");
+      req.headers.get("x-composio-webhook-id") || req.headers.get("webhook-id");
     const signature =
       req.headers.get("x-composio-signature") ||
       req.headers.get("webhook-signature");
@@ -122,7 +132,10 @@ export async function POST(req: NextRequest) {
 
     if (!signature || !webhookId || !timestampHeader) {
       console.error("[Composio Webhook] Missing required headers.");
-      return NextResponse.json({ error: "Missing webhook headers" }, { status: 401 });
+      return NextResponse.json(
+        { error: "Missing webhook headers" },
+        { status: 401 }
+      );
     }
 
     const secret = process.env.COMPOSIO_WEBHOOK_SECRET;
@@ -173,8 +186,14 @@ export async function POST(req: NextRequest) {
           `[Composio Webhook] Verified. Trigger: ${triggerSlug}, User: ${userId}`
         );
       } catch (verificationError) {
-        console.error("[Composio Webhook] Signature verification failed:", verificationError);
-        return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+        console.error(
+          "[Composio Webhook] Signature verification failed:",
+          verificationError
+        );
+        return NextResponse.json(
+          { error: "Invalid signature" },
+          { status: 401 }
+        );
       }
     }
 
@@ -182,7 +201,10 @@ export async function POST(req: NextRequest) {
       console.error(
         `[Composio Webhook] Missing identity. UserID: ${userId}, Trigger: ${triggerSlug}`
       );
-      return NextResponse.json({ error: "Missing identity data" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing identity data" },
+        { status: 400 }
+      );
     }
 
     // ── Fire-and-forget: wake up any paused mission workflows ────────────────
@@ -206,7 +228,10 @@ export async function POST(req: NextRequest) {
       if (savedEvent) {
         await updateEventStatus({ id: savedEvent.id, status: "failed" });
       }
-      return NextResponse.json({ ok: true, message: "Event logged, no active chat found" });
+      return NextResponse.json({
+        ok: true,
+        message: "Event logged, no active chat found",
+      });
     }
 
     const chatId = activeChat.id;
@@ -223,18 +248,28 @@ export async function POST(req: NextRequest) {
           eventId,
         });
         if (triggered) {
-          console.log(`[Composio Webhook] Workflow triggered: ${triggered.workflowRunId}`);
-          return NextResponse.json({ ok: true, message: "Event queued for processing" });
+          console.log(
+            `[Composio Webhook] Workflow triggered: ${triggered.workflowRunId}`
+          );
+          return NextResponse.json({
+            ok: true,
+            message: "Event queued for processing",
+          });
         }
       } catch (e) {
-        console.error("[Composio Webhook] Workflow trigger failed, falling back:", e);
+        console.error(
+          "[Composio Webhook] Workflow trigger failed, falling back:",
+          e
+        );
       }
     }
 
     // ── Fallback: inline AI processing ───────────────────────────────────────
     let composioTools: Record<string, unknown> = {};
     try {
-      const session = await composio.create(userId, { manageConnections: true });
+      const session = await composio.create(userId, {
+        manageConnections: true,
+      });
       composioTools = await session.tools();
     } catch (e) {
       console.error("[Composio Webhook] Failed to load tools:", e);
@@ -284,14 +319,22 @@ Today's date is ${new Date().toLocaleDateString()}. Execute your duties flawless
       app: triggerDef?.app || "app",
       summary: triggerDef?.name || `Event: ${triggerSlug}`,
       payload,
-      timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
 
     messagesToSave.push({
       id: generateUUID(),
       chatId,
       role: "user",
-      parts: [{ type: "text", text: `###EVENT_TRIGGERED###${JSON.stringify(eventPayload)}` }],
+      parts: [
+        {
+          type: "text",
+          text: `###EVENT_TRIGGERED###${JSON.stringify(eventPayload)}`,
+        },
+      ],
       attachments: [],
       createdAt: timestamp,
     });

@@ -1,5 +1,5 @@
-import { tool } from "ai";
 import { Redis } from "@upstash/redis";
+import { tool } from "ai";
 import { z } from "zod";
 import { generateUUID } from "@/lib/utils";
 
@@ -67,17 +67,29 @@ function scoreEntity(entity: GraphEntity, q: string): number {
   const query = q.toLowerCase();
   let score = 0;
 
-  if (entity.name.toLowerCase().includes(query)) score += 5;
-  if (entity.entityType.toLowerCase().includes(query)) score += 3;
-  if (entity.summary.toLowerCase().includes(query)) score += 3;
+  if (entity.name.toLowerCase().includes(query)) {
+    score += 5;
+  }
+  if (entity.entityType.toLowerCase().includes(query)) {
+    score += 3;
+  }
+  if (entity.summary.toLowerCase().includes(query)) {
+    score += 3;
+  }
   for (const alias of entity.aliases) {
-    if (alias.toLowerCase().includes(query)) score += 2;
+    if (alias.toLowerCase().includes(query)) {
+      score += 2;
+    }
   }
   for (const tag of entity.tags) {
-    if (tag.toLowerCase().includes(query)) score += 1;
+    if (tag.toLowerCase().includes(query)) {
+      score += 1;
+    }
   }
   for (const fact of entity.facts) {
-    if (fact.toLowerCase().includes(query)) score += 2;
+    if (fact.toLowerCase().includes(query)) {
+      score += 2;
+    }
   }
   return score;
 }
@@ -106,7 +118,9 @@ export const upsertKnowledgeEntity = ({ userId }: { userId: string }) =>
       facts,
     }) => {
       const redis = getRedis();
-      if (!redis) return { success: false, error: "Redis is not configured." };
+      if (!redis) {
+        return { success: false, error: "Redis is not configured." };
+      }
 
       const now = new Date().toISOString();
       const id = entityId ?? generateUUID();
@@ -161,7 +175,9 @@ export const addKnowledgeRelation = ({ userId }: { userId: string }) =>
       evidence,
     }) => {
       const redis = getRedis();
-      if (!redis) return { success: false, error: "Redis is not configured." };
+      if (!redis) {
+        return { success: false, error: "Redis is not configured." };
+      }
 
       const [fromRaw, toRaw] = await Promise.all([
         redis.get(entityKey(userId, fromEntityId)),
@@ -206,29 +222,39 @@ export const getKnowledgeEntity = ({ userId }: { userId: string }) =>
     }),
     execute: async ({ entityId, includeRelations }) => {
       const redis = getRedis();
-      if (!redis) return { success: false, error: "Redis is not configured." };
+      if (!redis) {
+        return { success: false, error: "Redis is not configured." };
+      }
 
       const raw = await redis.get<string>(entityKey(userId, entityId));
-      if (!raw) return { success: false, error: "Entity not found." };
+      if (!raw) {
+        return { success: false, error: "Entity not found." };
+      }
 
       const entity =
         typeof raw === "string"
           ? (JSON.parse(raw) as GraphEntity)
           : (raw as GraphEntity);
 
-      if (!includeRelations) return { success: true, entity };
+      if (!includeRelations) {
+        return { success: true, entity };
+      }
 
       const [outIds, inIds] = await Promise.all([
         redis.smembers<string[]>(outKey(userId, entityId)),
         redis.smembers<string[]>(inKey(userId, entityId)),
       ]);
 
-      const uniqueRelationIds = [...new Set([...(outIds ?? []), ...(inIds ?? [])])];
+      const uniqueRelationIds = [
+        ...new Set([...(outIds ?? []), ...(inIds ?? [])]),
+      ];
       const relations: GraphRelation[] = [];
 
       for (const rid of uniqueRelationIds) {
         const relRaw = await redis.get<string>(relationKey(userId, rid));
-        if (!relRaw) continue;
+        if (!relRaw) {
+          continue;
+        }
         const parsed =
           typeof relRaw === "string"
             ? (JSON.parse(relRaw) as GraphRelation)
@@ -252,22 +278,32 @@ export const searchKnowledgeGraph = ({ userId }: { userId: string }) =>
     }),
     execute: async ({ query, entityType, tag, limit }) => {
       const redis = getRedis();
-      if (!redis) return { success: false, error: "Redis is not configured." };
+      if (!redis) {
+        return { success: false, error: "Redis is not configured." };
+      }
 
       const entityIds = await redis.smembers<string[]>(entitySetKey(userId));
       const entities: GraphEntity[] = [];
 
       for (const id of entityIds ?? []) {
         const raw = await redis.get<string>(entityKey(userId, id));
-        if (!raw) continue;
+        if (!raw) {
+          continue;
+        }
         const entity =
           typeof raw === "string"
             ? (JSON.parse(raw) as GraphEntity)
             : (raw as GraphEntity);
-        if (entityType && entity.entityType !== entityType) continue;
-        if (tag && !entity.tags.includes(tag)) continue;
+        if (entityType && entity.entityType !== entityType) {
+          continue;
+        }
+        if (tag && !entity.tags.includes(tag)) {
+          continue;
+        }
         const score = scoreEntity(entity, query);
-        if (score <= 0) continue;
+        if (score <= 0) {
+          continue;
+        }
         entities.push(entity);
       }
 
@@ -289,7 +325,9 @@ export const deleteKnowledgeEntity = ({ userId }: { userId: string }) =>
     }),
     execute: async ({ entityId, deleteRelations }) => {
       const redis = getRedis();
-      if (!redis) return { success: false, error: "Redis is not configured." };
+      if (!redis) {
+        return { success: false, error: "Redis is not configured." };
+      }
 
       await redis.del(entityKey(userId, entityId));
       await redis.srem(entitySetKey(userId), entityId);
@@ -302,7 +340,9 @@ export const deleteKnowledgeEntity = ({ userId }: { userId: string }) =>
         const relationIds = [...new Set([...(outIds ?? []), ...(inIds ?? [])])];
         for (const rid of relationIds) {
           const raw = await redis.get<string>(relationKey(userId, rid));
-          if (!raw) continue;
+          if (!raw) {
+            continue;
+          }
           const rel =
             typeof raw === "string"
               ? (JSON.parse(raw) as GraphRelation)
@@ -333,10 +373,14 @@ export const deleteKnowledgeRelation = ({ userId }: { userId: string }) =>
     }),
     execute: async ({ relationId }) => {
       const redis = getRedis();
-      if (!redis) return { success: false, error: "Redis is not configured." };
+      if (!redis) {
+        return { success: false, error: "Redis is not configured." };
+      }
 
       const raw = await redis.get<string>(relationKey(userId, relationId));
-      if (!raw) return { success: false, error: "Relation not found." };
+      if (!raw) {
+        return { success: false, error: "Relation not found." };
+      }
 
       const rel =
         typeof raw === "string"

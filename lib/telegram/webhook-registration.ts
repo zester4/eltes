@@ -10,8 +10,8 @@
  */
 
 interface TelegramSetWebhookResult {
-  ok: boolean;
   description?: string;
+  ok: boolean;
 }
 
 /**
@@ -26,12 +26,12 @@ interface TelegramSetWebhookResult {
 export async function registerTelegramWebhook(
   botToken: string,
   userId: string,
-  baseUrl: string,
+  baseUrl: string
 ): Promise<{ ok: boolean; error?: string }> {
   const webhookUrl = `${baseUrl}/api/telegram/${userId}`;
   const callbackUrl = `${baseUrl}/api/telegram/callback/${userId}`;
 
-  // We register the main webhookUrl. 
+  // We register the main webhookUrl.
   // IMPORTANT: Telegram only supports ONE webhook URL per bot.
   // We should either:
   // 1. Point the webhook to a single router that handles both messages and callbacks.
@@ -53,10 +53,10 @@ export async function registerTelegramWebhook(
   // The user suggested: "Or more simply: handle callback_query in the existing /api/telegram/[userId] route"
   //
   // But they also provided a full separate route for callbacks.
-  // To use the separate route for callbacks while keeping the other for messages, 
+  // To use the separate route for callbacks while keeping the other for messages,
   // we would need two bots or a single router.
   //
-  // Let's assume the user wants the main webhook to be the one that handles everything, 
+  // Let's assume the user wants the main webhook to be the one that handles everything,
   // or they want us to register the callback one? No, messages would stop working.
   //
   // BEST APPROACH: Register the main /api/telegram/[userId] as the webhook,
@@ -67,7 +67,7 @@ export async function registerTelegramWebhook(
   // allowed_updates: ["message", "callback_query"]
   // which WAS correct for a single webhook.
   //
-  // Ah, I see. I might have failed to actually apply the change or it didn't "reflect" 
+  // Ah, I see. I might have failed to actually apply the change or it didn't "reflect"
   // because I didn't change the URL to something that handles both?
   //
   // Actually, the user's feedback includes a comment:
@@ -94,7 +94,7 @@ export async function registerTelegramWebhook(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    },
+    }
   );
 
   const data: TelegramSetWebhookResult = await res.json();
@@ -114,7 +114,7 @@ export async function registerTelegramWebhook(
  */
 export async function getTelegramWebhookInfo(botToken: string) {
   const res = await fetch(
-    `https://api.telegram.org/bot${botToken}/getWebhookInfo`,
+    `https://api.telegram.org/bot${botToken}/getWebhookInfo`
   );
   return res.json();
 }
@@ -134,7 +134,7 @@ export async function deleteTelegramWebhook(botToken: string): Promise<void> {
  * Returns { ok: true } if valid, { ok: false, error } if invalid.
  */
 export async function validateTelegramToken(
-  botToken: string,
+  botToken: string
 ): Promise<{ ok: boolean; error?: string; username?: string }> {
   const res = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
   const data = await res.json();

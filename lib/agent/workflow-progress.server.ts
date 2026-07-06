@@ -9,25 +9,25 @@
 
 import "server-only";
 
-import type { DBMessage } from "@/lib/db/schema";
-import { upsertMessages } from "@/lib/db/queries";
 import {
   encodeWorkflowProgress,
-  workflowProgressMessageId,
+  type WorkflowOverallStatus,
   type WorkflowProgress,
   type WorkflowStep,
-  type WorkflowOverallStatus,
+  workflowProgressMessageId,
 } from "@/lib/agent/workflow-progress";
+import { upsertMessages } from "@/lib/db/queries";
+import type { DBMessage } from "@/lib/db/schema";
 
 // Re-export the options interface so callers have a single import point.
 export interface UpsertWorkflowProgressOptions {
   chatId: string;
-  taskId: string;
-  workflowRunId: string;
-  task: string;
-  steps: WorkflowStep[];
   overallStatus?: WorkflowOverallStatus;
   startedAt: string;
+  steps: WorkflowStep[];
+  task: string;
+  taskId: string;
+  workflowRunId: string;
 }
 
 /**
@@ -51,7 +51,8 @@ export async function upsertWorkflowProgress({
     steps,
     overallStatus,
     startedAt,
-    completedAt: overallStatus !== "running" ? new Date().toISOString() : undefined,
+    completedAt:
+      overallStatus === "running" ? undefined : new Date().toISOString(),
   };
 
   await upsertMessages({

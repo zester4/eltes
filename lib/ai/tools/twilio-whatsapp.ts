@@ -25,10 +25,11 @@ type TwilioParams = Record<string, string | number | boolean | undefined>;
 function twilioAuth() {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
-  if (!sid || !token)
+  if (!sid || !token) {
     throw new Error(
       "TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN environment variables must be set."
     );
+  }
   return { sid, basic: Buffer.from(`${sid}:${token}`).toString("base64") };
 }
 
@@ -64,7 +65,9 @@ async function twilioMsgRequest<T>(
     const errText = await res.text().catch(() => res.statusText);
     throw new Error(`Twilio ${method} ${path} (${res.status}): ${errText}`);
   }
-  if (method === "DELETE") return {} as T;
+  if (method === "DELETE") {
+    return {} as T;
+  }
   return res.json() as Promise<T>;
 }
 
@@ -90,9 +93,13 @@ async function twilioContentRequest<T>(
 
   if (!res.ok) {
     const errText = await res.text().catch(() => res.statusText);
-    throw new Error(`Content API ${method} ${path} (${res.status}): ${errText}`);
+    throw new Error(
+      `Content API ${method} ${path} (${res.status}): ${errText}`
+    );
   }
-  if (method === "DELETE") return {} as T;
+  if (method === "DELETE") {
+    return {} as T;
+  }
   return res.json() as Promise<T>;
 }
 
@@ -112,41 +119,41 @@ const sendMessageSchema = z.object({
     .string()
     .describe(
       "Recipient WhatsApp number in E.164 format, e.g. +14155551234. " +
-      "The 'whatsapp:' prefix is added automatically."
+        "The 'whatsapp:' prefix is added automatically."
     ),
   from: z
     .string()
     .describe(
       "Your Twilio WhatsApp-enabled number in E.164 format. " +
-      "Must be registered as a WhatsApp sender in your Twilio account."
+        "Must be registered as a WhatsApp sender in your Twilio account."
     ),
   body: z
     .string()
     .optional()
     .describe(
       "Text body of the message. Required unless sending media-only. " +
-      "NOTE: WhatsApp does not allow a text body alongside video, audio, document, or vCard."
+        "NOTE: WhatsApp does not allow a text body alongside video, audio, document, or vCard."
     ),
   media_url: z
     .array(z.string())
     .optional()
     .describe(
       "Publicly accessible URLs of media to attach (image, video, audio, document). " +
-      "Max one media item per WhatsApp message. Must not require authentication."
+        "Max one media item per WhatsApp message. Must not require authentication."
     ),
   status_callback: z
     .string()
     .optional()
     .describe(
       "Webhook URL Twilio POSTs delivery status events to. " +
-      "WhatsApp surfaces a 'read' status in addition to sent/delivered."
+        "WhatsApp surfaces a 'read' status in addition to sent/delivered."
     ),
   messaging_service_sid: z
     .string()
     .optional()
     .describe(
       "SID of a Messaging Service (starts with MG). Lets Twilio auto-select the sender. " +
-      "When provided, 'from' can be omitted."
+        "When provided, 'from' can be omitted."
     ),
 });
 
@@ -161,19 +168,32 @@ export const twilioWhatsAppSendMessage = ({ userId }: { userId: string }) =>
     inputSchema: sendMessageSchema,
     execute: async (params: z.infer<typeof sendMessageSchema>) => {
       try {
-        if (!params.body && !params.media_url?.length)
+        if (!params.body && !params.media_url?.length) {
           throw new Error("Either 'body' or 'media_url' is required.");
+        }
 
         const body: TwilioParams = {
           To: waAddr(params.to),
           From: params.from ? waAddr(params.from) : undefined,
         };
-        if (params.body)                   body.Body                = params.body;
-        if (params.messaging_service_sid)  body.MessagingServiceSid = params.messaging_service_sid;
-        if (params.media_url?.length)      body.MediaUrl            = params.media_url[0]; // WA supports 1 media
-        if (params.status_callback)        body.StatusCallback      = params.status_callback;
+        if (params.body) {
+          body.Body = params.body;
+        }
+        if (params.messaging_service_sid) {
+          body.MessagingServiceSid = params.messaging_service_sid;
+        }
+        if (params.media_url?.length) {
+          body.MediaUrl = params.media_url[0]; // WA supports 1 media
+        }
+        if (params.status_callback) {
+          body.StatusCallback = params.status_callback;
+        }
 
-        const data = await twilioMsgRequest<Record<string, unknown>>("POST", "/Messages.json", body);
+        const data = await twilioMsgRequest<Record<string, unknown>>(
+          "POST",
+          "/Messages.json",
+          body
+        );
         return {
           success: true,
           message_sid: data.sid,
@@ -183,7 +203,10 @@ export const twilioWhatsAppSendMessage = ({ userId }: { userId: string }) =>
           data,
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -193,7 +216,9 @@ export const twilioWhatsAppSendMessage = ({ userId }: { userId: string }) =>
 const getMessageSchema = z.object({
   message_sid: z
     .string()
-    .describe("Message SID (starts with SM or MM) returned by twilioWhatsAppSendMessage."),
+    .describe(
+      "Message SID (starts with SM or MM) returned by twilioWhatsAppSendMessage."
+    ),
 });
 
 export const twilioWhatsAppGetMessage = ({ userId }: { userId: string }) =>
@@ -211,7 +236,7 @@ export const twilioWhatsAppGetMessage = ({ userId }: { userId: string }) =>
         );
         return {
           success: true,
-          status: data.status,          // includes WhatsApp 'read' status
+          status: data.status, // includes WhatsApp 'read' status
           error_code: data.error_code,
           error_message: data.error_message,
           date_sent: data.date_sent,
@@ -222,7 +247,10 @@ export const twilioWhatsAppGetMessage = ({ userId }: { userId: string }) =>
           data,
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -233,13 +261,23 @@ const listMessagesSchema = z.object({
   to: z
     .string()
     .optional()
-    .describe("Filter to messages sent TO this WhatsApp number (E.164, whatsapp: prefix optional)."),
+    .describe(
+      "Filter to messages sent TO this WhatsApp number (E.164, whatsapp: prefix optional)."
+    ),
   from: z
     .string()
     .optional()
-    .describe("Filter to messages sent FROM this WhatsApp number (E.164, whatsapp: prefix optional)."),
-  date_sent_after: z.string().optional().describe("Return messages sent on or after YYYY-MM-DD."),
-  date_sent_before: z.string().optional().describe("Return messages sent on or before YYYY-MM-DD."),
+    .describe(
+      "Filter to messages sent FROM this WhatsApp number (E.164, whatsapp: prefix optional)."
+    ),
+  date_sent_after: z
+    .string()
+    .optional()
+    .describe("Return messages sent on or after YYYY-MM-DD."),
+  date_sent_before: z
+    .string()
+    .optional()
+    .describe("Return messages sent on or before YYYY-MM-DD."),
   page_size: z
     .number()
     .int()
@@ -259,15 +297,30 @@ export const twilioWhatsAppListMessages = ({ userId }: { userId: string }) =>
     execute: async (params: z.infer<typeof listMessagesSchema>) => {
       try {
         const qs: TwilioParams = { PageSize: params.page_size };
-        if (params.to)               qs.To           = waAddr(params.to);
-        if (params.from)             qs.From         = waAddr(params.from);
-        if (params.date_sent_after)  qs["DateSent>"] = params.date_sent_after;
-        if (params.date_sent_before) qs["DateSent<"] = params.date_sent_before;
+        if (params.to) {
+          qs.To = waAddr(params.to);
+        }
+        if (params.from) {
+          qs.From = waAddr(params.from);
+        }
+        if (params.date_sent_after) {
+          qs["DateSent>"] = params.date_sent_after;
+        }
+        if (params.date_sent_before) {
+          qs["DateSent<"] = params.date_sent_before;
+        }
 
-        const data = await twilioMsgRequest<Record<string, unknown>>("GET", "/Messages.json", qs);
+        const data = await twilioMsgRequest<Record<string, unknown>>(
+          "GET",
+          "/Messages.json",
+          qs
+        );
         return { success: true, data };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -281,7 +334,9 @@ export const twilioWhatsAppListMessages = ({ userId }: { userId: string }) =>
 const sendTemplateSchema = z.object({
   to: z
     .string()
-    .describe("Recipient WhatsApp number in E.164 format. The 'whatsapp:' prefix is added automatically."),
+    .describe(
+      "Recipient WhatsApp number in E.164 format. The 'whatsapp:' prefix is added automatically."
+    ),
   from: z
     .string()
     .optional()
@@ -289,36 +344,42 @@ const sendTemplateSchema = z.object({
   messaging_service_sid: z
     .string()
     .optional()
-    .describe("SID of a Messaging Service (starts with MG). Either this or 'from' is required."),
+    .describe(
+      "SID of a Messaging Service (starts with MG). Either this or 'from' is required."
+    ),
   content_sid: z
     .string()
     .describe(
       "SID of a pre-approved Content template (starts with HX). " +
-      "Obtain from twilioWhatsAppListTemplates or twilioWhatsAppCreateTemplate. " +
-      "The template must have WhatsApp approval status 'approved'."
+        "Obtain from twilioWhatsAppListTemplates or twilioWhatsAppCreateTemplate. " +
+        "The template must have WhatsApp approval status 'approved'."
     ),
   content_variables: z
     .record(z.string(), z.string())
     .optional()
     .describe(
       "Key-value map of template variable substitutions, e.g. { '1': 'John', '2': 'Order #456' }. " +
-      "Keys are 1-indexed strings matching {{1}}, {{2}} placeholders in the template. " +
-      "If omitted, the template's default placeholder values are used."
+        "Keys are 1-indexed strings matching {{1}}, {{2}} placeholders in the template. " +
+        "If omitted, the template's default placeholder values are used."
     ),
   status_callback: z
     .string()
     .optional()
-    .describe("Webhook URL for delivery status events (sent, delivered, read, failed)."),
+    .describe(
+      "Webhook URL for delivery status events (sent, delivered, read, failed)."
+    ),
   schedule_type: z
     .literal("fixed")
     .optional()
-    .describe("Set to 'fixed' to enable scheduled delivery. Requires messaging_service_sid."),
+    .describe(
+      "Set to 'fixed' to enable scheduled delivery. Requires messaging_service_sid."
+    ),
   send_at: z
     .string()
     .optional()
     .describe(
       "ISO 8601 datetime to schedule the message for future delivery. " +
-      "Requires messaging_service_sid and schedule_type = 'fixed'."
+        "Requires messaging_service_sid and schedule_type = 'fixed'."
     ),
 });
 
@@ -333,22 +394,41 @@ export const twilioWhatsAppSendTemplate = ({ userId }: { userId: string }) =>
     inputSchema: sendTemplateSchema,
     execute: async (params: z.infer<typeof sendTemplateSchema>) => {
       try {
-        if (!params.from && !params.messaging_service_sid)
-          throw new Error("Either 'from' or 'messaging_service_sid' is required.");
+        if (!params.from && !params.messaging_service_sid) {
+          throw new Error(
+            "Either 'from' or 'messaging_service_sid' is required."
+          );
+        }
 
         const body: TwilioParams = {
           To: waAddr(params.to),
           ContentSid: params.content_sid,
         };
 
-        if (params.from)                   body.From                = waAddr(params.from);
-        if (params.messaging_service_sid)  body.MessagingServiceSid = params.messaging_service_sid;
-        if (params.content_variables)      body.ContentVariables    = JSON.stringify(params.content_variables);
-        if (params.status_callback)        body.StatusCallback      = params.status_callback;
-        if (params.schedule_type)          body.ScheduleType        = params.schedule_type;
-        if (params.send_at)                body.SendAt              = params.send_at;
+        if (params.from) {
+          body.From = waAddr(params.from);
+        }
+        if (params.messaging_service_sid) {
+          body.MessagingServiceSid = params.messaging_service_sid;
+        }
+        if (params.content_variables) {
+          body.ContentVariables = JSON.stringify(params.content_variables);
+        }
+        if (params.status_callback) {
+          body.StatusCallback = params.status_callback;
+        }
+        if (params.schedule_type) {
+          body.ScheduleType = params.schedule_type;
+        }
+        if (params.send_at) {
+          body.SendAt = params.send_at;
+        }
 
-        const data = await twilioMsgRequest<Record<string, unknown>>("POST", "/Messages.json", body);
+        const data = await twilioMsgRequest<Record<string, unknown>>(
+          "POST",
+          "/Messages.json",
+          body
+        );
         return {
           success: true,
           message_sid: data.sid,
@@ -358,7 +438,10 @@ export const twilioWhatsAppSendTemplate = ({ userId }: { userId: string }) =>
           data,
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -387,17 +470,19 @@ const createTemplateSchema = z.object({
     .string()
     .describe(
       "Internal name for the template (not shown to recipients). " +
-      "Use lowercase with underscores for WhatsApp approval, e.g. 'order_confirmation'."
+        "Use lowercase with underscores for WhatsApp approval, e.g. 'order_confirmation'."
     ),
   language: z
     .string()
     .default("en")
-    .describe("ISO 639-1 two-letter language code, e.g. 'en', 'es', 'fr', 'pt'."),
+    .describe(
+      "ISO 639-1 two-letter language code, e.g. 'en', 'es', 'fr', 'pt'."
+    ),
   content_type: templateContentTypeSchema.describe(
     "The Twilio content type defining the message structure. " +
-    "Most common for WhatsApp: 'twilio/text' (plain text), 'twilio/media' (image/video), " +
-    "'twilio/quick-reply' (buttons), 'twilio/call-to-action' (URL/phone buttons), " +
-    "'whatsapp/card' (header + body + buttons)."
+      "Most common for WhatsApp: 'twilio/text' (plain text), 'twilio/media' (image/video), " +
+      "'twilio/quick-reply' (buttons), 'twilio/call-to-action' (URL/phone buttons), " +
+      "'whatsapp/card' (header + body + buttons)."
   ),
   body: z
     .string()
@@ -409,19 +494,23 @@ const createTemplateSchema = z.object({
     .optional()
     .describe(
       "Default/sample values for template placeholders, e.g. { '1': 'Customer Name' }. " +
-      "Required for WhatsApp approval submission as sample values."
+        "Required for WhatsApp approval submission as sample values."
     ),
   // Optional rich-content fields
   media_url: z
     .string()
     .optional()
-    .describe("URL of a header image/video (for twilio/media, whatsapp/card content types)."),
+    .describe(
+      "URL of a header image/video (for twilio/media, whatsapp/card content types)."
+    ),
   actions: z
     .array(
       z.union([
         z.object({
           type: z.literal("QUICK_REPLY"),
-          title: z.string().describe("Button label text (max 20 chars for WhatsApp)."),
+          title: z
+            .string()
+            .describe("Button label text (max 20 chars for WhatsApp)."),
         }),
         z.object({
           type: z.literal("URL"),
@@ -438,7 +527,7 @@ const createTemplateSchema = z.object({
     .optional()
     .describe(
       "Interactive buttons (quick replies or call-to-action). " +
-      "WhatsApp allows up to 3 quick reply buttons or 2 CTA buttons."
+        "WhatsApp allows up to 3 quick reply buttons or 2 CTA buttons."
     ),
 });
 
@@ -478,11 +567,15 @@ export const twilioWhatsAppCreateTemplate = ({ userId }: { userId: string }) =>
         } else if (params.content_type === "whatsapp/card") {
           types["whatsapp/card"] = {
             body: params.body,
-            header_image: params.media_url ? { media: params.media_url } : undefined,
+            header_image: params.media_url
+              ? { media: params.media_url }
+              : undefined,
             actions: params.actions,
           };
         } else if (params.content_type === "whatsapp/authentication") {
-          types["whatsapp/authentication"] = { add_security_recommendation: true };
+          types["whatsapp/authentication"] = {
+            add_security_recommendation: true,
+          };
         } else {
           // Generic fallback
           types[params.content_type] = { body: params.body };
@@ -495,18 +588,26 @@ export const twilioWhatsAppCreateTemplate = ({ userId }: { userId: string }) =>
           types,
         };
 
-        const data = await twilioContentRequest<Record<string, unknown>>("POST", "/Content", payload);
+        const data = await twilioContentRequest<Record<string, unknown>>(
+          "POST",
+          "/Content",
+          payload
+        );
         return {
           success: true,
           content_sid: data.sid,
           friendly_name: data.friendly_name,
           language: data.language,
           date_created: data.date_created,
-          approval_link: (data.links as Record<string, string>)?.approval_create,
+          approval_link: (data.links as Record<string, string>)
+            ?.approval_create,
           data,
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -521,16 +622,22 @@ const listTemplatesSchema = z.object({
     .max(500)
     .optional()
     .default(50)
-    .describe("Number of templates per page (max 500, Twilio recommends ≤500 to stay under 1 MB response)."),
+    .describe(
+      "Number of templates per page (max 500, Twilio recommends ≤500 to stay under 1 MB response)."
+    ),
   page_token: z
     .string()
     .optional()
-    .describe("Pagination token from the previous response's meta.next_page_url. Page numbers are not supported."),
+    .describe(
+      "Pagination token from the previous response's meta.next_page_url. Page numbers are not supported."
+    ),
   include_approvals: z
     .boolean()
     .optional()
     .default(false)
-    .describe("When true, fetches templates with their WhatsApp approval status included."),
+    .describe(
+      "When true, fetches templates with their WhatsApp approval status included."
+    ),
 });
 
 export const twilioWhatsAppListTemplates = ({ userId }: { userId: string }) =>
@@ -541,9 +648,13 @@ export const twilioWhatsAppListTemplates = ({ userId }: { userId: string }) =>
     inputSchema: listTemplatesSchema,
     execute: async (params: z.infer<typeof listTemplatesSchema>) => {
       try {
-        const path = params.include_approvals ? "/ContentAndApprovals" : "/Content";
+        const path = params.include_approvals
+          ? "/ContentAndApprovals"
+          : "/Content";
         const qs = new URLSearchParams({ PageSize: String(params.page_size) });
-        if (params.page_token) qs.set("PageToken", params.page_token);
+        if (params.page_token) {
+          qs.set("PageToken", params.page_token);
+        }
 
         const data = await twilioContentRequest<Record<string, unknown>>(
           "GET",
@@ -580,7 +691,10 @@ export const twilioWhatsAppListTemplates = ({ userId }: { userId: string }) =>
             : null,
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -607,7 +721,10 @@ export const twilioWhatsAppGetTemplate = ({ userId }: { userId: string }) =>
         );
         return { success: true, data };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -617,7 +734,9 @@ export const twilioWhatsAppGetTemplate = ({ userId }: { userId: string }) =>
 const deleteTemplateSchema = z.object({
   content_sid: z
     .string()
-    .describe("SID of the Content template to permanently delete (starts with HX)."),
+    .describe(
+      "SID of the Content template to permanently delete (starts with HX)."
+    ),
 });
 
 export const twilioWhatsAppDeleteTemplate = ({ userId }: { userId: string }) =>
@@ -630,9 +749,15 @@ export const twilioWhatsAppDeleteTemplate = ({ userId }: { userId: string }) =>
     execute: async ({ content_sid }: z.infer<typeof deleteTemplateSchema>) => {
       try {
         await twilioContentRequest("DELETE", `/Content/${content_sid}`);
-        return { success: true, message: `Template ${content_sid} deleted successfully.` };
+        return {
+          success: true,
+          message: `Template ${content_sid} deleted successfully.`,
+        };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -646,21 +771,23 @@ export const twilioWhatsAppDeleteTemplate = ({ userId }: { userId: string }) =>
 const submitApprovalSchema = z.object({
   content_sid: z
     .string()
-    .describe("SID of the Content template to submit for approval (starts with HX)."),
+    .describe(
+      "SID of the Content template to submit for approval (starts with HX)."
+    ),
   name: z
     .string()
     .describe(
       "Template name for WhatsApp (lowercase alphanumeric + underscores only). " +
-      "Use a descriptive name, e.g. 'order_delivery_notification' — " +
-      "WhatsApp reviewers use this to understand the template's purpose."
+        "Use a descriptive name, e.g. 'order_delivery_notification' — " +
+        "WhatsApp reviewers use this to understand the template's purpose."
     ),
   category: z
     .enum(["UTILITY", "MARKETING", "AUTHENTICATION"])
     .describe(
       "WhatsApp template category. " +
-      "UTILITY: transactional (order updates, appointment reminders). " +
-      "MARKETING: promotions, offers, announcements. " +
-      "AUTHENTICATION: OTPs and verification codes."
+        "UTILITY: transactional (order updates, appointment reminders). " +
+        "MARKETING: promotions, offers, announcements. " +
+        "AUTHENTICATION: OTPs and verification codes."
     ),
 });
 
@@ -687,11 +814,15 @@ export const twilioWhatsAppSubmitApproval = ({ userId }: { userId: string }) =>
         return {
           success: true,
           content_sid: params.content_sid,
-          approval_status: (data as { approval_requests?: { status: string } })?.approval_requests?.status,
+          approval_status: (data as { approval_requests?: { status: string } })
+            ?.approval_requests?.status,
           data,
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -701,10 +832,16 @@ export const twilioWhatsAppSubmitApproval = ({ userId }: { userId: string }) =>
 const getApprovalSchema = z.object({
   content_sid: z
     .string()
-    .describe("SID of the Content template to check approval status for (starts with HX)."),
+    .describe(
+      "SID of the Content template to check approval status for (starts with HX)."
+    ),
 });
 
-export const twilioWhatsAppGetApprovalStatus = ({ userId }: { userId: string }) =>
+export const twilioWhatsAppGetApprovalStatus = ({
+  userId,
+}: {
+  userId: string;
+}) =>
   tool({
     description:
       "Fetch the WhatsApp approval status for a Content API template. " +
@@ -728,7 +865,8 @@ export const twilioWhatsAppGetApprovalStatus = ({ userId }: { userId: string }) 
           };
         };
 
-        const approvals = (data as { approval_requests?: ApprovalData }).approval_requests;
+        const approvals = (data as { approval_requests?: ApprovalData })
+          .approval_requests;
         const wa = approvals?.whatsapp;
 
         return {
@@ -742,7 +880,10 @@ export const twilioWhatsAppGetApprovalStatus = ({ userId }: { userId: string }) 
           raw: data,
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -797,7 +938,8 @@ export const twilioWhatsAppListSenders = ({ userId }: { userId: string }) =>
         };
 
         const numbers =
-          (data as { incoming_phone_numbers?: NumberEntry[] }).incoming_phone_numbers ?? [];
+          (data as { incoming_phone_numbers?: NumberEntry[] })
+            .incoming_phone_numbers ?? [];
 
         // WhatsApp-enabled numbers have a channel_capabilities.whatsapp field
         // (They appear as normal numbers — WhatsApp enablement is configured separately)
@@ -815,11 +957,15 @@ export const twilioWhatsAppListSenders = ({ userId }: { userId: string }) =>
           success: true,
           total: numbers.length,
           senders: summary,
-          note: "WhatsApp enablement is configured per-number in the Twilio Console. " +
+          note:
+            "WhatsApp enablement is configured per-number in the Twilio Console. " +
             "All numbers are returned; check the Console to confirm which are WhatsApp-enabled.",
         };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });
@@ -850,7 +996,10 @@ export const twilioWhatsAppMarkMessageRead = ({ userId }: { userId: string }) =>
         );
         return { success: true, status: data.status, data };
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) };
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : String(error),
+        };
       }
     },
   });

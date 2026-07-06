@@ -8,7 +8,7 @@
 
 export const initiateComposioAuthFlow = (
   url: string,
-  successParam: string = "status"
+  successParam = "status"
 ): Promise<Record<string, string>> => {
   const width = 600;
   const height = 840;
@@ -43,7 +43,9 @@ export const initiateComposioAuthFlow = (
         // Cross-origin while Composio page is open — ignore until redirect
       }
 
-      if (!popupUrl) return;
+      if (!popupUrl) {
+        return;
+      }
 
       const successValue = popupUrl.searchParams.get(successParam);
       const errorValue = popupUrl.searchParams.get("error");
