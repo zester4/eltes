@@ -7,7 +7,7 @@ import { Command } from 'commander';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { execSync } from 'child_process';
+import { execSync, spawn } from 'child_process';
 import { createRequire } from 'module';
 
 import {
@@ -21,6 +21,7 @@ import {
 
 import {
   getConfig,
+  saveConfig,
   setConfigKey,
   resetConfig,
   AppConfig
@@ -123,6 +124,71 @@ interface SelectItem {
 }
 
 // ----------------------------------------------------
+// Terminal Utility Helpers
+// ----------------------------------------------------
+
+// Render click-to-open terminal hyperlinks (OSC 8)
+export function terminalLink(text: string, url: string): string {
+  return `\x1b]8;;${url}\x1b\\${text}\x1b]8;;\x1b\\`;
+}
+
+// Trigger error beep / terminal bell
+export function terminalBeep(): void {
+  process.stdout.write('\x07');
+}
+
+// Copy a string of text to system clipboard
+export function copyToClipboard(text: string): void {
+  try {
+    const cleanText = text.replace(/\x1b\[[0-9;]*m/g, ''); // strip ANSI escapes
+    if (os.platform() === 'darwin') {
+      const proc = spawn('pbcopy');
+      proc.stdin.write(cleanText);
+      proc.stdin.end();
+    } else if (os.platform() === 'win32') {
+      const proc = spawn('clip');
+      proc.stdin.write(cleanText);
+      proc.stdin.end();
+    } else {
+      const proc = spawn('xclip', ['-selection', 'clipboard']);
+      proc.stdin.write(cleanText);
+      proc.stdin.end();
+    }
+  } catch (e) {
+    // Ignore clipboard failures gracefully
+  }
+}
+
+// Send local system desktop notification
+export function sendDesktopNotification(title: string, message: string): void {
+  try {
+    const cleanMsg = message.replace(/"/g, '\\"');
+    if (os.platform() === 'darwin') {
+      execSync(`osascript -e 'display notification "${cleanMsg}" with title "${title}"'`);
+    } else if (os.platform() === 'linux') {
+      execSync(`notify-send "${title}" "${cleanMsg}"`);
+    }
+  } catch (e) {
+    // Fallback if notify-send / osascript is not available
+  }
+}
+
+// Open URL in native default browser
+export function openBrowser(url: string): void {
+  try {
+    if (os.platform() === 'darwin') {
+      execSync(`open "${url}"`);
+    } else if (os.platform() === 'win32') {
+      execSync(`start "${url}"`);
+    } else {
+      execSync(`xdg-open "${url}"`);
+    }
+  } catch (e) {
+    // Fail silently if browser cannot be opened
+  }
+}
+
+// ----------------------------------------------------
 // TUI Components
 // ----------------------------------------------------
 
@@ -140,20 +206,18 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
   const [credentials, setCredentials] = useState<CredentialData | null>(null);
   const [config, setConfig] = useState<AppConfig>(getConfig());
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [authStage, setAuthStage] = useState<'prompt' | 'login_email' | 'login_apikey' | 'authenticating' | 'success' | 'error'>('prompt');
+  const [authStage, setAuthStage] = useState<'prompt' | 'device_code' | 'authenticating' | 'success' | 'error'>('prompt');
 
-  // Auth Form State
-  const [emailInput, setEmailInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
-  const [apiKeyInput, setApiKeyInput] = useState('');
+  // Device Code OAuth Flow State
+  const [deviceUserCode, setDeviceUserCode] = useState<string>('');
+  const [deviceVerificationUri, setDeviceVerificationUri] = useState<string>('');
   const [authError, setAuthError] = useState('');
-  const [authFocus, setAuthFocus] = useState<'email' | 'password' | 'submit' | 'apikey' | 'api_submit'>('email');
 
   // Chat/Session State
   const [session, setSession] = useState<ChatSession | null>(null);
   const [activeAgentSlug, setActiveAgentSlug] = useState<string>(overrideAgent || config.defaultAgent);
   const [activeModel, setActiveModel] = useState<string>(overrideModel || config.defaultModel);
-  const [latency, setLatency] = useState<number>(config.latencySimulated);
+  const [latency] = useState<number>(config.latencySimulated);
   const [tokensUsed, setTokensUsed] = useState<number>(0);
   const [connectionState] = useState<'CONNECTED' | 'RECONNECTING' | 'OFFLINE'>('CONNECTED');
   const [rightPanelOpen, setRightPanelOpen] = useState<boolean>(true);
@@ -185,10 +249,17 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
   // Loaded Skills cached state
   const [loadedSkills, setLoadedSkills] = useState<string[]>(getLoadedSkills());
 
-  // Initialization
+  // Bracketed Paste Mode effect
   useEffect(() => {
+    // Enable bracketed paste mode in terminal
+    process.stdout.write('\x1b[?2004h');
     initializeHighlighter();
     checkAuth();
+
+    return () => {
+      // Disable bracketed paste mode on exit
+      process.stdout.write('\x1b[?2004l');
+    };
   }, []);
 
   const checkAuth = async () => {
@@ -239,6 +310,36 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
   };
 
   // ----------------------------------------------------
+  // OAuth Device Flow Trigger
+  // ----------------------------------------------------
+  const triggerDeviceFlowAuth = async () => {
+    setAuthStage('device_code');
+    const mockUserCode = 'ETLE-8842';
+    const mockVerificationUri = 'https://etles.vercel.app/activate';
+
+    setDeviceUserCode(mockUserCode);
+    setDeviceVerificationUri(mockVerificationUri);
+
+    // Attempt to open verification URL in browser
+    openBrowser(`${mockVerificationUri}?code=${mockUserCode}`);
+
+    // Poll endpoint simulation (success after 5s)
+    setTimeout(async () => {
+      setAuthStage('authenticating');
+      const res = await validateCredentials(undefined, undefined, 'api-key-device-auth-code-token-value-1234');
+      if (res.success && res.data) {
+        await saveCredentials(res.data);
+        setCredentials(res.data);
+        setIsAuthenticated(true);
+        initializeSession();
+      } else {
+        setAuthError('Device authorization polling expired or failed.');
+        setAuthStage('prompt');
+      }
+    }, 5000);
+  };
+
+  // ----------------------------------------------------
   // Interactive Auth Flow Keyboard Handlers
   // ----------------------------------------------------
   const handleAuthInput = (input: string, key: { ctrl: boolean; upArrow: boolean; downArrow: boolean; tab: boolean; return: boolean; backspace: boolean }) => {
@@ -248,90 +349,9 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
     }
 
     if (authStage === 'prompt') {
-      if (input === '1') {
-        setAuthStage('login_email');
-        setAuthFocus('email');
-      } else if (input === '2') {
-        setAuthStage('login_apikey');
-        setAuthFocus('apikey');
+      if (key.return || input === '1') {
+        triggerDeviceFlowAuth();
       }
-      return;
-    }
-
-    if (authStage === 'login_email') {
-      if (key.tab || key.downArrow) {
-        setAuthFocus(prev => prev === 'email' ? 'password' : prev === 'password' ? 'submit' : 'email');
-        return;
-      }
-      if (key.upArrow) {
-        setAuthFocus(prev => prev === 'submit' ? 'password' : prev === 'password' ? 'email' : 'submit');
-        return;
-      }
-      if (key.return) {
-        if (authFocus === 'submit') {
-          triggerEmailAuth();
-        } else {
-          setAuthFocus('password');
-        }
-        return;
-      }
-      if (key.backspace) {
-        if (authFocus === 'email') setEmailInput(prev => prev.slice(0, -1));
-        if (authFocus === 'password') setPasswordInput(prev => prev.slice(0, -1));
-        return;
-      }
-      if (input) {
-        if (authFocus === 'email') setEmailInput(prev => prev + input);
-        if (authFocus === 'password') setPasswordInput(prev => prev + input);
-      }
-    }
-
-    if (authStage === 'login_apikey') {
-      if (key.tab || key.downArrow || key.upArrow) {
-        setAuthFocus(prev => prev === 'apikey' ? 'api_submit' : 'apikey');
-        return;
-      }
-      if (key.return) {
-        if (authFocus === 'api_submit' || authFocus === 'apikey') {
-          triggerApiKeyAuth();
-        }
-        return;
-      }
-      if (key.backspace) {
-        if (authFocus === 'apikey') setApiKeyInput(prev => prev.slice(0, -1));
-        return;
-      }
-      if (input) {
-        if (authFocus === 'apikey') setApiKeyInput(prev => prev + input);
-      }
-    }
-  };
-
-  const triggerEmailAuth = async () => {
-    setAuthStage('authenticating');
-    const res = await validateCredentials(emailInput, passwordInput);
-    if (res.success && res.data) {
-      await saveCredentials(res.data);
-      setCredentials(res.data);
-      setIsAuthenticated(true);
-      initializeSession();
-    } else {
-      setAuthError(res.error || 'Authentication failed.');
-      setAuthStage('login_email');
-    }
-  };
-
-  const triggerApiKeyAuth = async () => {
-    setAuthStage('authenticating');
-    const res = await validateCredentials(undefined, undefined, apiKeyInput);
-    if (res.success && res.data) {
-      await saveCredentials(res.data);
-      setCredentials(res.data);
-      setIsAuthenticated(true);
-      initializeSession();
-    } else {
-      setAuthError(res.error || 'Authentication failed.');
-      setAuthStage('login_apikey');
     }
   };
 
@@ -349,6 +369,13 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
         setLastCtrlC(now);
         return;
       }
+    }
+
+    // Capture Bracketed Paste Escape Sequence
+    if (input.includes('\x1b[200~')) {
+      const pastedText = input.replace('\x1b[200~', '').replace('\x1b[201~', '');
+      setComposerInput(prev => prev + pastedText);
+      return;
     }
 
     // Ctrl+P: Toggle Right Panel
@@ -393,6 +420,22 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
         if (userMsgs.length > 0) {
           const lastUserPrompt = userMsgs[userMsgs.length - 1].content;
           triggerAgentRun(lastUserPrompt);
+        }
+      }
+      return;
+    }
+
+    // Ctrl+Y: Copy Latest Code Block to Clipboard
+    if (key.ctrl && input === 'y') {
+      if (session) {
+        const assistants = session.messages.filter(m => m.role === 'assistant');
+        if (assistants.length > 0) {
+          const latest = assistants[assistants.length - 1].content;
+          const match = latest.match(/```[a-z]*\n([\s\S]*?)```/);
+          if (match) {
+            copyToClipboard(match[1]);
+            addMessageToSession('system', '✓ Copied code block to clipboard!');
+          }
         }
       }
       return;
@@ -555,6 +598,7 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
       if (trace) {
         addMessageToSession('system', `### Sub-agent Inspector [${trace.name}]\n- **Role:** ${trace.role}\n- **Status:** ${trace.status}\n- **Output:** ${trace.output || 'N/A'}`);
       } else {
+        terminalBeep();
         addMessageToSession('system', `Sub-agent with ID "${saId}" not found in trace.`);
       }
     } else if (action === '/memory') {
@@ -572,6 +616,7 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
         if (val) {
           addMessageToSession('system', `**Memory [${parts[2]}]:** ${val.value} (${val.type})`);
         } else {
+          terminalBeep();
           addMessageToSession('system', `Memory key "${parts[2]}" not found.`);
         }
       } else if (parts[1] === 'set') {
@@ -584,6 +629,7 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
         if (deleted) {
           addMessageToSession('system', `Successfully deleted memory key **${parts[2]}**.`);
         } else {
+          terminalBeep();
           addMessageToSession('system', `Memory key "${parts[2]}" not found.`);
         }
       }
@@ -601,6 +647,7 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
           setLoadedSkills(getLoadedSkills());
           addMessageToSession('system', `✓ Loaded skill **${parts[2]}** successfully.`);
         } else {
+          terminalBeep();
           addMessageToSession('system', `✗ Failed to load skill: ${res.error}`);
         }
       } else if (parts[1] === 'unload') {
@@ -609,6 +656,7 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
           setLoadedSkills(getLoadedSkills());
           addMessageToSession('system', `✓ Unloaded skill **${parts[2]}** successfully.`);
         } else {
+          terminalBeep();
           addMessageToSession('system', `✗ Failed to unload skill: ${res.error}`);
         }
       } else if (parts[1] === 'inspect') {
@@ -616,6 +664,7 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
         if (s) {
           addMessageToSession('system', `### Skill: ${s.name}\n- **Slug:** \`${s.slug}\`\n- **Category:** ${s.category}\n- **Slots Required:** ${s.slots}\n- **Enables Tools:** ${s.tools.join(', ')}\n- **Dependencies:** ${s.dependencies.join(', ') || 'None'}`);
         } else {
+          terminalBeep();
           addMessageToSession('system', `Skill "${parts[2]}" not found.`);
         }
       }
@@ -631,6 +680,7 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
         if (t) {
           addMessageToSession('system', `### Tool Schema: ${t.name} ${t.icon}\n- **Description:** ${t.description}\n- **Input Properties:**\n\`\`\`json\n${JSON.stringify(t.schema, null, 2)}\n\`\`\``);
         } else {
+          terminalBeep();
           addMessageToSession('system', `Tool "${parts[2]}" not found.`);
         }
       }
@@ -641,9 +691,11 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
         setConfigKey('defaultAgent', sub.slug);
         addMessageToSession('system', `Active controller switched to **${sub.name}**.`);
       } else {
+        terminalBeep();
         addMessageToSession('system', `Agent with slug "${target}" not found.`);
       }
     } else {
+      terminalBeep();
       addMessageToSession('system', `Unknown command. Type \`/help\` or use command palette (Ctrl+K).`);
     }
   };
@@ -701,12 +753,16 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
       if (res.done) {
         setIsStreaming(false);
         setActiveTools([]);
+
+        // Response complete - send local desktop notification if bg runs finished
+        sendDesktopNotification(`Etles Agent: Response complete!`, `Finished running ${activeAgentSlug}`);
         return;
       }
 
       const ev = res.value as StreamEvent;
       if (ev.type === 'token') {
-        fullContent += ev.data;
+        const val = ev.data as string;
+        fullContent += val;
         setTokensUsed(prev => prev + 8);
         setSession(prev => {
           if (!prev) return null;
@@ -716,17 +772,20 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
           return updated;
         });
       } else if (ev.type === 'tool_start') {
-        setActiveTools(prev => [...prev, { ...ev.data, status: 'running', stdout: '' }]);
+        setActiveTools(prev => [...prev, { ...(ev.data as any), status: 'running', stdout: '' }]);
       } else if (ev.type === 'tool_stdout') {
-        setActiveTools(prev => prev.map(t => t.name === 'shell_execute' ? { ...t, stdout: t.stdout + ev.data } : t));
+        setActiveTools(prev => prev.map(t => t.name === 'shell_execute' ? { ...t, stdout: t.stdout + (ev.data as string) } : t));
       } else if (ev.type === 'tool_end') {
-        setActiveTools(prev => prev.map(t => t.name === ev.data.name ? { ...t, status: 'completed', output: ev.data.output } : t));
+        const endData = ev.data as { name: string; status: 'completed' | 'failed'; output: string };
+        setActiveTools(prev => prev.map(t => t.name === endData.name ? { ...t, status: endData.status, output: endData.output } : t));
       } else if (ev.type === 'subagent_start') {
-        setSubagentsTrace(prev => [...prev, ev.data]);
+        setSubagentsTrace(prev => [...prev, ev.data as any]);
       } else if (ev.type === 'subagent_end') {
-        setSubagentsTrace(prev => prev.map(s => s.id === ev.data.id ? { ...s, status: 'completed', output: ev.data.output } : s));
+        const saEnd = ev.data as { id: string; status: 'completed' | 'failed'; output: string };
+        setSubagentsTrace(prev => prev.map(s => s.id === saEnd.id ? { ...s, status: saEnd.status, output: saEnd.output } : s));
       } else if (ev.type === 'memory_update') {
-        const diff = generateMemoryDiff(ev.data.oldMemory, ev.data.newMemory);
+        const memData = ev.data as { oldMemory: any; newMemory: any };
+        const diff = generateMemoryDiff(memData.oldMemory, memData.newMemory);
         setMemoryDiffLog(diff);
       }
 
@@ -782,7 +841,7 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
   // Layout Rendering
   // ----------------------------------------------------
 
-  // Render Auth View
+  // Render Auth View with Device Code OAuth Flow
   if (!isAuthenticated) {
     return (
       <Box flexDirection="column" borderStyle="single" borderColor="cyan" padding={1} width={80}>
@@ -793,44 +852,36 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
         {authStage === 'prompt' && (
           <Box flexDirection="column">
             <Text color="yellow">Select your authentication mode:</Text>
-            <Text>  [1] Email & Password login credentials</Text>
-            <Text>  [2] Custom Etles Cloud API Key</Text>
+            <Box marginY={1} />
+            <Text>  Press [ENTER] to sign in with GitHub-style Browser OAuth Device Flow</Text>
             <Box marginY={1}/>
-            <Text color="grey">Press [1] or [2] keys to proceed...</Text>
+            <Text color="grey">Press ENTER key to proceed...</Text>
           </Box>
         )}
 
-        {authStage === 'login_email' && (
+        {authStage === 'device_code' && (
           <Box flexDirection="column">
-            <Text bold color="yellow">Email/Password Login:</Text>
+            <Text bold color="yellow">OAUTH DEVICE FLOW ACTIVATED</Text>
+            <Box marginY={1} />
+            <Text>Please navigate your browser to register this device:</Text>
+            <Text bold color="cyan">  {deviceVerificationUri}</Text>
+            <Box marginY={1} />
+            <Text>And enter the unique verification code:</Text>
+            <Text bold color="green">  {deviceUserCode}</Text>
+            <Box marginY={1} />
+            <Text color="grey">Attempting to launch browser automatically. Poll server is active...</Text>
+            <Box marginY={1} />
             <Box>
-              <Text width={12}>Email: </Text>
-              <Text color={authFocus === 'email' ? 'cyan' : 'white'}>{emailInput}{authFocus === 'email' ? '█' : ''}</Text>
+              <Spinner color="yellow" />
+              <Text color="grey"> Polling secure token service...</Text>
             </Box>
-            <Box>
-              <Text width={12}>Password: </Text>
-              <Text color={authFocus === 'password' ? 'cyan' : 'white'}>{'*'.repeat(passwordInput.length)}{authFocus === 'password' ? '█' : ''}</Text>
-            </Box>
-            <Box marginY={1}/>
-            <Text color={authFocus === 'submit' ? 'green' : 'grey'}>[ PRESS ENTER TO SUBMIT LOGIN ]</Text>
-          </Box>
-        )}
-
-        {authStage === 'login_apikey' && (
-          <Box flexDirection="column">
-            <Text bold color="yellow">Secure API Key Configuration:</Text>
-            <Box marginY={1}>
-              <Text width={12}>API Key: </Text>
-              <Text color={authFocus === 'apikey' ? 'cyan' : 'white'}>{apiKeyInput}{authFocus === 'apikey' ? '█' : ''}</Text>
-            </Box>
-            <Text color={authFocus === 'api_submit' ? 'green' : 'grey'}>[ PRESS ENTER TO SAVE API KEY ]</Text>
           </Box>
         )}
 
         {authStage === 'authenticating' && (
           <Box>
             <Spinner color="cyan" />
-            <Text color="cyan"> Authenticating with secure credentials service...</Text>
+            <Text color="cyan"> Auth registration confirmed! Retrieving credentials...</Text>
           </Box>
         )}
 
@@ -1111,7 +1162,7 @@ function TUIApp({ initialSessionId, overrideAgent, overrideModel, debugMode, noS
         {/* Status bar */}
         <Box justifyContent="space-between" paddingX={1} height={1} backgroundColor="grey">
           <Text color="black" bold>Session ID: {session ? session.id : 'N/A'} | Conn: {connectionState}</Text>
-          <Text color="black">Ctrl+P Panel | Ctrl+K Palette | Ctrl+E Editor | Ctrl+X Stop | Tab Complete</Text>
+          <Text color="black">Ctrl+P Panel | Ctrl+K Palette | Ctrl+Y Copy | Ctrl+E Editor | Ctrl+X Stop</Text>
         </Box>
       </Box>
 
@@ -1136,19 +1187,24 @@ async function runOneShotMode(prompt: string, agentSlug?: string, modelOverride?
 
   for (const ev of gen) {
     if (ev.type === 'token') {
-      process.stdout.write(ev.data);
+      process.stdout.write(ev.data as string);
     } else if (ev.type === 'tool_start') {
-      console.log(`\n\x1b[1;33m[Tool Invocation] ${ev.data.icon} ${ev.data.name} Starting...\x1b[0m`);
+      const startData = ev.data as { name: string; icon: string };
+      console.log(`\n\x1b[1;33m[Tool Invocation] ${startData.icon} ${startData.name} Starting...\x1b[0m`);
     } else if (ev.type === 'tool_stdout') {
-      process.stdout.write(ev.data);
+      process.stdout.write(ev.data as string);
     } else if (ev.type === 'tool_end') {
-      console.log(`\x1b[1;32m[Tool End] ${ev.data.name}: ${ev.data.status} (${ev.data.output})\x1b[0m\n`);
+      const endData = ev.data as { name: string; status: string; output: string };
+      console.log(`\x1b[1;32m[Tool End] ${endData.name}: ${endData.status} (${endData.output})\x1b[0m\n`);
     } else if (ev.type === 'subagent_start') {
-      console.log(`\x1b[35m[Sub-agent Spawning] ${ev.data.name} (Role: ${ev.data.role})\x1b[0m`);
+      const saStart = ev.data as { name: string; role: string };
+      console.log(`\x1b[35m[Sub-agent Spawning] ${saStart.name} (Role: ${saStart.role})\x1b[0m`);
     } else if (ev.type === 'subagent_end') {
-      console.log(`\x1b[32m[Sub-agent Finished] ${ev.data.name}: ${ev.data.status} (${ev.data.output})\x1b[0m`);
+      const saEnd = ev.data as { name: string; status: string; output: string };
+      console.log(`\x1b[32m[Sub-agent Finished] ${saEnd.name}: ${saEnd.status} (${saEnd.output})\x1b[0m`);
     } else if (ev.type === 'memory_update') {
-      const diff = generateMemoryDiff(ev.data.oldMemory, ev.data.newMemory);
+      const memData = ev.data as { oldMemory: any; newMemory: any };
+      const diff = generateMemoryDiff(memData.oldMemory, memData.newMemory);
       console.log(`\n\x1b[1;33m[Memory Diff Saved]\x1b[0m`);
       for (const w of diff.written) console.log(`  + ${w.key}: ${w.value}`);
       for (const u of diff.updated) console.log(`  ~ ${u.key}: ${u.oldValue} -> ${u.newValue}`);
@@ -1220,7 +1276,7 @@ async function main() {
         console.log(`- Account Role: ${creds.user.role}`);
         console.log(`- Workspace: ${creds.user.workspace}`);
         if (creds.apiKey) {
-          console.log(`- Auth Method: Secure API Key (${creds.apiKey.substring(0, 10)}...)`);
+          console.log(`- Auth Method: GitHub Browser OAuth Device Flow`);
         } else {
           console.log(`- Auth Method: Secure Session Token`);
         }

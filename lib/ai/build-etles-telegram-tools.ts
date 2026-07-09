@@ -94,11 +94,6 @@ import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
 import * as browserUseTools from "@/lib/ai/tools/browser-use";
 import * as daytonaBrowserTools from "@/lib/ai/tools/daytona-browser";
 import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
-import * as aws from "@/lib/ai/tools/aws";
-import * as gcp from "@/lib/ai/tools/gcp";
-import * as azure from "@/lib/ai/tools/azure";
-import * as db from "@/lib/ai/tools/databases";
-import * as legal from "@/lib/ai/tools/legal";
 import { allOracleTools } from "@/lib/ai/tools/oracle-cloud";
 
 export type TelegramEtlesToolsParams = {
@@ -228,20 +223,6 @@ export function buildEtlesTelegramTools({
     browserUploadFile: daytonaBrowserTools.browserUploadFile({ userId }),
     browserScreenshot: daytonaBrowserTools.browserScreenshot({ userId }),
     browserVisualInteract: daytonaBrowserTools.browserVisualInteract({ userId }),
-    awsS3: aws.awsS3({ userId }),
-    awsEC2: aws.awsEC2({ userId }),
-    awsLambda: aws.awsLambda({ userId }),
-    gcpStorage: gcp.gcpStorage({ userId }),
-    gcpCompute: gcp.gcpCompute({ userId }),
-    gcpFunctions: gcp.gcpFunctions({ userId }),
-    azureStorage: azure.azureStorage({ userId }),
-    azureVM: azure.azureVM({ userId }),
-    azureFunctions: azure.azureFunctions({ userId }),
-    postgresQuery: db.postgresQuery({ userId }),
-    mysqlQuery: db.mysqlQuery({ userId }),
-    mongodbQuery: db.mongodbQuery({ userId }),
-    analyzeContract: legal.analyzeContract({ userId }),
-    compareContracts: legal.compareContracts({ userId }),
     ...allOracleTools({ userId }),
   } as ToolSet;
 }

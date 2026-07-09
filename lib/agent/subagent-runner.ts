@@ -93,11 +93,6 @@ import * as twilio from "@/lib/ai/tools/twilio";
 import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
 
 const composio = new Composio({ provider: new VercelProvider() });
-import * as aws from "@/lib/ai/tools/aws";
-import * as gcp from "@/lib/ai/tools/gcp";
-import * as azure from "@/lib/ai/tools/azure";
-import * as db from "@/lib/ai/tools/databases";
-import * as legal from "@/lib/ai/tools/legal";
 
 async function recallRelevantMemory(userId: string, query: string): Promise<string> {
   try {
@@ -230,21 +225,6 @@ export async function runSubAgent(params: RunSubAgentParams): Promise<{
     wikiIngest: wikiIngest({ userId }),
     readAgentSkill: readAgentSkill(),
     readDepartmentMemory: readDepartmentMemory({ userId, agentSlug: agentType }),
-    // Infrastructure & Database Tools
-    awsS3: aws.awsS3({ userId }),
-    awsEC2: aws.awsEC2({ userId }),
-    awsLambda: aws.awsLambda({ userId }),
-    gcpStorage: gcp.gcpStorage({ userId }),
-    gcpCompute: gcp.gcpCompute({ userId }),
-    gcpFunctions: gcp.gcpFunctions({ userId }),
-    azureStorage: azure.azureStorage({ userId }),
-    azureVM: azure.azureVM({ userId }),
-    azureFunctions: azure.azureFunctions({ userId }),
-    postgresQuery: db.postgresQuery({ userId }),
-    mysqlQuery: db.mysqlQuery({ userId }),
-    mongodbQuery: db.mongodbQuery({ userId }),
-    analyzeContract: legal.analyzeContract({ userId }),
-    compareContracts: legal.compareContracts({ userId }),
     writeDepartmentMemory: writeDepartmentMemory({ userId, agentSlug: agentType }),
 
     // Sandbox tools for specialist agents
