@@ -156,7 +156,7 @@ import { checkIpRateLimit } from "@/lib/ratelimit";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import type { ChatMessage } from "@/lib/types";
 import { touchUserActivity } from "@/lib/user-activity";
-import { convertToUIMessages, generateUUID } from "@/lib/utils";
+import { convertToUIMessages, generateUUID, sanitizeModelMessages } from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 
@@ -302,7 +302,7 @@ export async function POST(request: Request) {
       (selectedChatModel.includes("reasoning") &&
         !selectedChatModel.includes("non-reasoning"));
 
-    const modelMessages = await convertToModelMessages(uiMessages);
+    const modelMessages = sanitizeModelMessages(await convertToModelMessages(uiMessages));
 
     let composioTools: Record<string, any> = {};
     if (session?.user?.id && !isGuest) {

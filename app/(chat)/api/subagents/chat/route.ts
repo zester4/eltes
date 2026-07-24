@@ -8,7 +8,7 @@ import { auth } from "@/app/(auth)/auth";
 import { guestRegex } from "@/lib/constants";
 import { getSubAgentBySlug } from "@/lib/agent/subagent-definitions";
 import { ChatbotError } from "@/lib/errors";
-import { generateUUID } from "@/lib/utils";
+import { generateUUID, sanitizeModelMessages } from "@/lib/utils";
 import {
   getSubagentChatMessages,
   saveSubagentChatMessages,
@@ -273,7 +273,7 @@ async function runInlineSubagentChat(params: {
         ? getGoogleModel(subagentModel)
         : getLanguageModel(subagentModel);
 
-      const modelMessages = await convertToModelMessages(messages as any);
+      const modelMessages = sanitizeModelMessages(await convertToModelMessages(messages as any));
 
       const genResult = await generateText({
         model,

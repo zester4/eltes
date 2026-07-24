@@ -31,7 +31,7 @@ import {
   getSubagentChatMessages,
   saveSubagentChatMessages,
 } from "@/lib/subagent-redis";
-import { generateUUID } from "@/lib/utils";
+import { generateUUID, sanitizeModelMessages } from "@/lib/utils";
 import { Index } from "@upstash/vector";
 import type { SubagentChatWorkflowPayload } from "@/lib/workflow/client";
 import type { ChatMessage } from "@/lib/types";
@@ -226,7 +226,7 @@ export const { POST } = serve<SubagentChatWorkflowPayload>(async (context) => {
 
     // Convert ChatMessage[] to model messages format
     const { convertToModelMessages } = await import("ai");
-    const modelMessages = await convertToModelMessages(messages as any);
+    const modelMessages = sanitizeModelMessages(await convertToModelMessages(messages as any));
 
     try {
       const genResult = await generateText({

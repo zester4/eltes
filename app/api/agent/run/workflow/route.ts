@@ -88,7 +88,7 @@ import { getPersistentSandboxTools } from "@/lib/ai/tools/persistent-sandbox";
 import * as twilioTools from "@/lib/ai/tools/twilio";
 import * as twilioWhatsApp from "@/lib/ai/tools/twilio-whatsapp";
 import { getMessagesByChatId, saveMessages, updateAgentTask } from "@/lib/db/queries";
-import { convertToUIMessages, generateUUID, getTextFromMessage } from "@/lib/utils";
+import { convertToUIMessages, generateUUID, getTextFromMessage, sanitizeModelMessages } from "@/lib/utils";
 import { getSessionTail, saveSessionTail } from "@/lib/session-tail";
 import { upsertWorkflowProgress } from "@/lib/agent/workflow-progress.server";
 import {
@@ -210,7 +210,7 @@ export const { POST } = serve<AgentRunWorkflowPayload>(async (context) => {
         }
       }
 
-      const modelMessages = await convertToModelMessages(uiMessages);
+      const modelMessages = sanitizeModelMessages(await convertToModelMessages(uiMessages));
 
       // Load Composio tools — optional, continue without if unavailable
       let composioTools: Record<string, unknown> = {};

@@ -108,6 +108,78 @@ export function convertToUIMessages(messages: DBMessage[]): ChatMessage[] {
   }));
 }
 
+export function sanitizeModelMessages(messages: any[]): any[] {
+  return messages.map((msg) => {
+    if (!msg) return msg;
+
+    if (Array.isArray(msg.content)) {
+      return {
+        ...msg,
+        content: msg.content.map((part: any) => {
+          if (part && part.type === 'tool-call') {
+            let input = part.input;
+            if (typeof input === 'string') {
+              try {
+                input = JSON.parse(input);
+              } catch (e) {
+                console.error("[sanitizeModelMessages] Failed to parse tool-call input:", input, e);
+              }
+            }
+            let args = part.args;
+            if (typeof args === 'string') {
+              try {
+                args = JSON.parse(args);
+              } catch (e) {
+                console.error("[sanitizeModelMessages] Failed to parse tool-call args:", args, e);
+              }
+            }
+            return {
+              ...part,
+              ...(input !== undefined ? { input } : {}),
+              ...(args !== undefined ? { args } : {}),
+            };
+          }
+          return part;
+        }),
+      };
+    }
+
+    if (Array.isArray(msg.parts)) {
+      return {
+        ...msg,
+        parts: msg.parts.map((part: any) => {
+          if (part && (part.type === 'tool-call' || part.type === 'tool-invocation')) {
+            let input = part.input;
+            if (typeof input === 'string') {
+              try {
+                input = JSON.parse(input);
+              } catch (e) {
+                console.error("[sanitizeModelMessages] Failed to parse parts input:", input, e);
+              }
+            }
+            let args = part.args;
+            if (typeof args === 'string') {
+              try {
+                args = JSON.parse(args);
+              } catch (e) {
+                console.error("[sanitizeModelMessages] Failed to parse parts args:", args, e);
+              }
+            }
+            return {
+              ...part,
+              ...(input !== undefined ? { input } : {}),
+              ...(args !== undefined ? { args } : {}),
+            };
+          }
+          return part;
+        }),
+      };
+    }
+
+    return msg;
+  });
+}
+
 export function getTextFromMessage(message: ChatMessage | UIMessage): string {
   return message.parts
     .filter((part) => part.type === 'text')
