@@ -7,6 +7,7 @@ import {
   Source_Serif_4,
 } from "next/font/google";
 import { Toaster } from "sonner";
+import { PwaRegister } from "@/components/pwa-register";
 import { ThemeColorSync, ThemeProvider } from "@/components/theme-provider";
 
 import "./globals.css";
@@ -19,16 +20,20 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Etles AI",
   },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f4ee" },
+    { media: "(prefers-color-scheme: dark)", color: "#171717" },
+  ],
 };
 
 const fontSans = Inter({
@@ -83,6 +88,7 @@ export default function RootLayout({
         >
           <ThemeColorSync />
           <Toaster position="top-center" />
+          <PwaRegister />
           <SessionProvider>{children}</SessionProvider>
         </ThemeProvider>
       </body>

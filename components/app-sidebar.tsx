@@ -88,7 +88,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
               <SidebarMenu className="gap-1.5">
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="h-9 rounded-lg"
+                    className="min-h-11 rounded-lg"
                     onClick={() => {
                       setOpenMobile(false);
                       router.push("/chat");
@@ -101,7 +101,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="h-9 rounded-lg"
+                    className="min-h-11 rounded-lg"
                     onClick={() => {
                       setOpenMobile(false);
                       router.push("/subagents");
@@ -113,7 +113,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="h-9 rounded-lg"
+                    className="min-h-11 rounded-lg"
                     onClick={() => {
                       setOpenMobile(false);
                       router.push("/campaigns");
@@ -125,7 +125,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="h-9 rounded-lg"
+                    className="min-h-11 rounded-lg"
                     onClick={() => {
                       setOpenMobile(false);
                       router.push("/agent-status");
@@ -136,14 +136,14 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <SidebarMenuButton className="h-9 rounded-lg" onClick={() => { setOpenMobile(false); router.push("/calendar"); }}>
+                  <SidebarMenuButton className="min-h-11 rounded-lg" onClick={() => { setOpenMobile(false); router.push("/calendar"); }}>
                     <CalendarClock className="size-4" />
                     <span>Agent Calendar</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="h-9 rounded-lg"
+                    className="min-h-11 rounded-lg"
                     onClick={() => {
                       setOpenMobile(false);
                       router.push("/skills");
@@ -155,7 +155,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
-                    className="h-9 rounded-lg"
+                    className="min-h-11 rounded-lg"
                     onClick={() => {
                       setOpenMobile(false);
                       router.push("/media");

@@ -2,10 +2,14 @@
   "name": "Etles AI Agent",
   "short_name": "Etles",
   "description": "Etles premium AI Agent with 1000+ tool integrations.",
-  "start_url": "/",
+  "id": "/",
+  "start_url": "/chat",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "orientation": "portrait-primary",
+  "background_color": "#171717",
+  "theme_color": "#171717",
+  "categories": ["productivity", "utilities"],
   "icons": [
     {
       "src": "/icon.png",
